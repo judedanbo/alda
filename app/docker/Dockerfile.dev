@@ -1,0 +1,28 @@
+FROM node:25-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install libc6-compat for Prisma
+RUN apk add --no-cache libc6-compat
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install dependencies
+RUN npm install
+
+# Copy prisma schema for generation
+COPY prisma ./prisma
+
+# Generate Prisma client
+RUN npm run db:generate || true
+
+# Copy rest of the application
+COPY . .
+
+# Expose port
+EXPOSE 3000
+
+# Start development server
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

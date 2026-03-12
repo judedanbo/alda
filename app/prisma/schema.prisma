@@ -1,0 +1,443 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// Users & Authentication
+// ============================================
+
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  email         String    @unique @db.VarChar(255)
+  passwordHash  String    @map("password_hash") @db.VarChar(255)
+  phone         String?   @db.VarChar(20)
+  emailVerified Boolean   @default(false) @map("email_verified")
+  isActive      Boolean   @default(true) @map("is_active")
+  lastLoginAt   DateTime? @map("last_login_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  roles                UserRole[]
+  applicantProfile     ApplicantProfile?
+  refreshTokens        RefreshToken[]
+  submissions          Submission[]         @relation("RecordedBy")
+  reviews              Review[]             @relation("ReviewedBy")
+  receipts             Receipt[]            @relation("GeneratedBy")
+  auditLogs            AuditLog[]
+  notifications        Notification[]
+  notificationPrefs    NotificationPreference?
+  archivedRecords      ArchivedRecord[]     @relation("ArchivedBy")
+  passwordResetTokens  PasswordResetToken[]
+
+  @@map("users")
+}
+
+model Role {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique @db.VarChar(50)
+  description String?    @db.Text
+
+  // Relations
+  users UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  userId String @map("user_id") @db.Uuid
+  roleId Int    @map("role_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @unique @db.VarChar(500)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @unique @db.VarChar(255)
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@map("password_reset_tokens")
+}
+
+// ============================================
+// Applicant Profiles
+// ============================================
+
+model ApplicantProfile {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @unique @map("user_id") @db.Uuid
+  fullName         String   @map("full_name") @db.VarChar(255)
+  ghanaCardNumber  String   @unique @map("ghana_card_number") @db.VarChar(20)
+  ghanaCardFrontUrl String  @map("ghana_card_front_url") @db.Text
+  ghanaCardBackUrl  String? @map("ghana_card_back_url") @db.Text
+  institutionId    String?  @map("institution_id") @db.Uuid
+  designation      String   @db.VarChar(255)
+  officeCategoryId Int      @map("office_category_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  institution    Institution?         @relation(fields: [institutionId], references: [id])
+  officeCategory PublicOfficeCategory @relation(fields: [officeCategoryId], references: [id])
+  declarations   Declaration[]
+
+  @@map("applicant_profiles")
+}
+
+// ============================================
+// Reference Data
+// ============================================
+
+model PublicOfficeCategory {
+  id               Int     @id @default(autoincrement())
+  name             String  @db.VarChar(255)
+  description      String? @db.Text
+  articleReference String? @map("article_reference") @db.VarChar(50)
+  isActive         Boolean @default(true) @map("is_active")
+
+  // Relations
+  applicantProfiles ApplicantProfile[]
+
+  @@map("public_office_categories")
+}
+
+model Institution {
+  id       String  @id @default(uuid()) @db.Uuid
+  name     String  @db.VarChar(255)
+  type     String? @db.VarChar(100)
+  isActive Boolean @default(true) @map("is_active")
+
+  // Relations
+  applicantProfiles ApplicantProfile[]
+
+  @@map("institutions")
+}
+
+// ============================================
+// Declarations & Workflow
+// ============================================
+
+enum DeclarationStatus {
+  PENDING
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SEALED
+
+  @@map("declaration_status")
+}
+
+model Declaration {
+  id          String            @id @default(uuid()) @db.Uuid
+  applicantId String            @map("applicant_id") @db.Uuid
+  uniqueCode  String            @unique @map("unique_code") @db.VarChar(20)
+  status      DeclarationStatus @default(PENDING)
+  submittedAt DateTime?         @map("submitted_at")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  applicant           ApplicantProfile     @relation(fields: [applicantId], references: [id])
+  submissions         Submission[]
+  reviews             Review[]
+  receipts            Receipt[]
+  pickupAuthorization PickupAuthorization?
+
+  @@index([uniqueCode])
+  @@index([status])
+  @@map("declarations")
+}
+
+model Submission {
+  id             String   @id @default(uuid()) @db.Uuid
+  declarationId  String   @map("declaration_id") @db.Uuid
+  recordedBy     String   @map("recorded_by") @db.Uuid
+  submissionDate DateTime @map("submission_date")
+  notes          String?  @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // Relations
+  declaration Declaration @relation(fields: [declarationId], references: [id])
+  recorder    User        @relation("RecordedBy", fields: [recordedBy], references: [id])
+
+  @@map("submissions")
+}
+
+enum ReviewStatus {
+  APPROVED
+  REJECTED
+
+  @@map("review_status")
+}
+
+model Review {
+  id              String       @id @default(uuid()) @db.Uuid
+  declarationId   String       @map("declaration_id") @db.Uuid
+  reviewedBy      String       @map("reviewed_by") @db.Uuid
+  reviewDate      DateTime     @map("review_date")
+  status          ReviewStatus
+  rejectionReason String?      @map("rejection_reason") @db.Text
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  declaration Declaration @relation(fields: [declarationId], references: [id])
+  reviewer    User        @relation("ReviewedBy", fields: [reviewedBy], references: [id])
+
+  @@map("reviews")
+}
+
+model Receipt {
+  id            String   @id @default(uuid()) @db.Uuid
+  declarationId String   @map("declaration_id") @db.Uuid
+  receiptNumber String   @unique @map("receipt_number") @db.VarChar(50)
+  generatedBy   String   @map("generated_by") @db.Uuid
+  pdfUrl        String?  @map("pdf_url") @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  declaration Declaration @relation(fields: [declarationId], references: [id])
+  generator   User        @relation("GeneratedBy", fields: [generatedBy], references: [id])
+
+  @@map("receipts")
+}
+
+// ============================================
+// Pickup Management
+// ============================================
+
+model PickupAuthorization {
+  id              String    @id @default(uuid()) @db.Uuid
+  declarationId   String    @unique @map("declaration_id") @db.Uuid
+  authorizedName  String?   @map("authorized_name") @db.VarChar(255)
+  authorizedPhone String?   @map("authorized_phone") @db.VarChar(20)
+  isSelfPickup    Boolean   @default(true) @map("is_self_pickup")
+  pickupDate      DateTime? @map("pickup_date")
+  pickedUp        Boolean   @default(false) @map("picked_up")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  declaration Declaration @relation(fields: [declarationId], references: [id])
+
+  @@map("pickup_authorizations")
+}
+
+// ============================================
+// Audit Trail (Government Compliance)
+// ============================================
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  action     String   @db.VarChar(100)
+  entityType String?  @map("entity_type") @db.VarChar(50)
+  entityId   String?  @map("entity_id") @db.Uuid
+  oldValues  Json?    @map("old_values")
+  newValues  Json?    @map("new_values")
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  userAgent  String?  @map("user_agent") @db.Text
+  sessionId  String?  @map("session_id") @db.VarChar(100)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ============================================
+// Notification System
+// ============================================
+
+enum NotificationType {
+  UNIQUE_CODE_GENERATED
+  SUBMISSION_RECORDED
+  REVIEW_APPROVED
+  REVIEW_REJECTED
+  RECEIPT_READY
+  PICKUP_REMINDER
+  PASSWORD_RESET
+  EMAIL_VERIFICATION
+
+  @@map("notification_type")
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  IN_APP
+
+  @@map("notification_channel")
+}
+
+model Notification {
+  id        String              @id @default(uuid()) @db.Uuid
+  userId    String              @map("user_id") @db.Uuid
+  type      NotificationType
+  channel   NotificationChannel
+  title     String              @db.VarChar(255)
+  message   String              @db.Text
+  metadata  Json?
+  readAt    DateTime?           @map("read_at")
+  createdAt DateTime            @default(now()) @map("created_at")
+
+  // Relations
+  user         User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveryLogs NotificationDeliveryLog[]
+
+  @@index([userId])
+  @@index([readAt])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @unique @map("user_id") @db.Uuid
+  emailEnabled Boolean  @default(true) @map("email_enabled")
+  smsEnabled   Boolean  @default(true) @map("sms_enabled")
+  inAppEnabled Boolean  @default(true) @map("in_app_enabled")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+
+  @@map("delivery_status")
+}
+
+model NotificationDeliveryLog {
+  id               String              @id @default(uuid()) @db.Uuid
+  notificationId   String              @map("notification_id") @db.Uuid
+  channel          NotificationChannel
+  status           DeliveryStatus      @default(PENDING)
+  providerResponse Json?               @map("provider_response")
+  retryCount       Int                 @default(0) @map("retry_count")
+  sentAt           DateTime?           @map("sent_at")
+  deliveredAt      DateTime?           @map("delivered_at")
+  createdAt        DateTime            @default(now()) @map("created_at")
+
+  // Relations
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([notificationId])
+  @@index([status])
+  @@map("notification_delivery_logs")
+}
+
+// ============================================
+// Data Retention & Compliance
+// ============================================
+
+model DataRetentionPolicy {
+  id                  Int     @id @default(autoincrement())
+  entityType          String  @map("entity_type") @db.VarChar(50)
+  retentionPeriodDays Int     @map("retention_period_days")
+  archiveAfterDays    Int?    @map("archive_after_days")
+  deleteAfterDays     Int?    @map("delete_after_days")
+  isActive            Boolean @default(true) @map("is_active")
+
+  @@map("data_retention_policies")
+}
+
+model ArchivedRecord {
+  id                    String   @id @default(uuid()) @db.Uuid
+  entityType            String   @map("entity_type") @db.VarChar(50)
+  entityId              String   @map("entity_id") @db.Uuid
+  archivedData          Json     @map("archived_data")
+  archivedBy            String?  @map("archived_by") @db.Uuid
+  archivedAt            DateTime @default(now()) @map("archived_at")
+  scheduledDeletionDate DateTime? @map("scheduled_deletion_date") @db.Date
+
+  // Relations
+  archiver User? @relation("ArchivedBy", fields: [archivedBy], references: [id])
+
+  @@index([entityType, entityId])
+  @@map("archived_records")
+}
+
+// ============================================
+// Contact Submissions
+// ============================================
+
+enum ContactCategory {
+  GENERAL_INQUIRY
+  TECHNICAL_SUPPORT
+  DECLARATION_HELP
+  FEEDBACK
+  COMPLAINT
+  OTHER
+
+  @@map("contact_category")
+}
+
+enum ContactStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+
+  @@map("contact_status")
+}
+
+model ContactSubmission {
+  id          String          @id @default(uuid()) @db.Uuid
+  name        String          @db.VarChar(255)
+  email       String          @db.VarChar(255)
+  phone       String?         @db.VarChar(20)
+  category    ContactCategory @default(GENERAL_INQUIRY)
+  subject     String          @db.VarChar(255)
+  message     String          @db.Text
+  status      ContactStatus   @default(NEW)
+  ipAddress   String?         @map("ip_address") @db.VarChar(45)
+  userAgent   String?         @map("user_agent") @db.Text
+  respondedAt DateTime?       @map("responded_at")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([category])
+  @@index([createdAt])
+  @@map("contact_submissions")
+}
