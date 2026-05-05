@@ -13,8 +13,8 @@ interface AuditLog {
   action: string;
   entityType: string | null;
   entityId: string | null;
-  oldValues: Record<string, unknown> | null;
-  newValues: Record<string, unknown> | null;
+  oldValues: unknown;
+  newValues: unknown;
   ipAddress: string | null;
   userAgent: string | null;
   createdAt: string;

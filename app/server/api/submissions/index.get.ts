@@ -65,7 +65,7 @@ export default defineEventHandler(async (event) => {
             },
           },
         },
-        recordedBy: {
+        recorder: {
           select: {
             id: true,
             email: true,

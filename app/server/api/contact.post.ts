@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
   const { name, email, phone, category, subject, message } = result.data;
 
   // Get client information
-  const ipAddress = getHeader(event, "x-forwarded-for")?.split(",")[0].trim()
+  const ipAddress = getHeader(event, "x-forwarded-for")?.split(",")[0]?.trim()
     || getHeader(event, "x-real-ip")
     || "unknown";
   const userAgent = getHeader(event, "user-agent") || "unknown";

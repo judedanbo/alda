@@ -23,17 +23,18 @@ model User {
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  roles                UserRole[]
-  applicantProfile     ApplicantProfile?
-  refreshTokens        RefreshToken[]
-  submissions          Submission[]         @relation("RecordedBy")
-  reviews              Review[]             @relation("ReviewedBy")
-  receipts             Receipt[]            @relation("GeneratedBy")
-  auditLogs            AuditLog[]
-  notifications        Notification[]
-  notificationPrefs    NotificationPreference?
-  archivedRecords      ArchivedRecord[]     @relation("ArchivedBy")
-  passwordResetTokens  PasswordResetToken[]
+  roles                    UserRole[]
+  applicantProfile         ApplicantProfile?
+  refreshTokens            RefreshToken[]
+  submissions              Submission[]                 @relation("RecordedBy")
+  reviews                  Review[]                     @relation("ReviewedBy")
+  receipts                 Receipt[]                    @relation("GeneratedBy")
+  auditLogs                AuditLog[]
+  notifications            Notification[]
+  notificationPrefs        NotificationPreference?
+  archivedRecords          ArchivedRecord[]             @relation("ArchivedBy")
+  passwordResetTokens      PasswordResetToken[]
+  declarationStatusChanges DeclarationStatusHistory[]   @relation("StatusChangedBy")
 
   @@map("users")
 }
@@ -154,29 +155,51 @@ enum DeclarationStatus {
   APPROVED
   REJECTED
   SEALED
+  COMPLETED
 
   @@map("declaration_status")
 }
 
 model Declaration {
-  id          String            @id @default(uuid()) @db.Uuid
-  applicantId String            @map("applicant_id") @db.Uuid
-  uniqueCode  String            @unique @map("unique_code") @db.VarChar(20)
-  status      DeclarationStatus @default(PENDING)
-  submittedAt DateTime?         @map("submitted_at")
-  createdAt   DateTime          @default(now()) @map("created_at")
-  updatedAt   DateTime          @updatedAt @map("updated_at")
+  id                    String            @id @default(uuid()) @db.Uuid
+  applicantId           String            @map("applicant_id") @db.Uuid
+  uniqueCode            String            @unique @map("unique_code") @db.VarChar(20)
+  status                DeclarationStatus @default(PENDING)
+  submittedAt           DateTime?         @map("submitted_at")
+  previousDeclarationId String?           @unique @map("previous_declaration_id") @db.Uuid
+  createdAt             DateTime          @default(now()) @map("created_at")
+  updatedAt             DateTime          @updatedAt @map("updated_at")
 
   // Relations
-  applicant           ApplicantProfile     @relation(fields: [applicantId], references: [id])
+  applicant           ApplicantProfile           @relation(fields: [applicantId], references: [id])
   submissions         Submission[]
   reviews             Review[]
   receipts            Receipt[]
   pickupAuthorization PickupAuthorization?
+  statusHistory       DeclarationStatusHistory[]
+  previousDeclaration Declaration?               @relation("DeclarationChain", fields: [previousDeclarationId], references: [id])
+  nextDeclaration     Declaration?               @relation("DeclarationChain")
 
   @@index([uniqueCode])
   @@index([status])
   @@map("declarations")
+}
+
+model DeclarationStatusHistory {
+  id            String            @id @default(uuid()) @db.Uuid
+  declarationId String            @map("declaration_id") @db.Uuid
+  status        DeclarationStatus
+  changedById   String?           @map("changed_by_id") @db.Uuid
+  notes         String?           @db.Text
+  createdAt     DateTime          @default(now()) @map("created_at")
+
+  // Relations
+  declaration Declaration @relation(fields: [declarationId], references: [id], onDelete: Cascade)
+  changedBy   User?       @relation("StatusChangedBy", fields: [changedById], references: [id])
+
+  @@index([declarationId])
+  @@index([createdAt])
+  @@map("declaration_status_history")
 }
 
 model Submission {

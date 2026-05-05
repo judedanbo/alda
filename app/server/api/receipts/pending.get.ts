@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
     prisma.declaration.findMany({
       where: {
         status: "APPROVED",
-        receipt: null,
+        receipts: { none: {} },
       },
       include: {
         applicant: {
@@ -44,15 +44,17 @@ export default defineEventHandler(async (event) => {
             officeCategory: true,
           },
         },
-        review: {
+        reviews: {
           include: {
-            reviewedBy: {
+            reviewer: {
               select: {
                 id: true,
                 email: true,
               },
             },
           },
+          orderBy: { createdAt: "desc" },
+          take: 1,
         },
       },
       orderBy: { submittedAt: "asc" },
@@ -62,7 +64,7 @@ export default defineEventHandler(async (event) => {
     prisma.declaration.count({
       where: {
         status: "APPROVED",
-        receipt: null,
+        receipts: { none: {} },
       },
     }),
   ]);

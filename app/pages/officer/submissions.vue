@@ -12,7 +12,7 @@ interface Declaration {
   id: string;
   uniqueCode: string;
   status: string;
-  submittedAt: string;
+  submittedAt: string | null;
   applicant: {
     fullName: string;
     ghanaCardNumber: string;
@@ -55,7 +55,7 @@ const fetchPendingSubmissions = async () => {
     });
 
     if (response.success) {
-      pendingDeclarations.value = response.data.declarations;
+      pendingDeclarations.value = response.data.declarations as Declaration[];
       total.value = response.data.total;
     }
   } catch (error) {
@@ -200,7 +200,7 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
                 {{ declaration.applicant.institution?.name || 'N/A' }}
               </td>
               <td class="px-4 py-3 text-sm text-muted-foreground">
-                {{ formatDate(declaration.submittedAt) }}
+                {{ declaration.submittedAt ? formatDate(declaration.submittedAt) : '-' }}
               </td>
               <td class="px-4 py-3 text-right">
                 <button

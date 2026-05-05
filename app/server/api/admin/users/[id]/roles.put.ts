@@ -1,5 +1,5 @@
 import prisma from "~/server/utils/prisma";
-import { createAuditLog } from "~/server/utils/audit";
+import { logAction } from "~/server/utils/audit";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -76,7 +76,7 @@ export default defineEventHandler(async (event) => {
     where: { id: { in: roleIds } },
   });
 
-  await createAuditLog({
+  await logAction({
     userId: auth.userId,
     action: "ROLE_ASSIGN",
     entityType: "User",

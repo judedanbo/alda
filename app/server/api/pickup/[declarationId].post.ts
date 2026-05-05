@@ -1,5 +1,5 @@
 import prisma from "~/server/utils/prisma";
-import { validateBody, pickupAuthorizationSchema } from "~/server/utils/validators";
+import { validateBody, pickupAuthorizationBodySchema } from "~/server/utils/validators";
 import { logAction } from "~/server/utils/audit";
 import { sendNotification } from "~/server/services/notification.service";
 
@@ -38,8 +38,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const body = await readBody(event);
-  const data = await validateBody(event, pickupAuthorizationSchema.omit({ declarationId: true }));
+  const data = await validateBody(event, pickupAuthorizationBodySchema);
 
   // Get the declaration
   const declaration = await prisma.declaration.findUnique({
@@ -50,7 +49,7 @@ export default defineEventHandler(async (event) => {
           user: true,
         },
       },
-      receipt: true,
+      receipts: { orderBy: { createdAt: "desc" }, take: 1 },
       pickupAuthorization: true,
     },
   });
@@ -62,8 +61,10 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  const receipt = declaration.receipts[0];
+
   // Check if declaration has a receipt (SEALED status)
-  if (declaration.status !== "SEALED" || !declaration.receipt) {
+  if (declaration.status !== "SEALED" || !receipt) {
     throw createError({
       statusCode: 400,
       statusMessage: "Receipt must be generated before scheduling pickup",
@@ -90,7 +91,7 @@ export default defineEventHandler(async (event) => {
       declaration: {
         include: {
           applicant: true,
-          receipt: true,
+          receipts: { orderBy: { createdAt: "desc" }, take: 1 },
         },
       },
     },
@@ -125,29 +126,9 @@ export default defineEventHandler(async (event) => {
       message: pickupMessage,
       metadata: {
         declarationId,
-        receiptNumber: declaration.receipt.receiptNumber,
+        receiptNumber: receipt.receiptNumber,
         isSelfPickup: data.isSelfPickup,
         authorizedPerson: data.isSelfPickup ? null : data.authorizedName,
-      },
-      channels: {
-        email: {
-          to: user.email,
-          template: "pickup",
-          data: {
-            applicantName: declaration.applicant.fullName,
-            receiptNumber: declaration.receipt.receiptNumber,
-            isSelfPickup: data.isSelfPickup,
-            authorizedName: data.authorizedName,
-            officeAddress: "Ghana Audit Service, Ministry Enclave, Accra",
-            officeHours: "Monday - Friday, 8:00 AM - 5:00 PM",
-          },
-        },
-        sms: user.phone
-          ? {
-              to: user.phone,
-              message: `ADLA: Your receipt (${declaration.receipt.receiptNumber}) is ready for pickup at Ghana Audit Service. ${data.isSelfPickup ? "Bring your Ghana Card." : `Authorized: ${data.authorizedName}`}`,
-            }
-          : undefined,
       },
     });
   }

@@ -49,10 +49,12 @@ export default defineEventHandler(async (event) => {
           officeCategory: true,
         },
       },
-      review: {
+      reviews: {
         include: {
-          reviewedBy: true,
+          reviewer: true,
         },
+        orderBy: { createdAt: "desc" },
+        take: 1,
       },
     },
   });
@@ -89,7 +91,8 @@ export default defineEventHandler(async (event) => {
   const receiptNumber = generateReceiptNumber();
 
   // Get reviewer info
-  const reviewer = declaration.review?.reviewedBy;
+  const review = declaration.reviews[0];
+  const reviewer = review?.reviewer;
 
   // Generate PDF
   const pdfUrl = await generateReceiptPDF({
@@ -101,7 +104,7 @@ export default defineEventHandler(async (event) => {
     designation: declaration.applicant.designation,
     officeCategory: declaration.applicant.officeCategory?.name || "N/A",
     submissionDate: declaration.submittedAt || declaration.createdAt,
-    approvalDate: declaration.review?.reviewDate || new Date(),
+    approvalDate: review?.reviewDate || new Date(),
     approvedBy: reviewer?.email || "System",
     sealNumber: `SEAL-${Date.now()}`,
   });
@@ -112,7 +115,7 @@ export default defineEventHandler(async (event) => {
       data: {
         declarationId,
         receiptNumber,
-        generatedById: auth.userId,
+        generatedBy: auth.userId,
         pdfUrl,
       },
     }),
@@ -153,24 +156,6 @@ export default defineEventHandler(async (event) => {
         declarationId,
         receiptNumber,
         pdfUrl,
-      },
-      channels: {
-        email: {
-          to: user.email,
-          template: "receipt-ready",
-          data: {
-            applicantName: declaration.applicant.fullName,
-            receiptNumber,
-            uniqueCode: declaration.uniqueCode,
-            downloadUrl: pdfUrl,
-          },
-        },
-        sms: user.phone
-          ? {
-              to: user.phone,
-              message: `ADLA: Your receipt (${receiptNumber}) is ready. Check your email for the download link.`,
-            }
-          : undefined,
       },
     });
   }

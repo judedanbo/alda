@@ -58,15 +58,17 @@ export default defineEventHandler(async (event) => {
             },
           },
         },
-        submission: {
+        submissions: {
           include: {
-            recordedBy: {
+            recorder: {
               select: {
                 id: true,
                 email: true,
               },
             },
           },
+          orderBy: { createdAt: "desc" },
+          take: 1,
         },
       },
       orderBy: { submittedAt: "asc" }, // FIFO

@@ -60,7 +60,7 @@ export default defineEventHandler(async (event) => {
             pickupAuthorization: true,
           },
         },
-        generatedBy: {
+        generator: {
           select: {
             id: true,
             email: true,

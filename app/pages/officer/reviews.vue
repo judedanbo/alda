@@ -12,7 +12,7 @@ interface Declaration {
   id: string;
   uniqueCode: string;
   status: string;
-  submittedAt: string;
+  submittedAt: string | null;
   applicant: {
     fullName: string;
     ghanaCardNumber: string;
@@ -24,13 +24,13 @@ interface Declaration {
       phone: string | null;
     };
   };
-  submission: {
+  submissions: {
     submissionDate: string;
     notes: string | null;
-    recordedBy: {
+    recorder: {
       email: string;
     };
-  } | null;
+  }[];
 }
 
 const pendingDeclarations = ref<Declaration[]>([]);
@@ -63,7 +63,7 @@ const fetchPendingReviews = async () => {
     });
 
     if (response.success) {
-      pendingDeclarations.value = response.data.declarations;
+      pendingDeclarations.value = response.data.declarations as Declaration[];
       total.value = response.data.total;
     }
   } catch (error) {
@@ -215,7 +215,7 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
                 {{ declaration.applicant.officeCategory?.name || 'N/A' }}
               </td>
               <td class="px-4 py-3 text-sm text-muted-foreground">
-                {{ declaration.submission ? formatDate(declaration.submission.submissionDate) : 'N/A' }}
+                {{ declaration.submissions[0] ? formatDate(declaration.submissions[0].submissionDate) : 'N/A' }}
               </td>
               <td class="px-4 py-3 text-right">
                 <div class="flex justify-end gap-2">

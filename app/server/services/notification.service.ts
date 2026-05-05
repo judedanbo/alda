@@ -1,7 +1,8 @@
+import { Prisma } from "@prisma/client";
 import prisma from "~/server/utils/prisma";
-import { sendEmail, sendUniqueCodeEmail, sendDeclarationStatusEmail } from "./email.service";
-import { sendSms, sendUniqueCodeSms, sendDeclarationStatusSms, sendPickupSms } from "./sms.service";
-import type { NotificationType, NotificationChannel, DeliveryStatus } from "@prisma/client";
+import { sendEmail, type EmailTemplate } from "./email.service";
+import { sendSms } from "./sms.service";
+import type { NotificationType, NotificationChannel } from "@prisma/client";
 
 /**
  * Notification payload
@@ -45,7 +46,7 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
         channel: "IN_APP",
         title: payload.title,
         message: payload.message,
-        metadata: payload.metadata,
+        metadata: (payload.metadata ?? Prisma.JsonNull) as Prisma.InputJsonValue,
       },
     });
   }
@@ -59,7 +60,7 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
         channel: "EMAIL",
         title: payload.title,
         message: payload.message,
-        metadata: payload.metadata,
+        metadata: (payload.metadata ?? Prisma.JsonNull) as Prisma.InputJsonValue,
       },
     });
 
@@ -111,7 +112,7 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
         channel: "SMS",
         title: payload.title,
         message: payload.message,
-        metadata: payload.metadata,
+        metadata: (payload.metadata ?? Prisma.JsonNull) as Prisma.InputJsonValue,
       },
     });
 
@@ -152,8 +153,8 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
 /**
  * Map notification type to email template
  */
-function mapNotificationTypeToEmailTemplate(type: NotificationType): string {
-  const mapping: Record<NotificationType, string> = {
+function mapNotificationTypeToEmailTemplate(type: NotificationType): EmailTemplate {
+  const mapping: Record<NotificationType, EmailTemplate> = {
     UNIQUE_CODE_GENERATED: "unique-code",
     SUBMISSION_RECORDED: "declaration-submitted",
     REVIEW_APPROVED: "declaration-approved",

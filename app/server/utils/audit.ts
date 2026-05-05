@@ -1,4 +1,5 @@
 import type { H3Event } from "h3";
+import { Prisma } from "@prisma/client";
 import prisma from "./prisma";
 
 export interface AuditLogData {
@@ -17,7 +18,7 @@ export async function createAuditLog(
   event: H3Event,
   data: AuditLogData
 ): Promise<void> {
-  const ipAddress = getHeader(event, "x-forwarded-for")?.split(",")[0].trim()
+  const ipAddress = getHeader(event, "x-forwarded-for")?.split(",")[0]?.trim()
     || getHeader(event, "x-real-ip")
     || "unknown";
   const userAgent = getHeader(event, "user-agent") || "unknown";
@@ -30,8 +31,8 @@ export async function createAuditLog(
         action: data.action,
         entityType: data.entityType,
         entityId: data.entityId,
-        oldValues: data.oldValues,
-        newValues: data.newValues,
+        oldValues: (data.oldValues ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        newValues: (data.newValues ?? Prisma.JsonNull) as Prisma.InputJsonValue,
         ipAddress,
         userAgent,
         sessionId,

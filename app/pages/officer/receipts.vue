@@ -12,7 +12,7 @@ interface Declaration {
   id: string;
   uniqueCode: string;
   status: string;
-  submittedAt: string;
+  submittedAt: string | null;
   applicant: {
     fullName: string;
     ghanaCardNumber: string;
@@ -20,10 +20,10 @@ interface Declaration {
     institution: { name: string } | null;
     officeCategory: { name: string } | null;
   };
-  review: {
+  reviews: {
     reviewDate: string;
-    reviewedBy: { email: string };
-  } | null;
+    reviewer: { email: string };
+  }[];
 }
 
 const pendingDeclarations = ref<Declaration[]>([]);
@@ -50,7 +50,7 @@ const fetchPendingReceipts = async () => {
     });
 
     if (response.success) {
-      pendingDeclarations.value = response.data.declarations;
+      pendingDeclarations.value = response.data.declarations as Declaration[];
       total.value = response.data.total;
     }
   } catch (error) {
@@ -82,8 +82,10 @@ const generateReceipt = async () => {
       headers: authStore.getAuthHeaders(),
     });
 
-    if (response.success && response.data.receipt.pdfUrl) {
-      window.open(response.data.receipt.pdfUrl, "_blank");
+    type GenerateResponse = { success: boolean; data: { receipt: { pdfUrl: string | null } } };
+    const typed = response as GenerateResponse;
+    if (typed.success && typed.data.receipt.pdfUrl) {
+      window.open(typed.data.receipt.pdfUrl, "_blank");
     }
 
     showGenerateModal.value = false;
@@ -166,7 +168,7 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
                 {{ declaration.applicant.institution?.name || 'N/A' }}
               </td>
               <td class="px-4 py-3 text-sm text-muted-foreground">
-                {{ declaration.review ? formatDate(declaration.review.reviewDate) : 'N/A' }}
+                {{ declaration.reviews[0] ? formatDate(declaration.reviews[0].reviewDate) : 'N/A' }}
               </td>
               <td class="px-4 py-3 text-right">
                 <button

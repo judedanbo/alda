@@ -1,5 +1,5 @@
 import prisma from "~/server/utils/prisma";
-import { createAuditLog } from "~/server/utils/audit";
+import { logAction } from "~/server/utils/audit";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -53,7 +53,7 @@ export default defineEventHandler(async (event) => {
     },
   });
 
-  await createAuditLog({
+  await logAction({
     userId: auth.userId,
     action: "INSTITUTION_CREATE",
     entityType: "Institution",

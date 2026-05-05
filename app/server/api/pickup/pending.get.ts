@@ -58,7 +58,7 @@ export default defineEventHandler(async (event) => {
                 institution: true,
               },
             },
-            receipt: true,
+            receipts: { orderBy: { createdAt: "desc" }, take: 1 },
           },
         },
       },

@@ -84,8 +84,8 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  if (declaration.submissions.length > 0) {
-    const submission = declaration.submissions[0];
+  const submission = declaration.submissions[0];
+  if (submission) {
     timeline.push({
       status: "RECORDED",
       date: submission.submissionDate,
@@ -94,8 +94,8 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  if (declaration.reviews.length > 0) {
-    const review = declaration.reviews[0];
+  const review = declaration.reviews[0];
+  if (review) {
     timeline.push({
       status: review.status === "APPROVED" ? "APPROVED" : "REJECTED",
       date: review.reviewDate,
@@ -104,8 +104,8 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  if (declaration.receipts.length > 0) {
-    const receipt = declaration.receipts[0];
+  const receipt = declaration.receipts[0];
+  if (receipt) {
     timeline.push({
       status: "RECEIPT_READY",
       date: receipt.createdAt,

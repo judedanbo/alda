@@ -346,7 +346,7 @@ export async function sendDeclarationStatusEmail(
   uniqueCode: string,
   additionalData?: Record<string, unknown>
 ): Promise<boolean> {
-  const templates: Record<string, { subject: string; template: EmailTemplate }> = {
+  const templates: Record<"submitted" | "approved" | "rejected", { subject: string; template: EmailTemplate }> = {
     submitted: {
       subject: "Declaration Submitted Successfully",
       template: "declaration-submitted",

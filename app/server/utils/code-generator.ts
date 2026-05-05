@@ -16,7 +16,7 @@ export function generateUniqueCode(): string {
   let randomPart = "";
   const randomBuffer = randomBytes(5);
   for (let i = 0; i < 5; i++) {
-    randomPart += chars[randomBuffer[i] % chars.length];
+    randomPart += chars[randomBuffer[i]! % chars.length];
   }
 
   return `ADLA-${dateStr}-${randomPart}`;

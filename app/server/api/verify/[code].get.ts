@@ -54,27 +54,29 @@ export default defineEventHandler(async (event) => {
           },
         },
       },
-      submission: {
+      submissions: {
         include: {
-          recordedBy: {
+          recorder: {
             select: {
               id: true,
               email: true,
             },
           },
         },
+        orderBy: { createdAt: "desc" },
       },
-      review: {
+      reviews: {
         include: {
-          reviewedBy: {
+          reviewer: {
             select: {
               id: true,
               email: true,
             },
           },
         },
+        orderBy: { createdAt: "desc" },
       },
-      receipt: true,
+      receipts: { orderBy: { createdAt: "desc" }, take: 1 },
       pickupAuthorization: true,
       statusHistory: {
         include: {

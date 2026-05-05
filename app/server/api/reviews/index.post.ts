@@ -82,14 +82,14 @@ export default defineEventHandler(async (event) => {
     const review = await tx.review.create({
       data: {
         declarationId: data.declarationId,
-        reviewedById: auth.userId,
+        reviewedBy: auth.userId,
         reviewDate: new Date(),
         status: data.status,
         rejectionReason: data.rejectionReason,
       },
       include: {
         declaration: true,
-        reviewedBy: {
+        reviewer: {
           select: {
             id: true,
             email: true,
@@ -163,24 +163,6 @@ export default defineEventHandler(async (event) => {
           declarationId: declaration.id,
           uniqueCode: declaration.uniqueCode,
         },
-        channels: {
-          email: {
-            to: user.email,
-            template: "declaration-status",
-            data: {
-              applicantName: declaration.applicant.fullName,
-              uniqueCode: declaration.uniqueCode,
-              status: "approved",
-              statusMessage: "Your declaration has been approved.",
-            },
-          },
-          sms: user.phone
-            ? {
-                to: user.phone,
-                message: `ADLA: Your asset declaration (${declaration.uniqueCode}) has been approved. Please check your email for details.`,
-              }
-            : undefined,
-        },
       });
     } else {
       await sendNotification({
@@ -193,24 +175,6 @@ export default defineEventHandler(async (event) => {
           uniqueCode: declaration.uniqueCode,
           newCode: result.newCode,
           rejectionReason: data.rejectionReason,
-        },
-        channels: {
-          email: {
-            to: user.email,
-            template: "declaration-status",
-            data: {
-              applicantName: declaration.applicant.fullName,
-              uniqueCode: declaration.uniqueCode,
-              status: "rejected",
-              statusMessage: `Your declaration requires revision.\n\nReason: ${data.rejectionReason}\n\nA new unique code has been issued: ${result.newCode}\n\nPlease use this new code to resubmit your declaration.`,
-            },
-          },
-          sms: user.phone
-            ? {
-                to: user.phone,
-                message: `ADLA: Your declaration (${declaration.uniqueCode}) requires revision. New code: ${result.newCode}. Check your email for details.`,
-              }
-            : undefined,
         },
       });
     }

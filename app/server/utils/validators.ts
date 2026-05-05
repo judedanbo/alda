@@ -95,20 +95,28 @@ export const reviewSchema = z.object({
 );
 
 /**
- * Pickup authorization schema
+ * Pickup authorization schema (request body — declarationId comes from the URL)
  */
+const pickupAuthorizationRefinement = (data: { isSelfPickup: boolean; authorizedName?: string; authorizedPhone?: string }) =>
+  data.isSelfPickup || (Boolean(data.authorizedName) && Boolean(data.authorizedPhone));
+
+const pickupAuthorizationRefinementMessage = {
+  message: "Authorized person details are required for third-party pickup",
+  path: ["authorizedName"],
+};
+
+export const pickupAuthorizationBodySchema = z.object({
+  isSelfPickup: z.boolean(),
+  authorizedName: z.string().optional(),
+  authorizedPhone: z.string().regex(ghanaPhoneRegex, "Invalid phone number").optional(),
+}).refine(pickupAuthorizationRefinement, pickupAuthorizationRefinementMessage);
+
 export const pickupAuthorizationSchema = z.object({
   declarationId: z.string().uuid("Invalid declaration ID"),
   isSelfPickup: z.boolean(),
   authorizedName: z.string().optional(),
   authorizedPhone: z.string().regex(ghanaPhoneRegex, "Invalid phone number").optional(),
-}).refine(
-  (data) => data.isSelfPickup || (data.authorizedName && data.authorizedPhone),
-  {
-    message: "Authorized person details are required for third-party pickup",
-    path: ["authorizedName"],
-  }
-);
+}).refine(pickupAuthorizationRefinement, pickupAuthorizationRefinementMessage);
 
 /**
  * Notification preferences schema

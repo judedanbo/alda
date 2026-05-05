@@ -1,6 +1,7 @@
 import prisma from "~/server/utils/prisma";
 import { validateBody, submissionRecordSchema } from "~/server/utils/validators";
 import { logAction } from "~/server/utils/audit";
+import { sendNotification } from "~/server/services/notification.service";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -74,7 +75,7 @@ export default defineEventHandler(async (event) => {
     prisma.submission.create({
       data: {
         declarationId: data.declarationId,
-        recordedById: auth.userId,
+        recordedBy: auth.userId,
         submissionDate: new Date(),
         notes: data.notes,
       },
@@ -84,7 +85,7 @@ export default defineEventHandler(async (event) => {
             applicant: true,
           },
         },
-        recordedBy: {
+        recorder: {
           select: {
             id: true,
             email: true,
@@ -118,16 +119,14 @@ export default defineEventHandler(async (event) => {
 
   // Create notification for applicant
   if (declaration.applicant.user) {
-    await prisma.notification.create({
-      data: {
-        userId: declaration.applicant.user.id,
-        type: "SUBMISSION_RECORDED",
-        title: "Declaration Received",
-        message: `Your asset declaration (${declaration.uniqueCode}) has been received and is now under review.`,
-        metadata: {
-          declarationId: declaration.id,
-          uniqueCode: declaration.uniqueCode,
-        },
+    await sendNotification({
+      userId: declaration.applicant.user.id,
+      type: "SUBMISSION_RECORDED",
+      title: "Declaration Received",
+      message: `Your asset declaration (${declaration.uniqueCode}) has been received and is now under review.`,
+      metadata: {
+        declarationId: declaration.id,
+        uniqueCode: declaration.uniqueCode,
       },
     });
   }

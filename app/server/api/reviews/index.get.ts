@@ -39,7 +39,7 @@ export default defineEventHandler(async (event) => {
   }
 
   if (reviewerId) {
-    where.reviewedById = reviewerId;
+    where.reviewedBy = reviewerId;
   }
 
   const [reviews, total] = await Promise.all([
@@ -56,7 +56,7 @@ export default defineEventHandler(async (event) => {
             },
           },
         },
-        reviewedBy: {
+        reviewer: {
           select: {
             id: true,
             email: true,

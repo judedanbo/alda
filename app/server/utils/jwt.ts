@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken";
+import jwt, { type SignOptions } from "jsonwebtoken";
 import type { H3Event } from "h3";
 
 export interface JwtPayload {
@@ -17,9 +17,10 @@ export interface TokenPair {
  */
 export function generateAccessToken(payload: JwtPayload): string {
   const config = useRuntimeConfig();
-  return jwt.sign(payload, config.jwtSecret, {
-    expiresIn: config.jwtExpiresIn || "15m",
-  });
+  const options: SignOptions = {
+    expiresIn: (config.jwtExpiresIn || "15m") as SignOptions["expiresIn"],
+  };
+  return jwt.sign(payload, config.jwtSecret, options);
 }
 
 /**
@@ -27,9 +28,10 @@ export function generateAccessToken(payload: JwtPayload): string {
  */
 export function generateRefreshToken(payload: JwtPayload): string {
   const config = useRuntimeConfig();
-  return jwt.sign(payload, config.jwtRefreshSecret, {
-    expiresIn: config.jwtRefreshExpiresIn || "7d",
-  });
+  const options: SignOptions = {
+    expiresIn: (config.jwtRefreshExpiresIn || "7d") as SignOptions["expiresIn"],
+  };
+  return jwt.sign(payload, config.jwtRefreshSecret, options);
 }
 
 /**
@@ -93,7 +95,7 @@ export function getAuthUser(event: H3Event): JwtPayload | null {
  */
 export function getTokenExpiry(duration: string): Date {
   const match = duration.match(/^(\d+)([smhd])$/);
-  if (!match) {
+  if (!match || !match[1] || !match[2]) {
     throw new Error(`Invalid duration format: ${duration}`);
   }
 

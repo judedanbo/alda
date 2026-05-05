@@ -151,17 +151,17 @@ const formatDate = (date: string) => {
         </div>
 
         <!-- Latest Activity -->
-        <div v-if="declaration.reviews?.length > 0" class="mt-4 pt-4 border-t">
+        <div v-if="declaration.reviews?.[0]" class="mt-4 pt-4 border-t">
           <p class="text-sm">
             <span class="text-muted-foreground">Latest Review:</span>
             <span
               class="ml-2 font-medium"
-              :class="declaration.reviews[0].status === 'APPROVED' ? 'text-success' : 'text-destructive'"
+              :class="declaration.reviews[0]!.status === 'APPROVED' ? 'text-success' : 'text-destructive'"
             >
-              {{ declaration.reviews[0].status }}
+              {{ declaration.reviews[0]!.status }}
             </span>
             <span class="text-muted-foreground ml-2">
-              on {{ formatDate(declaration.reviews[0].reviewDate) }}
+              on {{ formatDate(declaration.reviews[0]!.reviewDate) }}
             </span>
           </p>
         </div>

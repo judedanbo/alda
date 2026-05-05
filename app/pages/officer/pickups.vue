@@ -23,9 +23,9 @@ interface Pickup {
       fullName: string;
       institution: { name: string } | null;
     };
-    receipt: {
+    receipts: {
       receiptNumber: string;
-    };
+    }[];
   };
 }
 
@@ -57,7 +57,7 @@ const fetchPendingPickups = async () => {
     });
 
     if (response.success) {
-      pendingPickups.value = response.data.pickups;
+      pendingPickups.value = response.data.pickups as Pickup[];
       total.value = response.data.total;
     }
   } catch (error) {
@@ -163,7 +163,7 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
           <tbody class="divide-y">
             <tr v-for="pickup in pendingPickups" :key="pickup.id" class="hover:bg-muted/30">
               <td class="px-4 py-3">
-                <span class="font-mono text-sm font-medium text-primary">{{ pickup.declaration.receipt.receiptNumber }}</span>
+                <span class="font-mono text-sm font-medium text-primary">{{ pickup.declaration.receipts[0]?.receiptNumber }}</span>
                 <p class="text-xs text-muted-foreground">{{ pickup.declaration.uniqueCode }}</p>
               </td>
               <td class="px-4 py-3">
@@ -223,7 +223,7 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
             <div class="bg-muted/30 rounded-lg p-4 space-y-2">
               <div class="flex justify-between">
                 <span class="text-sm text-muted-foreground">Receipt:</span>
-                <span class="font-mono font-medium">{{ selectedPickup.declaration.receipt.receiptNumber }}</span>
+                <span class="font-mono font-medium">{{ selectedPickup.declaration.receipts[0]?.receiptNumber }}</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-sm text-muted-foreground">Applicant:</span>

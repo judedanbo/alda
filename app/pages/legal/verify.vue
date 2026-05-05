@@ -8,10 +8,7 @@ definePageMeta({
 
 const authStore = useAuthStore();
 
-const code = ref("");
-const isVerifying = ref(false);
-const verificationError = ref("");
-const verificationResult = ref<{
+interface VerificationResult {
   declaration: {
     id: string;
     uniqueCode: string;
@@ -33,25 +30,25 @@ const verificationResult = ref<{
         createdAt: string;
       };
     };
-    submission: {
+    submissions: Array<{
       submissionDate: string;
       notes: string | null;
-      recordedBy: { email: string };
-    } | null;
-    review: {
+      recorder: { email: string };
+    }>;
+    reviews: Array<{
       reviewDate: string;
       status: string;
       rejectionReason: string | null;
-      reviewedBy: { email: string };
-    } | null;
-    receipt: {
+      reviewer: { email: string };
+    }>;
+    receipts: Array<{
       receiptNumber: string;
-      pdfUrl: string;
+      pdfUrl: string | null;
       createdAt: string;
-    } | null;
+    }>;
     pickupAuthorization: {
       isSelfPickup: boolean;
-      authorizedName: string;
+      authorizedName: string | null;
       authorizedPhone: string | null;
       pickedUp: boolean;
       pickupDate: string | null;
@@ -68,7 +65,12 @@ const verificationResult = ref<{
     verifiedAt: string;
     verifiedBy: string;
   };
-} | null>(null);
+}
+
+const code = ref("");
+const isVerifying = ref(false);
+const verificationError = ref("");
+const verificationResult = ref<VerificationResult | null>(null);
 
 const verifyCode = async () => {
   if (!code.value.trim()) {
@@ -86,7 +88,7 @@ const verifyCode = async () => {
     });
 
     if (response.success) {
-      verificationResult.value = response.data;
+      verificationResult.value = response.data as unknown as VerificationResult;
     }
   } catch (error: any) {
     verificationError.value = error.data?.statusMessage || "Verification failed. Code may be invalid.";
@@ -289,16 +291,16 @@ const getStatusColor = (status: string) => {
       </div>
 
       <!-- Receipt Info -->
-      <div v-if="verificationResult.declaration.receipt" class="bg-card border rounded-lg p-6">
+      <div v-if="verificationResult.declaration.receipts[0]" class="bg-card border rounded-lg p-6">
         <h4 class="font-medium text-foreground mb-4">Receipt Information</h4>
         <div class="grid grid-cols-2 gap-4 text-sm">
           <div>
             <span class="text-muted-foreground">Receipt Number:</span>
-            <p class="font-mono font-medium">{{ verificationResult.declaration.receipt.receiptNumber }}</p>
+            <p class="font-mono font-medium">{{ verificationResult.declaration.receipts[0].receiptNumber }}</p>
           </div>
           <div>
             <span class="text-muted-foreground">Generated:</span>
-            <p>{{ formatDate(verificationResult.declaration.receipt.createdAt) }}</p>
+            <p>{{ formatDate(verificationResult.declaration.receipts[0].createdAt) }}</p>
           </div>
         </div>
         <div v-if="verificationResult.declaration.pickupAuthorization" class="mt-4 pt-4 border-t">
