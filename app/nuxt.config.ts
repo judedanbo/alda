@@ -1,5 +1,21 @@
 import tailwindcss from "@tailwindcss/vite";
 
+// @tailwindcss/vite v4 mutates CSS chunks in generateBundle without emitting
+// a sourcemap, which makes Rollup raise SOURCEMAP_BROKEN. The warning is
+// logged via stderr and bypasses every Rollup/Vite onwarn/customLogger hook
+// reachable from this file (the SSR Vite build creates its own logger).
+// Suppress at process level since prod sourcemaps default off and the warning
+// has no behavioral impact. Track removal when the plugin starts emitting maps.
+const originalStderrWrite = process.stderr.write.bind(process.stderr);
+process.stderr.write = ((chunk: unknown, ...rest: unknown[]) => {
+  if (typeof chunk === "string"
+    && chunk.includes("@tailwindcss/vite:generate:build")
+    && chunk.includes("Sourcemap is likely to be incorrect")) {
+    return true;
+  }
+  return (originalStderrWrite as (chunk: unknown, ...rest: unknown[]) => boolean)(chunk, ...rest);
+}) as typeof process.stderr.write;
+
 export default defineNuxtConfig({
   compatibilityDate: "2025-01-15",
   devtools: { enabled: true },
