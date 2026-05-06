@@ -35,7 +35,8 @@ model User {
   archivedRecords          ArchivedRecord[]             @relation("ArchivedBy")
   passwordResetTokens      PasswordResetToken[]
   emailVerificationTokens  EmailVerificationToken[]
-  declarationStatusChanges DeclarationStatusHistory[]   @relation("StatusChangedBy")
+  declarationStatusChanges     DeclarationStatusHistory[]   @relation("StatusChangedBy")
+  verificationReviews          ApplicantVerificationReview[] @relation("VerificationReviewedBy")
 
   @@map("users")
 }
@@ -121,14 +122,35 @@ model ApplicantProfile {
   officeCategoryId Int      @map("office_category_id")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
+  verificationStatus VerificationStatus @default(PENDING_VERIFICATION) @map("verification_status")
 
   // Relations
-  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  institution    Institution?         @relation(fields: [institutionId], references: [id])
-  officeCategory PublicOfficeCategory @relation(fields: [officeCategoryId], references: [id])
-  declarations   Declaration[]
+  user                User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  institution         Institution?                  @relation(fields: [institutionId], references: [id])
+  officeCategory      PublicOfficeCategory          @relation(fields: [officeCategoryId], references: [id])
+  declarations        Declaration[]
+  verificationReviews ApplicantVerificationReview[]
 
+  @@index([verificationStatus])
   @@map("applicant_profiles")
+}
+
+model ApplicantVerificationReview {
+  id                 String             @id @default(uuid()) @db.Uuid
+  applicantId        String             @map("applicant_id") @db.Uuid
+  reviewerId         String             @map("reviewer_id") @db.Uuid
+  status             VerificationStatus
+  reason             String             @db.Text
+  messageToApplicant String?            @map("message_to_applicant") @db.Text
+  createdAt          DateTime           @default(now()) @map("created_at")
+
+  // Relations
+  applicant ApplicantProfile @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  reviewer  User             @relation("VerificationReviewedBy", fields: [reviewerId], references: [id])
+
+  @@index([applicantId])
+  @@index([createdAt])
+  @@map("applicant_verification_reviews")
 }
 
 // ============================================
@@ -174,6 +196,16 @@ enum DeclarationStatus {
   COMPLETED
 
   @@map("declaration_status")
+}
+
+enum VerificationStatus {
+  PENDING_VERIFICATION
+  VERIFIED
+  ON_HOLD
+  MORE_INFO_REQUIRED
+  REJECTED
+
+  @@map("verification_status")
 }
 
 model Declaration {
@@ -330,6 +362,11 @@ enum NotificationType {
   PICKUP_REMINDER
   PASSWORD_RESET
   EMAIL_VERIFICATION
+  VERIFICATION_SUBMITTED
+  VERIFICATION_APPROVED
+  VERIFICATION_REJECTED
+  VERIFICATION_ON_HOLD
+  VERIFICATION_MORE_INFO_REQUIRED
 
   @@map("notification_type")
 }
