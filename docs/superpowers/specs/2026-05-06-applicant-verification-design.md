@@ -87,6 +87,8 @@ Route protection: `legal_unit` or `admin` role, handled by existing server auth 
 | `GET` | `/api/applicant/verification` | Own verification status, latest review reason/message, full review history |
 | `POST` | `/api/applicant/verification/resubmit` | Re-trigger verification after rejection or more-info-required. Resets status to `PENDING_VERIFICATION` |
 
+Route protection: These routes are under `/api/applicant/` which has no prefix-based role check in the server auth middleware. Auth is enforced at the handler level by reading `event.context.auth` and verifying the user has an applicant profile — matching the existing pattern used by `/api/profile` and `/api/declarations`.
+
 ### Changes to existing endpoints
 
 - **`POST /api/declarations`**: Add check — if `profile.verificationStatus !== 'VERIFIED'`, return `403` with message "Your registration must be verified before creating declarations."
