@@ -23,18 +23,12 @@
             </div>
           </div>
           <div class="flex items-center gap-4">
-            <NuxtLink
-              to="/auth/login"
-              class="text-sm font-medium hover:underline"
-            >
-              Sign in
-            </NuxtLink>
-            <NuxtLink
-              to="/auth/register"
-              class="px-4 py-2 bg-white text-primary rounded-md text-sm font-medium hover:bg-white/90 transition-colors"
-            >
-              Create account
-            </NuxtLink>
+            <Button variant="link" as-child class="text-primary-foreground hover:text-primary-foreground/80">
+              <NuxtLink to="/auth/login">Sign in</NuxtLink>
+            </Button>
+            <Button variant="secondary" as-child>
+              <NuxtLink to="/auth/register">Create account</NuxtLink>
+            </Button>
           </div>
         </nav>
 
@@ -48,18 +42,12 @@
             Constitution of Ghana.
           </p>
           <div class="flex items-center justify-center gap-4">
-            <NuxtLink
-              to="/auth/register"
-              class="px-6 py-3 bg-white text-primary rounded-md font-medium hover:bg-white/90 transition-colors"
-            >
-              Start Declaration
-            </NuxtLink>
-            <a
-              href="#how-it-works"
-              class="px-6 py-3 border border-white/30 rounded-md font-medium hover:bg-white/10 transition-colors"
-            >
-              Learn more
-            </a>
+            <Button size="lg" variant="secondary" as-child>
+              <NuxtLink to="/auth/register">Start Declaration</NuxtLink>
+            </Button>
+            <Button size="lg" variant="outline" as-child class="border-white/30 text-primary-foreground hover:bg-white/10">
+              <a href="#how-it-works">Learn more</a>
+            </Button>
           </div>
         </div>
       </div>
@@ -76,53 +64,61 @@
         </div>
 
         <div class="grid md:grid-cols-4 gap-8">
-          <div class="text-center">
-            <div
-              class="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center"
-            >
-              <span class="text-2xl font-bold text-primary">1</span>
-            </div>
-            <h3 class="text-lg font-semibold text-foreground mb-2">Register</h3>
-            <p class="text-sm text-muted-foreground">
-              Create an account with your email and Ghana Card details
-            </p>
-          </div>
+          <Card class="text-center border-none shadow-none bg-transparent">
+            <CardContent class="pt-6">
+              <div
+                class="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center"
+              >
+                <span class="text-2xl font-bold text-primary">1</span>
+              </div>
+              <CardTitle class="text-lg mb-2">Register</CardTitle>
+              <p class="text-sm text-muted-foreground">
+                Create an account with your email and Ghana Card details
+              </p>
+            </CardContent>
+          </Card>
 
-          <div class="text-center">
-            <div
-              class="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center"
-            >
-              <span class="text-2xl font-bold text-primary">2</span>
-            </div>
-            <h3 class="text-lg font-semibold text-foreground mb-2">Submit</h3>
-            <p class="text-sm text-muted-foreground">
-              Complete and submit your asset declaration form
-            </p>
-          </div>
+          <Card class="text-center border-none shadow-none bg-transparent">
+            <CardContent class="pt-6">
+              <div
+                class="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center"
+              >
+                <span class="text-2xl font-bold text-primary">2</span>
+              </div>
+              <CardTitle class="text-lg mb-2">Submit</CardTitle>
+              <p class="text-sm text-muted-foreground">
+                Complete and submit your asset declaration form
+              </p>
+            </CardContent>
+          </Card>
 
-          <div class="text-center">
-            <div
-              class="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center"
-            >
-              <span class="text-2xl font-bold text-primary">3</span>
-            </div>
-            <h3 class="text-lg font-semibold text-foreground mb-2">Review</h3>
-            <p class="text-sm text-muted-foreground">
-              Your declaration is reviewed by the Legal Unit and GAS officers
-            </p>
-          </div>
+          <Card class="text-center border-none shadow-none bg-transparent">
+            <CardContent class="pt-6">
+              <div
+                class="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center"
+              >
+                <span class="text-2xl font-bold text-primary">3</span>
+              </div>
+              <CardTitle class="text-lg mb-2">Review</CardTitle>
+              <p class="text-sm text-muted-foreground">
+                Your declaration is reviewed by the Legal Unit and GAS officers
+              </p>
+            </CardContent>
+          </Card>
 
-          <div class="text-center">
-            <div
-              class="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center"
-            >
-              <span class="text-2xl font-bold text-primary">4</span>
-            </div>
-            <h3 class="text-lg font-semibold text-foreground mb-2">Receive</h3>
-            <p class="text-sm text-muted-foreground">
-              Get your receipt and notification for document pickup
-            </p>
-          </div>
+          <Card class="text-center border-none shadow-none bg-transparent">
+            <CardContent class="pt-6">
+              <div
+                class="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center"
+              >
+                <span class="text-2xl font-bold text-primary">4</span>
+              </div>
+              <CardTitle class="text-lg mb-2">Receive</CardTitle>
+              <p class="text-sm text-muted-foreground">
+                Get your receipt and notification for document pickup
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </section>
@@ -141,66 +137,84 @@
         </div>
 
         <div class="grid md:grid-cols-3 gap-6">
-          <div class="p-6 bg-card rounded-lg border">
-            <h3 class="font-semibold text-foreground mb-3">Executive Branch</h3>
-            <ul class="text-sm text-muted-foreground space-y-2">
-              <li>• President and Vice President</li>
-              <li>• Ministers and Deputy Ministers</li>
-              <li>• Secretary to Cabinet</li>
-              <li>• Heads of Ministries</li>
-            </ul>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Executive Branch</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul class="text-sm text-muted-foreground space-y-2">
+                <li>- President and Vice President</li>
+                <li>- Ministers and Deputy Ministers</li>
+                <li>- Secretary to Cabinet</li>
+                <li>- Heads of Ministries</li>
+              </ul>
+            </CardContent>
+          </Card>
 
-          <div class="p-6 bg-card rounded-lg border">
-            <h3 class="font-semibold text-foreground mb-3">
-              Legislative Branch
-            </h3>
-            <ul class="text-sm text-muted-foreground space-y-2">
-              <li>• Speaker and Deputy Speakers</li>
-              <li>• Members of Parliament</li>
-              <li>• Parliamentary Staff (senior)</li>
-            </ul>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Legislative Branch</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul class="text-sm text-muted-foreground space-y-2">
+                <li>- Speaker and Deputy Speakers</li>
+                <li>- Members of Parliament</li>
+                <li>- Parliamentary Staff (senior)</li>
+              </ul>
+            </CardContent>
+          </Card>
 
-          <div class="p-6 bg-card rounded-lg border">
-            <h3 class="font-semibold text-foreground mb-3">Judicial Branch</h3>
-            <ul class="text-sm text-muted-foreground space-y-2">
-              <li>• Chief Justice</li>
-              <li>• Justices of Superior Courts</li>
-              <li>• Regional Tribunal Chairmen</li>
-            </ul>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Judicial Branch</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul class="text-sm text-muted-foreground space-y-2">
+                <li>- Chief Justice</li>
+                <li>- Justices of Superior Courts</li>
+                <li>- Regional Tribunal Chairmen</li>
+              </ul>
+            </CardContent>
+          </Card>
 
-          <div class="p-6 bg-card rounded-lg border">
-            <h3 class="font-semibold text-foreground mb-3">
-              Public Enterprises
-            </h3>
-            <ul class="text-sm text-muted-foreground space-y-2">
-              <li>• Board Chairmen and Members</li>
-              <li>• Managing Directors</li>
-              <li>• Deputy Managing Directors</li>
-            </ul>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Public Enterprises</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul class="text-sm text-muted-foreground space-y-2">
+                <li>- Board Chairmen and Members</li>
+                <li>- Managing Directors</li>
+                <li>- Deputy Managing Directors</li>
+              </ul>
+            </CardContent>
+          </Card>
 
-          <div class="p-6 bg-card rounded-lg border">
-            <h3 class="font-semibold text-foreground mb-3">
-              Security Services
-            </h3>
-            <ul class="text-sm text-muted-foreground space-y-2">
-              <li>• Police Service Officers</li>
-              <li>• Armed Forces Officers</li>
-              <li>• Immigration & Prisons Officers</li>
-            </ul>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Security Services</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul class="text-sm text-muted-foreground space-y-2">
+                <li>- Police Service Officers</li>
+                <li>- Armed Forces Officers</li>
+                <li>- Immigration & Prisons Officers</li>
+              </ul>
+            </CardContent>
+          </Card>
 
-          <div class="p-6 bg-card rounded-lg border">
-            <h3 class="font-semibold text-foreground mb-3">Others</h3>
-            <ul class="text-sm text-muted-foreground space-y-2">
-              <li>• Ambassadors & High Commissioners</li>
-              <li>• Heads of Educational Institutions</li>
-              <li>• Members of Regulatory Bodies</li>
-            </ul>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Others</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul class="text-sm text-muted-foreground space-y-2">
+                <li>- Ambassadors & High Commissioners</li>
+                <li>- Heads of Educational Institutions</li>
+                <li>- Members of Regulatory Bodies</li>
+              </ul>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </section>

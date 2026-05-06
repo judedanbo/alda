@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { useAuthStore } from "~/stores/auth";
-
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
 });
 
-const authStore = useAuthStore();
+const { getAuthHeaders } = useAuth();
 
 interface AuditLog {
   id: string;
@@ -54,7 +52,7 @@ const fetchLogs = async () => {
     if (dateTo.value) params.append("dateTo", dateTo.value);
 
     const response = await $fetch(`/api/admin/audit-logs?${params}`, {
-      headers: authStore.getAuthHeaders(),
+      headers: getAuthHeaders(),
     });
 
     if (response.success) {
@@ -158,141 +156,124 @@ const entityTypes = [
 
 <template>
   <div class="space-y-6">
-    <!-- Header -->
-    <div>
-      <h1 class="text-2xl font-bold text-foreground">Audit Logs</h1>
-      <p class="text-muted-foreground mt-1">
-        View system activity and changes
-      </p>
-    </div>
+    <PageHeader title="Audit Logs" description="View system activity and changes" />
 
     <!-- Filters -->
-    <div class="bg-card border rounded-lg p-4">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search by user email or IP..."
-          class="px-4 py-2 border rounded-md bg-background text-foreground"
-          @keyup.enter="handleSearch"
-        />
-        <select
-          v-model="selectedAction"
-          class="px-4 py-2 border rounded-md bg-background text-foreground"
-          @change="handleSearch"
-        >
-          <option value="">All Actions</option>
-          <option v-for="action in actionTypes" :key="action" :value="action">
-            {{ action }}
-          </option>
-        </select>
-        <select
-          v-model="selectedEntity"
-          class="px-4 py-2 border rounded-md bg-background text-foreground"
-          @change="handleSearch"
-        >
-          <option value="">All Entities</option>
-          <option v-for="entity in entityTypes" :key="entity" :value="entity">
-            {{ entity }}
-          </option>
-        </select>
-        <div class="flex gap-2">
-          <input
-            v-model="dateFrom"
-            type="date"
-            class="flex-1 px-3 py-2 border rounded-md bg-background text-foreground"
-            @change="handleSearch"
+    <Card>
+      <CardContent class="pt-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search by user email or IP..."
+            @keyup.enter="handleSearch"
           />
-          <input
-            v-model="dateTo"
-            type="date"
-            class="flex-1 px-3 py-2 border rounded-md bg-background text-foreground"
-            @change="handleSearch"
-          />
+          <Select v-model="selectedAction" @update:model-value="handleSearch">
+            <SelectTrigger>
+              <SelectValue placeholder="All Actions" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Actions</SelectItem>
+              <SelectItem v-for="action in actionTypes" :key="action" :value="action">
+                {{ action }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <Select v-model="selectedEntity" @update:model-value="handleSearch">
+            <SelectTrigger>
+              <SelectValue placeholder="All Entities" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Entities</SelectItem>
+              <SelectItem v-for="entity in entityTypes" :key="entity" :value="entity">
+                {{ entity }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <div class="flex gap-2">
+            <Input
+              v-model="dateFrom"
+              type="date"
+              class="flex-1"
+              @change="handleSearch"
+            />
+            <Input
+              v-model="dateTo"
+              type="date"
+              class="flex-1"
+              @change="handleSearch"
+            />
+          </div>
         </div>
-      </div>
-      <div class="flex justify-end mt-4 gap-2">
-        <button
-          class="px-4 py-2 text-sm border rounded-md hover:bg-muted"
-          @click="clearFilters"
-        >
-          Clear Filters
-        </button>
-        <button
-          class="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          @click="handleSearch"
-        >
-          Search
-        </button>
-      </div>
-    </div>
+        <div class="flex justify-end mt-4 gap-2">
+          <Button variant="outline" @click="clearFilters">Clear Filters</Button>
+          <Button @click="handleSearch">Search</Button>
+        </div>
+      </CardContent>
+    </Card>
 
     <!-- Loading -->
-    <div v-if="loading" class="flex justify-center py-12">
-      <div class="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
+    <div v-if="loading" class="space-y-3">
+      <Skeleton v-for="i in 8" :key="i" class="h-12 w-full rounded-lg" />
     </div>
 
     <!-- Logs Table -->
-    <div v-else class="bg-card border rounded-lg overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead class="bg-muted/50">
-            <tr>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Time</th>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Action</th>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Entity</th>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">User</th>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">IP Address</th>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Details</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="logs.length === 0">
-              <td colspan="6" class="py-8 text-center text-muted-foreground">
-                No audit logs found
-              </td>
-            </tr>
-            <tr v-for="log in logs" :key="log.id" class="border-t">
-              <td class="py-3 px-4 text-sm text-muted-foreground whitespace-nowrap">
-                {{ formatDate(log.createdAt) }}
-              </td>
-              <td class="py-3 px-4">
-                <span
-                  class="px-2 py-0.5 text-xs rounded-full"
-                  :class="getActionColor(log.action)"
-                >
-                  {{ log.action }}
+    <Card v-else>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Time</TableHead>
+            <TableHead>Action</TableHead>
+            <TableHead>Entity</TableHead>
+            <TableHead>User</TableHead>
+            <TableHead>IP Address</TableHead>
+            <TableHead>Details</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow v-if="logs.length === 0">
+            <TableCell colspan="6" class="text-center py-8 text-muted-foreground">
+              No audit logs found
+            </TableCell>
+          </TableRow>
+          <TableRow v-for="log in logs" :key="log.id">
+            <TableCell class="text-sm text-muted-foreground whitespace-nowrap">
+              {{ formatDate(log.createdAt) }}
+            </TableCell>
+            <TableCell>
+              <Badge :class="getActionColor(log.action)">
+                {{ log.action }}
+              </Badge>
+            </TableCell>
+            <TableCell class="text-sm text-muted-foreground">
+              <span v-if="log.entityType">
+                {{ log.entityType }}
+                <span v-if="log.entityId" class="text-xs opacity-60">
+                  ({{ log.entityId.substring(0, 8) }}...)
                 </span>
-              </td>
-              <td class="py-3 px-4 text-sm text-muted-foreground">
-                <span v-if="log.entityType">
-                  {{ log.entityType }}
-                  <span v-if="log.entityId" class="text-xs opacity-60">
-                    ({{ log.entityId.substring(0, 8) }}...)
-                  </span>
-                </span>
-                <span v-else>-</span>
-              </td>
-              <td class="py-3 px-4 text-sm text-foreground">
-                {{ log.user?.email || 'System' }}
-              </td>
-              <td class="py-3 px-4 text-sm font-mono text-muted-foreground">
-                {{ log.ipAddress || '-' }}
-              </td>
-              <td class="py-3 px-4">
-                <button
-                  v-if="log.oldValues || log.newValues"
-                  class="px-3 py-1 text-xs border rounded hover:bg-muted"
-                  @click="openDetailModal(log)"
-                >
-                  View
-                </button>
-                <span v-else class="text-xs text-muted-foreground">-</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+              </span>
+              <span v-else>-</span>
+            </TableCell>
+            <TableCell class="text-sm text-foreground">
+              {{ log.user?.email || 'System' }}
+            </TableCell>
+            <TableCell class="text-sm font-mono text-muted-foreground">
+              {{ log.ipAddress || '-' }}
+            </TableCell>
+            <TableCell>
+              <Button
+                v-if="log.oldValues || log.newValues"
+                variant="outline"
+                size="sm"
+                @click="openDetailModal(log)"
+              >
+                View
+              </Button>
+              <span v-else class="text-xs text-muted-foreground">-</span>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
 
       <!-- Pagination -->
       <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t">
@@ -300,34 +281,32 @@ const entityTypes = [
           Showing {{ (currentPage - 1) * perPage + 1 }} to {{ Math.min(currentPage * perPage, totalLogs) }} of {{ totalLogs }} logs
         </p>
         <div class="flex gap-2">
-          <button
-            class="px-3 py-1 text-sm border rounded hover:bg-muted disabled:opacity-50"
+          <Button
+            variant="outline"
+            size="sm"
             :disabled="currentPage === 1"
             @click="handlePageChange(currentPage - 1)"
           >
             Previous
-          </button>
-          <button
-            class="px-3 py-1 text-sm border rounded hover:bg-muted disabled:opacity-50"
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             :disabled="currentPage === totalPages"
             @click="handlePageChange(currentPage + 1)"
           >
             Next
-          </button>
+          </Button>
         </div>
       </div>
-    </div>
+    </Card>
 
     <!-- Detail Modal -->
-    <div
-      v-if="showDetailModal && selectedLog"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      @click.self="closeDetailModal"
-    >
-      <div class="bg-card border rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
-        <h2 class="text-lg font-semibold text-foreground mb-4">
-          Audit Log Details
-        </h2>
+    <Dialog :open="showDetailModal && !!selectedLog" @update:open="(v: boolean) => { if (!v) closeDetailModal() }">
+      <DialogScrollContent v-if="selectedLog" class="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Audit Log Details</DialogTitle>
+        </DialogHeader>
 
         <div class="space-y-4">
           <div class="grid grid-cols-2 gap-4 text-sm">
@@ -375,15 +354,10 @@ const entityTypes = [
           </div>
         </div>
 
-        <div class="flex justify-end mt-6">
-          <button
-            class="px-4 py-2 text-sm border rounded-md hover:bg-muted"
-            @click="closeDetailModal"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+        <DialogFooter>
+          <Button variant="outline" @click="closeDetailModal">Close</Button>
+        </DialogFooter>
+      </DialogScrollContent>
+    </Dialog>
   </div>
 </template>

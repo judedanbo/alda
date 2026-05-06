@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { useAuthStore } from "~/stores/auth";
-
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
 });
 
-const authStore = useAuthStore();
+const { getAuthHeaders } = useAuth();
 
 interface VerificationResult {
   declaration: {
@@ -84,7 +82,7 @@ const verifyCode = async () => {
 
   try {
     const response = await $fetch(`/api/verify/${encodeURIComponent(code.value.trim())}`, {
-      headers: authStore.getAuthHeaders(),
+      headers: getAuthHeaders(),
     });
 
     if (response.success) {
@@ -112,206 +110,183 @@ const formatDate = (date: string) => {
     minute: "2-digit",
   });
 };
-
-const getStatusColor = (status: string) => {
-  const colors: Record<string, string> = {
-    PENDING: "bg-gray-100 text-gray-700",
-    SUBMITTED: "bg-blue-100 text-blue-700",
-    UNDER_REVIEW: "bg-yellow-100 text-yellow-700",
-    APPROVED: "bg-green-100 text-green-700",
-    SEALED: "bg-purple-100 text-purple-700",
-    COMPLETED: "bg-emerald-100 text-emerald-700",
-    REJECTED: "bg-red-100 text-red-700",
-  };
-  return colors[status] || "bg-gray-100 text-gray-700";
-};
 </script>
 
 <template>
   <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-foreground">Code Verification</h1>
-        <p class="text-muted-foreground mt-1">Verify declaration codes and view applicant information</p>
-      </div>
-      <NuxtLink to="/legal/dashboard" class="text-sm text-primary hover:underline">Back to Dashboard</NuxtLink>
-    </div>
+    <PageHeader title="Code Verification" description="Verify declaration codes and view applicant information">
+      <template #actions>
+        <Button variant="ghost" as-child>
+          <NuxtLink to="/legal/dashboard">Back to Dashboard</NuxtLink>
+        </Button>
+      </template>
+    </PageHeader>
 
     <!-- Search Card -->
-    <div class="bg-card border rounded-lg p-6">
-      <div class="max-w-xl">
-        <label class="block text-sm font-medium text-foreground mb-2">Enter Unique Code</label>
-        <div class="flex gap-3">
-          <input
-            v-model="code"
-            type="text"
-            placeholder="ADLA-XXXXXXXX-XXXXX"
-            class="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary font-mono uppercase"
-            @keyup.enter="verifyCode"
-          />
-          <button
-            :disabled="isVerifying"
-            class="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
-            @click="verifyCode"
-          >
-            {{ isVerifying ? 'Verifying...' : 'Verify' }}
-          </button>
+    <Card>
+      <CardContent class="pt-6">
+        <div class="max-w-xl">
+          <Label for="unique-code" class="mb-2">Enter Unique Code</Label>
+          <div class="flex gap-3 mt-2">
+            <Input
+              id="unique-code"
+              v-model="code"
+              type="text"
+              placeholder="ADLA-XXXXXXXX-XXXXX"
+              class="flex-1 font-mono uppercase"
+              @keyup.enter="verifyCode"
+            />
+            <Button :disabled="isVerifying" @click="verifyCode">
+              {{ isVerifying ? 'Verifying...' : 'Verify' }}
+            </Button>
+          </div>
+          <p class="text-xs text-muted-foreground mt-2">
+            Enter the unique declaration code to verify its authenticity
+          </p>
         </div>
-        <p class="text-xs text-muted-foreground mt-2">
-          Enter the unique declaration code to verify its authenticity
-        </p>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
 
     <!-- Error -->
-    <div v-if="verificationError" class="bg-red-50 border border-red-200 rounded-lg p-4">
-      <div class="flex items-center gap-3">
-        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <div>
-          <p class="font-medium text-red-700">Verification Failed</p>
-          <p class="text-sm text-red-600">{{ verificationError }}</p>
-        </div>
-      </div>
-    </div>
+    <Alert v-if="verificationError" variant="destructive">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <AlertTitle>Verification Failed</AlertTitle>
+      <AlertDescription>{{ verificationError }}</AlertDescription>
+    </Alert>
 
     <!-- Verification Result -->
     <div v-if="verificationResult" class="space-y-6">
       <!-- Verification Badge -->
-      <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-          </div>
-          <div>
-            <p class="font-semibold text-green-700">Code Verified</p>
-            <p class="text-sm text-green-600">
-              Verified at {{ formatDate(verificationResult.verification.verifiedAt) }}
-            </p>
-          </div>
-          <button
-            class="ml-auto text-sm text-green-700 hover:underline"
-            @click="clearResults"
-          >
-            New Search
-          </button>
-        </div>
-      </div>
+      <Alert class="border-green-200 bg-green-50 text-green-700">
+        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+        <AlertTitle class="text-green-700">Code Verified</AlertTitle>
+        <AlertDescription class="text-green-600">
+          Verified at {{ formatDate(verificationResult.verification.verifiedAt) }}
+        </AlertDescription>
+        <AlertAction>
+          <Button variant="link" class="text-green-700" @click="clearResults">New Search</Button>
+        </AlertAction>
+      </Alert>
 
       <!-- Declaration Info -->
-      <div class="bg-card border rounded-lg overflow-hidden">
-        <div class="p-4 bg-muted/50 border-b flex items-center justify-between">
+      <Card>
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 bg-muted/50">
           <div>
-            <h3 class="font-semibold text-foreground">Declaration Details</h3>
-            <p class="text-sm font-mono text-primary">{{ verificationResult.declaration.uniqueCode }}</p>
+            <CardTitle>Declaration Details</CardTitle>
+            <CardDescription class="font-mono text-primary">{{ verificationResult.declaration.uniqueCode }}</CardDescription>
           </div>
-          <span :class="['px-3 py-1 text-sm font-medium rounded-full', getStatusColor(verificationResult.declaration.status)]">
-            {{ verificationResult.declaration.status }}
-          </span>
-        </div>
+          <StatusBadge :status="verificationResult.declaration.status" />
+        </CardHeader>
+        <CardContent class="pt-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Applicant Info -->
+            <div class="space-y-4">
+              <h4 class="font-medium text-foreground border-b pb-2">Applicant Information</h4>
+              <div class="space-y-3 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Full Name:</span>
+                  <span class="font-medium">{{ verificationResult.declaration.applicant.fullName }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Ghana Card:</span>
+                  <span class="font-mono">{{ verificationResult.declaration.applicant.ghanaCardNumber }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Email:</span>
+                  <span>{{ verificationResult.declaration.applicant.user.email }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Phone:</span>
+                  <span>{{ verificationResult.declaration.applicant.user.phone || 'N/A' }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Registered:</span>
+                  <span>{{ formatDate(verificationResult.declaration.applicant.user.createdAt) }}</span>
+                </div>
+              </div>
+            </div>
 
-        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Applicant Info -->
-          <div class="space-y-4">
-            <h4 class="font-medium text-foreground border-b pb-2">Applicant Information</h4>
-            <div class="space-y-3 text-sm">
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">Full Name:</span>
-                <span class="font-medium">{{ verificationResult.declaration.applicant.fullName }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">Ghana Card:</span>
-                <span class="font-mono">{{ verificationResult.declaration.applicant.ghanaCardNumber }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">Email:</span>
-                <span>{{ verificationResult.declaration.applicant.user.email }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">Phone:</span>
-                <span>{{ verificationResult.declaration.applicant.user.phone || 'N/A' }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">Registered:</span>
-                <span>{{ formatDate(verificationResult.declaration.applicant.user.createdAt) }}</span>
+            <!-- Office Info -->
+            <div class="space-y-4">
+              <h4 class="font-medium text-foreground border-b pb-2">Office Details</h4>
+              <div class="space-y-3 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Designation:</span>
+                  <span class="font-medium">{{ verificationResult.declaration.applicant.designation }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Institution:</span>
+                  <span>{{ verificationResult.declaration.applicant.institution?.name || 'N/A' }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Category:</span>
+                  <span>{{ verificationResult.declaration.applicant.officeCategory?.name || 'N/A' }}</span>
+                </div>
+                <div v-if="verificationResult.declaration.applicant.officeCategory?.articleReference" class="flex justify-between">
+                  <span class="text-muted-foreground">Article:</span>
+                  <span>{{ verificationResult.declaration.applicant.officeCategory.articleReference }}</span>
+                </div>
               </div>
             </div>
           </div>
-
-          <!-- Office Info -->
-          <div class="space-y-4">
-            <h4 class="font-medium text-foreground border-b pb-2">Office Details</h4>
-            <div class="space-y-3 text-sm">
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">Designation:</span>
-                <span class="font-medium">{{ verificationResult.declaration.applicant.designation }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">Institution:</span>
-                <span>{{ verificationResult.declaration.applicant.institution?.name || 'N/A' }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">Category:</span>
-                <span>{{ verificationResult.declaration.applicant.officeCategory?.name || 'N/A' }}</span>
-              </div>
-              <div v-if="verificationResult.declaration.applicant.officeCategory?.articleReference" class="flex justify-between">
-                <span class="text-muted-foreground">Article:</span>
-                <span>{{ verificationResult.declaration.applicant.officeCategory.articleReference }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       <!-- Timeline -->
-      <div class="bg-card border rounded-lg p-6">
-        <h4 class="font-medium text-foreground mb-4">Declaration Timeline</h4>
-        <div class="space-y-4">
-          <div v-for="(event, index) in verificationResult.declaration.statusHistory" :key="index" class="flex gap-4">
-            <div class="flex flex-col items-center">
-              <div :class="['w-3 h-3 rounded-full', index === 0 ? 'bg-primary' : 'bg-gray-300']" />
-              <div v-if="index < verificationResult.declaration.statusHistory.length - 1" class="w-0.5 h-full bg-gray-200 my-1" />
-            </div>
-            <div class="flex-1 pb-4">
-              <div class="flex items-center gap-2">
-                <span :class="['px-2 py-0.5 text-xs font-medium rounded', getStatusColor(event.status)]">
-                  {{ event.status }}
-                </span>
-                <span class="text-xs text-muted-foreground">{{ formatDate(event.createdAt) }}</span>
+      <Card>
+        <CardHeader>
+          <CardTitle>Declaration Timeline</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div class="space-y-4">
+            <div v-for="(event, index) in verificationResult.declaration.statusHistory" :key="index" class="flex gap-4">
+              <div class="flex flex-col items-center">
+                <div :class="['w-3 h-3 rounded-full', index === 0 ? 'bg-primary' : 'bg-gray-300']" />
+                <div v-if="index < verificationResult.declaration.statusHistory.length - 1" class="w-0.5 h-full bg-gray-200 my-1" />
               </div>
-              <p v-if="event.notes" class="text-sm text-muted-foreground mt-1">{{ event.notes }}</p>
-              <p v-if="event.changedBy" class="text-xs text-muted-foreground">by {{ event.changedBy.email }}</p>
+              <div class="flex-1 pb-4">
+                <div class="flex items-center gap-2">
+                  <StatusBadge :status="event.status" />
+                  <span class="text-xs text-muted-foreground">{{ formatDate(event.createdAt) }}</span>
+                </div>
+                <p v-if="event.notes" class="text-sm text-muted-foreground mt-1">{{ event.notes }}</p>
+                <p v-if="event.changedBy" class="text-xs text-muted-foreground">by {{ event.changedBy.email }}</p>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       <!-- Receipt Info -->
-      <div v-if="verificationResult.declaration.receipts[0]" class="bg-card border rounded-lg p-6">
-        <h4 class="font-medium text-foreground mb-4">Receipt Information</h4>
-        <div class="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span class="text-muted-foreground">Receipt Number:</span>
-            <p class="font-mono font-medium">{{ verificationResult.declaration.receipts[0].receiptNumber }}</p>
+      <Card v-if="verificationResult.declaration.receipts[0]">
+        <CardHeader>
+          <CardTitle>Receipt Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span class="text-muted-foreground">Receipt Number:</span>
+              <p class="font-mono font-medium">{{ verificationResult.declaration.receipts[0].receiptNumber }}</p>
+            </div>
+            <div>
+              <span class="text-muted-foreground">Generated:</span>
+              <p>{{ formatDate(verificationResult.declaration.receipts[0].createdAt) }}</p>
+            </div>
           </div>
-          <div>
-            <span class="text-muted-foreground">Generated:</span>
-            <p>{{ formatDate(verificationResult.declaration.receipts[0].createdAt) }}</p>
+          <div v-if="verificationResult.declaration.pickupAuthorization" class="mt-4 pt-4 border-t">
+            <p class="text-sm">
+              <span class="text-muted-foreground">Pickup Status:</span>
+              <Badge :class="verificationResult.declaration.pickupAuthorization.pickedUp ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'" class="ml-2">
+                {{ verificationResult.declaration.pickupAuthorization.pickedUp ? 'Collected' : 'Pending Collection' }}
+              </Badge>
+            </p>
           </div>
-        </div>
-        <div v-if="verificationResult.declaration.pickupAuthorization" class="mt-4 pt-4 border-t">
-          <p class="text-sm">
-            <span class="text-muted-foreground">Pickup Status:</span>
-            <span :class="verificationResult.declaration.pickupAuthorization.pickedUp ? 'text-green-600' : 'text-yellow-600'" class="ml-2 font-medium">
-              {{ verificationResult.declaration.pickupAuthorization.pickedUp ? 'Collected' : 'Pending Collection' }}
-            </span>
-          </p>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   </div>
 </template>

@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { useAuthStore } from "~/stores/auth";
-
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
 });
 
-const authStore = useAuthStore();
+const { getAuthHeaders } = useAuth();
 
 interface Institution {
   id: string;
@@ -50,7 +48,7 @@ const fetchInstitutions = async () => {
     if (selectedStatus.value) params.append("status", selectedStatus.value);
 
     const response = await $fetch(`/api/admin/institutions?${params}`, {
-      headers: authStore.getAuthHeaders(),
+      headers: getAuthHeaders(),
     });
 
     if (response.success) {
@@ -96,7 +94,7 @@ const saveInstitution = async () => {
     if (isEditing.value) {
       await $fetch(`/api/admin/institutions/${formData.value.id}`, {
         method: "PUT",
-        headers: authStore.getAuthHeaders(),
+        headers: getAuthHeaders(),
         body: {
           name: formData.value.name,
           type: formData.value.type || null,
@@ -106,7 +104,7 @@ const saveInstitution = async () => {
     } else {
       await $fetch("/api/admin/institutions", {
         method: "POST",
-        headers: authStore.getAuthHeaders(),
+        headers: getAuthHeaders(),
         body: {
           name: formData.value.name,
           type: formData.value.type || null,
@@ -126,7 +124,7 @@ const toggleStatus = async (institution: Institution) => {
   try {
     await $fetch(`/api/admin/institutions/${institution.id}`, {
       method: "PUT",
-      headers: authStore.getAuthHeaders(),
+      headers: getAuthHeaders(),
       body: {
         name: institution.name,
         type: institution.type,
@@ -167,115 +165,95 @@ const institutionTypes = [
 
 <template>
   <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-foreground">Institutions</h1>
-        <p class="text-muted-foreground mt-1">
-          Manage registered institutions
-        </p>
-      </div>
-      <button
-        class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-        @click="openCreateModal"
-      >
-        Add Institution
-      </button>
-    </div>
+    <PageHeader title="Institutions" description="Manage registered institutions">
+      <template #actions>
+        <Button @click="openCreateModal">Add Institution</Button>
+      </template>
+    </PageHeader>
 
     <!-- Filters -->
-    <div class="bg-card border rounded-lg p-4">
-      <div class="flex flex-col md:flex-row gap-4">
-        <div class="flex-1">
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Search institutions..."
-            class="w-full px-4 py-2 border rounded-md bg-background text-foreground"
-            @keyup.enter="handleSearch"
-          />
+    <Card>
+      <CardContent class="pt-6">
+        <div class="flex flex-col md:flex-row gap-4">
+          <div class="flex-1">
+            <Input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search institutions..."
+              @keyup.enter="handleSearch"
+            />
+          </div>
+          <Select v-model="selectedStatus" @update:model-value="handleSearch">
+            <SelectTrigger class="w-[180px]">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button @click="handleSearch">Search</Button>
         </div>
-        <select
-          v-model="selectedStatus"
-          class="px-4 py-2 border rounded-md bg-background text-foreground"
-          @change="handleSearch"
-        >
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-        <button
-          class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          @click="handleSearch"
-        >
-          Search
-        </button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
 
     <!-- Loading -->
-    <div v-if="loading" class="flex justify-center py-12">
-      <div class="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
+    <div v-if="loading" class="space-y-3">
+      <Skeleton v-for="i in 5" :key="i" class="h-12 w-full rounded-lg" />
     </div>
 
     <!-- Institutions Table -->
-    <div v-else class="bg-card border rounded-lg overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead class="bg-muted/50">
-            <tr>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Name</th>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Type</th>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Applicants</th>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="institutions.length === 0">
-              <td colspan="5" class="py-8 text-center text-muted-foreground">
-                No institutions found
-              </td>
-            </tr>
-            <tr v-for="institution in institutions" :key="institution.id" class="border-t">
-              <td class="py-3 px-4">
-                <p class="text-sm font-medium text-foreground">{{ institution.name }}</p>
-              </td>
-              <td class="py-3 px-4 text-sm text-muted-foreground">
-                {{ institution.type || '-' }}
-              </td>
-              <td class="py-3 px-4 text-sm text-muted-foreground">
-                {{ institution._count.applicantProfiles }}
-              </td>
-              <td class="py-3 px-4">
-                <span
-                  class="px-2 py-0.5 text-xs rounded-full"
-                  :class="institution.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+    <Card v-else>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Applicants</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow v-if="institutions.length === 0">
+            <TableCell colspan="5" class="text-center py-8 text-muted-foreground">
+              No institutions found
+            </TableCell>
+          </TableRow>
+          <TableRow v-for="institution in institutions" :key="institution.id">
+            <TableCell>
+              <p class="text-sm font-medium text-foreground">{{ institution.name }}</p>
+            </TableCell>
+            <TableCell class="text-sm text-muted-foreground">
+              {{ institution.type || '-' }}
+            </TableCell>
+            <TableCell class="text-sm text-muted-foreground">
+              {{ institution._count.applicantProfiles }}
+            </TableCell>
+            <TableCell>
+              <Badge :class="institution.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+                {{ institution.isActive ? 'Active' : 'Inactive' }}
+              </Badge>
+            </TableCell>
+            <TableCell>
+              <div class="flex items-center gap-2">
+                <Button variant="outline" size="sm" @click="openEditModal(institution)">
+                  Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  :class="institution.isActive ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'"
+                  @click="toggleStatus(institution)"
                 >
-                  {{ institution.isActive ? 'Active' : 'Inactive' }}
-                </span>
-              </td>
-              <td class="py-3 px-4">
-                <div class="flex items-center gap-2">
-                  <button
-                    class="px-3 py-1 text-xs border rounded hover:bg-muted"
-                    @click="openEditModal(institution)"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    class="px-3 py-1 text-xs border rounded hover:bg-muted"
-                    :class="institution.isActive ? 'text-red-600' : 'text-green-600'"
-                    @click="toggleStatus(institution)"
-                  >
-                    {{ institution.isActive ? 'Deactivate' : 'Activate' }}
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                  {{ institution.isActive ? 'Deactivate' : 'Activate' }}
+                </Button>
+              </div>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
 
       <!-- Pagination -->
       <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t">
@@ -283,61 +261,60 @@ const institutionTypes = [
           Showing {{ (currentPage - 1) * perPage + 1 }} to {{ Math.min(currentPage * perPage, totalInstitutions) }} of {{ totalInstitutions }} institutions
         </p>
         <div class="flex gap-2">
-          <button
-            class="px-3 py-1 text-sm border rounded hover:bg-muted disabled:opacity-50"
+          <Button
+            variant="outline"
+            size="sm"
             :disabled="currentPage === 1"
             @click="handlePageChange(currentPage - 1)"
           >
             Previous
-          </button>
-          <button
-            class="px-3 py-1 text-sm border rounded hover:bg-muted disabled:opacity-50"
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             :disabled="currentPage === totalPages"
             @click="handlePageChange(currentPage + 1)"
           >
             Next
-          </button>
+          </Button>
         </div>
       </div>
-    </div>
+    </Card>
 
     <!-- Create/Edit Modal -->
-    <div
-      v-if="showModal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      @click.self="closeModal"
-    >
-      <div class="bg-card border rounded-lg p-6 w-full max-w-md mx-4">
-        <h2 class="text-lg font-semibold text-foreground mb-4">
-          {{ isEditing ? 'Edit Institution' : 'Add Institution' }}
-        </h2>
+    <Dialog :open="showModal" @update:open="(v: boolean) => { if (!v) closeModal() }">
+      <DialogContent class="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{{ isEditing ? 'Edit Institution' : 'Add Institution' }}</DialogTitle>
+        </DialogHeader>
 
-        <div class="space-y-4 mb-6">
+        <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1">
+            <Label for="inst-name">
               Name <span class="text-red-500">*</span>
-            </label>
-            <input
+            </Label>
+            <Input
+              id="inst-name"
               v-model="formData.name"
               type="text"
-              class="w-full px-4 py-2 border rounded-md bg-background text-foreground"
               placeholder="Institution name"
+              class="mt-1"
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1">
-              Type
-            </label>
-            <select
-              v-model="formData.type"
-              class="w-full px-4 py-2 border rounded-md bg-background text-foreground"
-            >
-              <option value="">Select type</option>
-              <option v-for="type in institutionTypes" :key="type" :value="type">
-                {{ type }}
-              </option>
-            </select>
+            <Label for="inst-type">Type</Label>
+            <Select v-model="formData.type">
+              <SelectTrigger class="mt-1">
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Select type</SelectItem>
+                <SelectItem v-for="type in institutionTypes" :key="type" :value="type">
+                  {{ type }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div v-if="isEditing" class="flex items-center gap-2">
@@ -347,26 +324,17 @@ const institutionTypes = [
               id="isActive"
               class="w-4 h-4"
             />
-            <label for="isActive" class="text-sm text-foreground">Active</label>
+            <Label for="isActive">Active</Label>
           </div>
         </div>
 
-        <div class="flex justify-end gap-3">
-          <button
-            class="px-4 py-2 text-sm border rounded-md hover:bg-muted"
-            @click="closeModal"
-          >
-            Cancel
-          </button>
-          <button
-            class="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
-            :disabled="saving || !formData.name"
-            @click="saveInstitution"
-          >
+        <DialogFooter>
+          <Button variant="outline" @click="closeModal">Cancel</Button>
+          <Button :disabled="saving || !formData.name" @click="saveInstitution">
             {{ saving ? 'Saving...' : (isEditing ? 'Update' : 'Create') }}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>

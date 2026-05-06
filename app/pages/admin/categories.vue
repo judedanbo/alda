@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { useAuthStore } from "~/stores/auth";
-
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
 });
 
-const authStore = useAuthStore();
+const { getAuthHeaders } = useAuth();
 
 interface Category {
   id: number;
@@ -38,7 +36,7 @@ const fetchCategories = async () => {
     const response = await $fetch(
       "/api/admin/categories?includeInactive=true",
       {
-        headers: authStore.getAuthHeaders(),
+        headers: getAuthHeaders(),
       }
     );
 
@@ -99,7 +97,7 @@ const saveCategory = async () => {
     if (isEditing.value) {
       await $fetch(`/api/admin/categories/${formData.value.id}`, {
         method: "PUT",
-        headers: authStore.getAuthHeaders(),
+        headers: getAuthHeaders(),
         body: {
           name: formData.value.name,
           description: formData.value.description || null,
@@ -110,7 +108,7 @@ const saveCategory = async () => {
     } else {
       await $fetch("/api/admin/categories", {
         method: "POST",
-        headers: authStore.getAuthHeaders(),
+        headers: getAuthHeaders(),
         body: {
           name: formData.value.name,
           description: formData.value.description || null,
@@ -135,14 +133,14 @@ const toggleStatus = async (category: Category) => {
       // Deactivate via DELETE endpoint (soft-delete)
       await $fetch(`/api/admin/categories/${category.id}`, {
         method: "DELETE",
-        headers: authStore.getAuthHeaders(),
+        headers: getAuthHeaders(),
       });
       category.isActive = false;
     } else {
       // Reactivate via PUT endpoint
       await $fetch(`/api/admin/categories/${category.id}`, {
         method: "PUT",
-        headers: authStore.getAuthHeaders(),
+        headers: getAuthHeaders(),
         body: {
           isActive: true,
         },
@@ -157,211 +155,140 @@ const toggleStatus = async (category: Category) => {
 
 <template>
   <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-foreground">
-          Public Office Categories
-        </h1>
-        <p class="text-muted-foreground mt-1">
-          Manage public office categories for Article 286 declarations
-        </p>
-      </div>
-      <button
-        class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-        @click="openCreateModal"
-      >
-        Add Category
-      </button>
-    </div>
+    <PageHeader
+      title="Public Office Categories"
+      description="Manage public office categories for Article 286 declarations"
+    >
+      <template #actions>
+        <Button @click="openCreateModal">Add Category</Button>
+      </template>
+    </PageHeader>
 
     <!-- Loading -->
-    <div v-if="loading" class="flex justify-center py-12">
-      <div
-        class="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full"
-      />
+    <div v-if="loading" class="space-y-3">
+      <Skeleton v-for="i in 5" :key="i" class="h-12 w-full rounded-lg" />
     </div>
 
     <!-- Categories Table -->
-    <div v-else class="bg-card border rounded-lg overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead class="bg-muted/50">
-            <tr>
-              <th
-                class="text-left py-3 px-4 text-sm font-medium text-muted-foreground"
-              >
-                Name
-              </th>
-              <th
-                class="text-left py-3 px-4 text-sm font-medium text-muted-foreground"
-              >
-                Article Reference
-              </th>
-              <th
-                class="text-left py-3 px-4 text-sm font-medium text-muted-foreground"
-              >
-                Description
-              </th>
-              <th
-                class="text-left py-3 px-4 text-sm font-medium text-muted-foreground"
-              >
-                Status
-              </th>
-              <th
-                class="text-left py-3 px-4 text-sm font-medium text-muted-foreground"
-              >
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="categories.length === 0">
-              <td
-                colspan="5"
-                class="py-8 text-center text-muted-foreground"
-              >
-                No categories found
-              </td>
-            </tr>
-            <tr
-              v-for="category in categories"
-              :key="category.id"
-              class="border-t"
-            >
-              <td class="py-3 px-4">
-                <p class="text-sm font-medium text-foreground">
-                  {{ category.name }}
-                </p>
-              </td>
-              <td class="py-3 px-4 text-sm text-muted-foreground">
-                {{ category.articleReference || "-" }}
-              </td>
-              <td class="py-3 px-4 text-sm text-muted-foreground max-w-xs truncate">
-                {{ category.description || "-" }}
-              </td>
-              <td class="py-3 px-4">
-                <span
-                  class="px-2 py-0.5 text-xs rounded-full"
-                  :class="
-                    category.isActive
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                  "
+    <Card v-else>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Article Reference</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow v-if="categories.length === 0">
+            <TableCell colspan="5" class="text-center py-8 text-muted-foreground">
+              No categories found
+            </TableCell>
+          </TableRow>
+          <TableRow v-for="category in categories" :key="category.id">
+            <TableCell>
+              <p class="text-sm font-medium text-foreground">{{ category.name }}</p>
+            </TableCell>
+            <TableCell class="text-sm text-muted-foreground">
+              {{ category.articleReference || "-" }}
+            </TableCell>
+            <TableCell class="text-sm text-muted-foreground max-w-xs truncate">
+              {{ category.description || "-" }}
+            </TableCell>
+            <TableCell>
+              <Badge :class="category.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+                {{ category.isActive ? "Active" : "Inactive" }}
+              </Badge>
+            </TableCell>
+            <TableCell>
+              <div class="flex items-center gap-2">
+                <Button variant="outline" size="sm" @click="openEditModal(category)">
+                  Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  :class="category.isActive ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'"
+                  @click="toggleStatus(category)"
                 >
-                  {{ category.isActive ? "Active" : "Inactive" }}
-                </span>
-              </td>
-              <td class="py-3 px-4">
-                <div class="flex items-center gap-2">
-                  <button
-                    class="px-3 py-1 text-xs border rounded hover:bg-muted"
-                    @click="openEditModal(category)"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    class="px-3 py-1 text-xs border rounded hover:bg-muted"
-                    :class="
-                      category.isActive
-                        ? 'text-red-600'
-                        : 'text-green-600'
-                    "
-                    @click="toggleStatus(category)"
-                  >
-                    {{ category.isActive ? "Deactivate" : "Activate" }}
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+                  {{ category.isActive ? "Deactivate" : "Activate" }}
+                </Button>
+              </div>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    </Card>
 
     <!-- Create/Edit Modal -->
-    <div
-      v-if="showModal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      @click.self="closeModal"
-    >
-      <div class="bg-card border rounded-lg p-6 w-full max-w-md mx-4">
-        <h2 class="text-lg font-semibold text-foreground mb-4">
-          {{ isEditing ? "Edit Category" : "Add Category" }}
-        </h2>
+    <Dialog :open="showModal" @update:open="(v: boolean) => { if (!v) closeModal() }">
+      <DialogContent class="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{{ isEditing ? "Edit Category" : "Add Category" }}</DialogTitle>
+        </DialogHeader>
 
-        <div v-if="errorMessage" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
-          {{ errorMessage }}
-        </div>
+        <Alert v-if="errorMessage" variant="destructive">
+          <AlertDescription>{{ errorMessage }}</AlertDescription>
+        </Alert>
 
-        <div class="space-y-4 mb-6">
+        <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1">
+            <Label for="cat-name">
               Name <span class="text-red-500">*</span>
-            </label>
-            <input
+            </Label>
+            <Input
+              id="cat-name"
               v-model="formData.name"
               type="text"
-              class="w-full px-4 py-2 border rounded-md bg-background text-foreground"
               placeholder="Category name"
+              class="mt-1"
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1">
-              Article Reference
-            </label>
-            <input
+            <Label for="cat-article">Article Reference</Label>
+            <Input
+              id="cat-article"
               v-model="formData.articleReference"
               type="text"
-              class="w-full px-4 py-2 border rounded-md bg-background text-foreground"
               placeholder="e.g. Article 286(1)(a)"
               maxlength="50"
+              class="mt-1"
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1">
-              Description
-            </label>
-            <textarea
+            <Label for="cat-desc">Description</Label>
+            <Textarea
+              id="cat-desc"
               v-model="formData.description"
-              class="w-full px-4 py-2 border rounded-md bg-background text-foreground"
               placeholder="Brief description of this category"
-              rows="3"
+              :rows="3"
               maxlength="500"
+              class="mt-1"
             />
           </div>
 
           <div v-if="isEditing" class="flex items-center gap-2">
             <input
-              id="isActive"
+              id="cat-active"
               v-model="formData.isActive"
               type="checkbox"
               class="w-4 h-4"
             />
-            <label for="isActive" class="text-sm text-foreground"
-              >Active</label
-            >
+            <Label for="cat-active">Active</Label>
           </div>
         </div>
 
-        <div class="flex justify-end gap-3">
-          <button
-            class="px-4 py-2 text-sm border rounded-md hover:bg-muted"
-            @click="closeModal"
-          >
-            Cancel
-          </button>
-          <button
-            class="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
-            :disabled="saving || !formData.name"
-            @click="saveCategory"
-          >
+        <DialogFooter>
+          <Button variant="outline" @click="closeModal">Cancel</Button>
+          <Button :disabled="saving || !formData.name" @click="saveCategory">
             {{ saving ? "Saving..." : isEditing ? "Update" : "Create" }}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
