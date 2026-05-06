@@ -139,6 +139,22 @@ async function resendVerification() {
               <p class="text-sm text-muted-foreground">See all your declarations</p>
             </div>
           </NuxtLink>
+
+          <NuxtLink
+            v-if="authStore.user?.hasProfile"
+            to="/applicant/profile/edit"
+            class="flex items-center gap-3 p-3 rounded-md hover:bg-muted transition-colors"
+          >
+            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <div>
+              <p class="font-medium text-foreground">Edit Profile</p>
+              <p class="text-sm text-muted-foreground">Update your office details</p>
+            </div>
+          </NuxtLink>
         </div>
       </div>
 
