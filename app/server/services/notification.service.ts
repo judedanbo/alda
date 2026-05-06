@@ -163,6 +163,11 @@ function mapNotificationTypeToEmailTemplate(type: NotificationType): EmailTempla
     PICKUP_REMINDER: "pickup-notification",
     PASSWORD_RESET: "password-reset",
     EMAIL_VERIFICATION: "email-verification",
+    VERIFICATION_SUBMITTED: "verification-submitted",
+    VERIFICATION_APPROVED: "verification-approved",
+    VERIFICATION_REJECTED: "verification-rejected",
+    VERIFICATION_ON_HOLD: "verification-on-hold",
+    VERIFICATION_MORE_INFO_REQUIRED: "verification-more-info",
   };
   return mapping[type] || "welcome";
 }
@@ -293,6 +298,74 @@ export async function notifyPickupReady(
       authorizedPerson,
       authorizedPhone,
     },
+  });
+}
+
+/**
+ * Send verification status change notification
+ */
+export async function notifyVerificationStatusChanged(
+  userId: string,
+  status: "VERIFIED" | "ON_HOLD" | "MORE_INFO_REQUIRED" | "REJECTED",
+  name: string,
+  reason: string,
+  messageToApplicant?: string,
+): Promise<void> {
+  const config = useRuntimeConfig();
+  const dashboardUrl = `${config.public.appUrl}/applicant/dashboard`;
+
+  const typeMap: Record<string, NotificationType> = {
+    VERIFIED: "VERIFICATION_APPROVED",
+    ON_HOLD: "VERIFICATION_ON_HOLD",
+    MORE_INFO_REQUIRED: "VERIFICATION_MORE_INFO_REQUIRED",
+    REJECTED: "VERIFICATION_REJECTED",
+  };
+
+  const titleMap: Record<string, string> = {
+    VERIFIED: "Registration Verified",
+    ON_HOLD: "Registration Under Investigation",
+    MORE_INFO_REQUIRED: "Additional Information Required",
+    REJECTED: "Registration Not Approved",
+  };
+
+  const messageMap: Record<string, string> = {
+    VERIFIED: "Your registration has been verified. You can now create asset declarations.",
+    ON_HOLD: `Your registration is under investigation. Reason: ${reason}`,
+    MORE_INFO_REQUIRED: `Additional information required: ${messageToApplicant || reason}`,
+    REJECTED: `Your registration was not approved. Reason: ${reason}`,
+  };
+
+  const channelMap: Record<string, NotificationChannel[]> = {
+    VERIFIED: ["EMAIL", "SMS", "IN_APP"],
+    ON_HOLD: ["EMAIL", "IN_APP"],
+    MORE_INFO_REQUIRED: ["EMAIL", "SMS", "IN_APP"],
+    REJECTED: ["EMAIL", "IN_APP"],
+  };
+
+  await sendNotification({
+    userId,
+    type: typeMap[status]!,
+    title: titleMap[status]!,
+    message: messageMap[status]!,
+    metadata: { name, reason, messageToApplicant, dashboardUrl },
+    channels: channelMap[status],
+  });
+}
+
+/**
+ * Send notification that verification was submitted
+ */
+export async function notifyVerificationSubmitted(
+  userId: string,
+  name: string,
+): Promise<void> {
+  await sendNotification({
+    userId,
+    type: "VERIFICATION_SUBMITTED",
+    title: "Registration Under Review",
+    message: "Your registration is now being reviewed by the legal office.",
+    metadata: { name },
+    channels: ["EMAIL", "IN_APP"],
   });
 }
 
