@@ -55,6 +55,11 @@ const officeForm = reactive<OfficeEntry>({
 const offices = ref<(OfficeEntry & { id: string; categoryName?: string; institutionName?: string })[]>([]);
 const addingOffice = ref(false);
 
+const formatDate = (dateStr: string) => {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+};
+
 const error = ref("");
 const isLoading = ref(false);
 const currentStep = ref(1);
@@ -166,10 +171,15 @@ const nextStep = async () => {
   if (currentStep.value === 2) {
     try {
       await createProfile();
-      currentStep.value = 3;
-    } catch {
-      // error already set in createProfile
+    } catch (err: unknown) {
+      const e = err as { status?: number; statusCode?: number; data?: { statusCode?: number } };
+      const status = e?.status ?? e?.statusCode ?? e?.data?.statusCode;
+      if (status !== 409) {
+        return;
+      }
+      error.value = "";
     }
+    currentStep.value = 3;
     return;
   }
 
@@ -513,8 +523,8 @@ const handleSubmit = async () => {
                   <p class="text-sm text-muted-foreground">{{ office.categoryName }}</p>
                   <p v-if="office.institutionName" class="text-sm text-muted-foreground">{{ office.institutionName }}</p>
                   <p class="text-xs text-muted-foreground mt-1">
-                    From {{ office.startDate }}
-                    <span v-if="office.endDate"> to {{ office.endDate }}</span>
+                    From {{ formatDate(office.startDate) }}
+                    <span v-if="office.endDate"> to {{ formatDate(office.endDate) }}</span>
                     <span v-else class="text-primary font-medium"> — Current</span>
                   </p>
                 </div>
