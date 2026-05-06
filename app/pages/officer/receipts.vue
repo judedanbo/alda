@@ -4,8 +4,6 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { getAuthHeaders } = useAuth();
-
 interface Declaration {
   id: string;
   uniqueCode: string;
@@ -43,9 +41,7 @@ const fetchPendingReceipts = async () => {
       offset: String((currentPage.value - 1) * limit),
     });
 
-    const response = await $fetch(`/api/receipts/pending?${query}`, {
-      headers: getAuthHeaders(),
-    });
+    const response = await authFetch<any>(`/api/receipts/pending?${query}`);
 
     if (response.success) {
       pendingDeclarations.value = response.data.declarations as Declaration[];
@@ -75,9 +71,8 @@ const generateReceipt = async () => {
   generateError.value = "";
 
   try {
-    const response = await $fetch(`/api/receipts/${selectedDeclaration.value.id}`, {
+    const response = await authFetch<any>(`/api/receipts/${selectedDeclaration.value.id}`, {
       method: "POST",
-      headers: getAuthHeaders(),
     });
 
     type GenerateResponse = { success: boolean; data: { receipt: { pdfUrl: string | null } } };

@@ -4,8 +4,6 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { getAuthHeaders } = useAuth();
-
 interface Pickup {
   id: string;
   isSelfPickup: boolean;
@@ -50,9 +48,7 @@ const fetchPendingPickups = async () => {
       query.set("search", search.value);
     }
 
-    const response = await $fetch(`/api/pickup/pending?${query}`, {
-      headers: getAuthHeaders(),
-    });
+    const response = await authFetch<any>(`/api/pickup/pending?${query}`);
 
     if (response.success) {
       pendingPickups.value = response.data.pickups as Pickup[];
@@ -82,9 +78,8 @@ const recordPickup = async () => {
   recordError.value = "";
 
   try {
-    await $fetch(`/api/pickup/${selectedPickup.value.declaration.id}`, {
+    await authFetch(`/api/pickup/${selectedPickup.value.declaration.id}`, {
       method: "PATCH",
-      headers: getAuthHeaders(),
     });
 
     showPickupModal.value = false;

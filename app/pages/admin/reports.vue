@@ -4,8 +4,6 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { getAuthHeaders } = useAuth();
-
 interface ReportData {
   declarationsByStatus: Array<{ status: string; count: number }>;
   declarationsByMonth: Array<{ month: string; count: number }>;
@@ -31,9 +29,7 @@ const fetchReportData = async () => {
     if (dateFrom.value) params.append("dateFrom", dateFrom.value);
     if (dateTo.value) params.append("dateTo", dateTo.value);
 
-    const response = await $fetch(`/api/admin/reports?${params}`, {
-      headers: getAuthHeaders(),
-    });
+    const response = await authFetch<any>(`/api/admin/reports?${params}`);
 
     if (response.success) {
       reportData.value = response.data;
@@ -81,9 +77,7 @@ const exportReport = async (format: 'csv' | 'pdf') => {
     if (dateFrom.value) params.append("dateFrom", dateFrom.value);
     if (dateTo.value) params.append("dateTo", dateTo.value);
 
-    const response = await $fetch(`/api/admin/reports/export?${params}`, {
-      headers: getAuthHeaders(),
-    });
+    const response = await authFetch<any>(`/api/admin/reports/export?${params}`);
 
     // Handle file download
     if (format === 'csv' && response) {

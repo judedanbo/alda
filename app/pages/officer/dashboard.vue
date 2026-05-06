@@ -4,8 +4,6 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { getAuthHeaders } = useAuth();
-
 interface DashboardStats {
   pendingSubmissions: number;
   pendingReviews: number;
@@ -43,18 +41,10 @@ const fetchDashboardData = async () => {
       pendingReceiptsRes,
       pendingPickupsRes,
     ] = await Promise.all([
-      $fetch("/api/submissions/pending?limit=1", {
-        headers: getAuthHeaders(),
-      }),
-      $fetch("/api/reviews/pending?limit=1", {
-        headers: getAuthHeaders(),
-      }),
-      $fetch("/api/receipts/pending?limit=1", {
-        headers: getAuthHeaders(),
-      }),
-      $fetch("/api/pickup/pending?limit=1", {
-        headers: getAuthHeaders(),
-      }),
+      authFetch<any>("/api/submissions/pending?limit=1"),
+      authFetch<any>("/api/reviews/pending?limit=1"),
+      authFetch<any>("/api/receipts/pending?limit=1"),
+      authFetch<any>("/api/pickup/pending?limit=1"),
     ]);
 
     stats.value = {

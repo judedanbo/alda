@@ -30,7 +30,7 @@ const { fieldErrors, clearFieldError, clearAll, handleServerError } = useFieldEr
 
 // Fetch profile, institutions, and categories in parallel
 const [profileRes, institutionsRes, categoriesRes] = await Promise.all([
-  $fetch("/api/profile", { headers: authStore.getAuthHeaders() }),
+  authFetch("/api/profile"),
   $fetch("/api/institutions"),
   $fetch("/api/categories"),
 ]);
@@ -69,10 +69,9 @@ async function handleSave() {
     if (form.institutionId) body.institutionId = form.institutionId;
     if (form.officeCategoryId) body.officeCategoryId = form.officeCategoryId;
 
-    await $fetch("/api/profile", {
+    await authFetch("/api/profile", {
       method: "PUT",
       body,
-      headers: authStore.getAuthHeaders(),
     });
 
     success.value = "Profile updated successfully.";

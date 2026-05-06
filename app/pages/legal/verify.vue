@@ -4,8 +4,6 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { getAuthHeaders } = useAuth();
-
 interface VerificationResult {
   declaration: {
     id: string;
@@ -84,9 +82,7 @@ const verifyCode = async () => {
   verificationResult.value = null;
 
   try {
-    const response = await $fetch(`/api/verify/${encodeURIComponent(code.value.trim())}`, {
-      headers: getAuthHeaders(),
-    });
+    const response = await authFetch<any>(`/api/verify/${encodeURIComponent(code.value.trim())}`);
 
     if (response.success) {
       verificationResult.value = response.data as unknown as VerificationResult;

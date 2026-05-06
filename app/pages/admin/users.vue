@@ -4,8 +4,6 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { getAuthHeaders } = useAuth();
-
 interface User {
   id: string;
   email: string;
@@ -57,9 +55,7 @@ const fetchUsers = async () => {
     if (selectedRole.value) params.append("role", selectedRole.value);
     if (selectedStatus.value) params.append("status", selectedStatus.value);
 
-    const response = await $fetch(`/api/admin/users?${params}`, {
-      headers: getAuthHeaders(),
-    });
+    const response = await authFetch<any>(`/api/admin/users?${params}`);
 
     if (response.success) {
       users.value = response.data.users;
@@ -74,9 +70,7 @@ const fetchUsers = async () => {
 
 const fetchRoles = async () => {
   try {
-    const response = await $fetch("/api/admin/roles", {
-      headers: getAuthHeaders(),
-    });
+    const response = await authFetch<any>("/api/admin/roles");
 
     if (response.success) {
       roles.value = response.data.roles;
@@ -109,9 +103,8 @@ const saveUserRoles = async () => {
 
   saving.value = true;
   try {
-    const response = await $fetch(`/api/admin/users/${editingUser.value.id}/roles`, {
+    const response = await authFetch<any>(`/api/admin/users/${editingUser.value.id}/roles`, {
       method: "PUT",
-      headers: getAuthHeaders(),
       body: { roleIds: selectedRoles.value },
     });
 
@@ -128,9 +121,8 @@ const saveUserRoles = async () => {
 
 const toggleUserStatus = async (user: User) => {
   try {
-    const response = await $fetch(`/api/admin/users/${user.id}/status`, {
+    const response = await authFetch<any>(`/api/admin/users/${user.id}/status`, {
       method: "PATCH",
-      headers: getAuthHeaders(),
       body: { isActive: !user.isActive },
     });
 

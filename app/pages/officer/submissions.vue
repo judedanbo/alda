@@ -4,8 +4,6 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { getAuthHeaders } = useAuth();
-
 interface Declaration {
   id: string;
   uniqueCode: string;
@@ -48,9 +46,7 @@ const fetchPendingSubmissions = async () => {
       query.set("search", search.value);
     }
 
-    const response = await $fetch(`/api/submissions/pending?${query}`, {
-      headers: getAuthHeaders(),
-    });
+    const response = await authFetch<any>(`/api/submissions/pending?${query}`);
 
     if (response.success) {
       pendingDeclarations.value = response.data.declarations as Declaration[];
@@ -81,9 +77,8 @@ const recordSubmission = async () => {
   recordError.value = "";
 
   try {
-    await $fetch("/api/submissions", {
+    await authFetch("/api/submissions", {
       method: "POST",
-      headers: getAuthHeaders(),
       body: {
         declarationId: selectedDeclaration.value.id,
         notes: recordingNotes.value || undefined,

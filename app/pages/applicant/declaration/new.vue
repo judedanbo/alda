@@ -4,7 +4,7 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { getAuthHeaders, isEmailVerified } = useAuth();
+const { isEmailVerified } = useAuth();
 const router = useRouter();
 
 const isLoading = ref(false);
@@ -12,9 +12,10 @@ const error = ref("");
 const createdDeclaration = ref<{ id: string; uniqueCode: string } | null>(null);
 
 // Fetch user profile
-const { data: profileData, error: profileError } = await useFetch("/api/profile", {
-  headers: getAuthHeaders(),
-});
+const { data: profileData, error: profileError } = await useAsyncData(
+  "declaration-new-profile",
+  () => authFetch<{ data: any }>("/api/profile"),
+);
 
 const profile = computed(() => profileData.value?.data);
 
@@ -24,9 +25,8 @@ const handleCreate = async () => {
   isLoading.value = true;
 
   try {
-    const response = await $fetch("/api/declarations", {
+    const response = await authFetch<{ success: boolean; data: { id: string; uniqueCode: string } }>("/api/declarations", {
       method: "POST",
-      headers: getAuthHeaders(),
     });
 
     if (response.success) {
@@ -50,9 +50,8 @@ const handleSubmit = async () => {
   isLoading.value = true;
 
   try {
-    const response = await $fetch(`/api/declarations/${createdDeclaration.value.id}/submit`, {
+    const response = await authFetch<{ success: boolean }>(`/api/declarations/${createdDeclaration.value.id}/submit`, {
       method: "POST",
-      headers: getAuthHeaders(),
     });
 
     if (response.success) {

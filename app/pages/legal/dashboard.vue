@@ -4,8 +4,6 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { getAuthHeaders } = useAuth();
-
 const recentVerifications = ref<Array<{
   code: string;
   applicantName: string;

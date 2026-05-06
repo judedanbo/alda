@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import { useAuthStore } from "./auth";
+import { authFetch } from "~/utils/authFetch";
 
 interface Notification {
   id: string;
@@ -25,9 +25,6 @@ export const useNotificationStore = defineStore("notifications", () => {
 
   // Actions
   async function fetchNotifications(options: { limit?: number; offset?: number; unreadOnly?: boolean } = {}) {
-    const authStore = useAuthStore();
-    if (!authStore.isAuthenticated) return;
-
     loading.value = true;
     try {
       const query = new URLSearchParams();
@@ -35,9 +32,9 @@ export const useNotificationStore = defineStore("notifications", () => {
       if (options.offset) query.set("offset", String(options.offset));
       if (options.unreadOnly) query.set("unreadOnly", "true");
 
-      const response = await $fetch(`/api/notifications?${query}`, {
-        headers: authStore.getAuthHeaders(),
-      });
+      const response = await authFetch<{ success: boolean; data: { notifications: Notification[]; unreadCount: number; total: number } }>(
+        `/api/notifications?${query}`,
+      );
 
       if (response.success) {
         notifications.value = response.data.notifications;
@@ -52,16 +49,11 @@ export const useNotificationStore = defineStore("notifications", () => {
   }
 
   async function markAsRead(notificationId: string) {
-    const authStore = useAuthStore();
-    if (!authStore.isAuthenticated) return;
-
     try {
-      await $fetch(`/api/notifications/${notificationId}/read`, {
+      await authFetch(`/api/notifications/${notificationId}/read`, {
         method: "PATCH",
-        headers: authStore.getAuthHeaders(),
       });
 
-      // Update local state
       const notification = notifications.value.find((n) => n.id === notificationId);
       if (notification && !notification.readAt) {
         notification.readAt = new Date().toISOString();
@@ -73,16 +65,11 @@ export const useNotificationStore = defineStore("notifications", () => {
   }
 
   async function markAllAsRead() {
-    const authStore = useAuthStore();
-    if (!authStore.isAuthenticated) return;
-
     try {
-      await $fetch("/api/notifications/read-all", {
+      await authFetch("/api/notifications/read-all", {
         method: "POST",
-        headers: authStore.getAuthHeaders(),
       });
 
-      // Update local state
       notifications.value.forEach((n) => {
         if (!n.readAt) {
           n.readAt = new Date().toISOString();
@@ -95,13 +82,10 @@ export const useNotificationStore = defineStore("notifications", () => {
   }
 
   async function refreshUnreadCount() {
-    const authStore = useAuthStore();
-    if (!authStore.isAuthenticated) return;
-
     try {
-      const response = await $fetch("/api/notifications?limit=1", {
-        headers: authStore.getAuthHeaders(),
-      });
+      const response = await authFetch<{ success: boolean; data: { unreadCount: number } }>(
+        "/api/notifications?limit=1",
+      );
 
       if (response.success) {
         unreadCount.value = response.data.unreadCount;

@@ -1,37 +1,24 @@
-export function useDeclarations() {
-  const { getAuthHeaders } = useAuth();
+import { authFetch } from "~/utils/authFetch";
 
+export function useDeclarations() {
   async function fetchDeclarations(params?: { page?: number; status?: string }) {
-    return $fetch<any>("/api/declarations", {
-      headers: getAuthHeaders(),
-      params,
-    });
+    return authFetch<any>("/api/declarations", { query: params as Record<string, unknown> });
   }
 
   async function fetchDeclaration(id: string) {
-    return $fetch<any>(`/api/declarations/${id}`, {
-      headers: getAuthHeaders(),
-    });
+    return authFetch<any>(`/api/declarations/${id}`);
   }
 
   async function createDeclaration() {
-    return $fetch<any>("/api/declarations", {
-      method: "POST",
-      headers: getAuthHeaders(),
-    });
+    return authFetch<any>("/api/declarations", { method: "POST" });
   }
 
   async function submitDeclaration(id: string) {
-    return $fetch<any>(`/api/declarations/${id}/submit`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-    });
+    return authFetch<any>(`/api/declarations/${id}/submit`, { method: "POST" });
   }
 
   async function fetchDeclarationStatus(id: string) {
-    return $fetch<any>(`/api/declarations/${id}/status`, {
-      headers: getAuthHeaders(),
-    });
+    return authFetch<any>(`/api/declarations/${id}/status`);
   }
 
   return {

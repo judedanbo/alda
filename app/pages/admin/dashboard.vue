@@ -4,8 +4,6 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { getAuthHeaders } = useAuth();
-
 interface AdminStats {
   totalUsers: number;
   totalApplicants: number;
@@ -61,9 +59,7 @@ const loading = ref(true);
 
 const fetchDashboardData = async () => {
   try {
-    const response = await $fetch("/api/admin/stats", {
-      headers: getAuthHeaders(),
-    });
+    const response = await authFetch<any>("/api/admin/stats");
 
     if (response.success) {
       stats.value = response.data.stats;
