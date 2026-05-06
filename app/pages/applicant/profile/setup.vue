@@ -9,6 +9,24 @@ definePageMeta({
 const authStore = useAuthStore();
 const router = useRouter();
 
+const checkingProfile = ref(true);
+
+onMounted(async () => {
+  try {
+    const response = await $fetch("/api/auth/me", {
+      headers: getAuthHeaders(),
+    });
+    if (response.success && response.data.profile) {
+      router.replace("/applicant/dashboard");
+      return;
+    }
+  } catch {
+    // If the check fails, let the user proceed with the form
+  } finally {
+    checkingProfile.value = false;
+  }
+});
+
 // Form state
 const form = reactive({
   fullName: "",
@@ -180,7 +198,10 @@ const handleSubmit = async () => {
 
 <template>
   <div class="w-full max-w-2xl">
-    <Card class="shadow-lg">
+    <div v-if="checkingProfile" class="flex items-center justify-center py-20">
+      <p class="text-muted-foreground">Loading...</p>
+    </div>
+    <Card v-else class="shadow-lg">
       <!-- Header -->
       <CardHeader class="text-center">
         <CardTitle class="text-2xl">Complete Your Profile</CardTitle>

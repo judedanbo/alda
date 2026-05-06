@@ -4,6 +4,7 @@ definePageMeta({
   middleware: "auth",
 });
 
+const { isEmailVerified } = useAuth();
 const router = useRouter();
 
 const isLoading = ref(false);
@@ -78,6 +79,22 @@ const handleSubmit = async () => {
         </p>
         <Button as-child>
           <NuxtLink to="/applicant/profile/setup">Complete Profile</NuxtLink>
+        </Button>
+      </CardContent>
+    </Card>
+
+    <!-- Email Not Verified Warning -->
+    <Card v-else-if="!isEmailVerified">
+      <CardContent class="text-center p-6">
+        <svg class="w-16 h-16 mx-auto text-warning mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        <h2 class="text-xl font-semibold text-foreground mb-2">Email Verification Required</h2>
+        <p class="text-muted-foreground mb-6">
+          Please verify your email address before creating a declaration. Check your inbox for the verification link.
+        </p>
+        <Button as-child>
+          <NuxtLink to="/applicant/dashboard">Back to Dashboard</NuxtLink>
         </Button>
       </CardContent>
     </Card>
