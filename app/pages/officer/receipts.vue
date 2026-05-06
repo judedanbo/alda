@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { useAuthStore } from "~/stores/auth";
-
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
 });
 
-const authStore = useAuthStore();
+const { getAuthHeaders } = useAuth();
 
 interface Declaration {
   id: string;
@@ -46,7 +44,7 @@ const fetchPendingReceipts = async () => {
     });
 
     const response = await $fetch(`/api/receipts/pending?${query}`, {
-      headers: authStore.getAuthHeaders(),
+      headers: getAuthHeaders(),
     });
 
     if (response.success) {
@@ -79,7 +77,7 @@ const generateReceipt = async () => {
   try {
     const response = await $fetch(`/api/receipts/${selectedDeclaration.value.id}`, {
       method: "POST",
-      headers: authStore.getAuthHeaders(),
+      headers: getAuthHeaders(),
     });
 
     type GenerateResponse = { success: boolean; data: { receipt: { pdfUrl: string | null } } };
@@ -114,135 +112,138 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-foreground">Generate Receipts</h1>
-        <p class="text-muted-foreground mt-1">
-          Generate receipts for approved declarations
-        </p>
-      </div>
-      <NuxtLink to="/officer/dashboard" class="text-sm text-primary hover:underline">
-        Back to Dashboard
-      </NuxtLink>
-    </div>
+    <PageHeader title="Generate Receipts" description="Generate receipts for approved declarations">
+      <template #actions>
+        <Button variant="ghost" as-child>
+          <NuxtLink to="/officer/dashboard">Back to Dashboard</NuxtLink>
+        </Button>
+      </template>
+    </PageHeader>
 
     <!-- Loading -->
-    <div v-if="loading" class="flex justify-center py-12">
-      <div class="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
-    </div>
+    <Card v-if="loading">
+      <CardContent class="p-6">
+        <div class="space-y-4">
+          <Skeleton class="h-8 w-full" />
+          <Skeleton class="h-8 w-full" />
+          <Skeleton class="h-8 w-full" />
+        </div>
+      </CardContent>
+    </Card>
 
     <!-- Empty State -->
-    <div v-else-if="pendingDeclarations.length === 0" class="text-center py-12 bg-card rounded-lg border">
-      <svg class="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-      </svg>
-      <h3 class="text-lg font-medium text-foreground mb-2">No pending receipts</h3>
-      <p class="text-muted-foreground">All approved declarations have receipts generated.</p>
-    </div>
+    <Card v-else-if="pendingDeclarations.length === 0">
+      <CardContent class="text-center py-12">
+        <svg class="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+        </svg>
+        <h3 class="text-lg font-medium text-foreground mb-2">No pending receipts</h3>
+        <p class="text-muted-foreground">All approved declarations have receipts generated.</p>
+      </CardContent>
+    </Card>
 
     <!-- Table -->
-    <div v-else class="bg-card border rounded-lg overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead class="bg-muted/50">
-            <tr>
-              <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Code</th>
-              <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Applicant</th>
-              <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Institution</th>
-              <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Approved</th>
-              <th class="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Action</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y">
-            <tr v-for="declaration in pendingDeclarations" :key="declaration.id" class="hover:bg-muted/30">
-              <td class="px-4 py-3">
+    <Card v-else>
+      <CardContent class="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Code</TableHead>
+              <TableHead>Applicant</TableHead>
+              <TableHead>Institution</TableHead>
+              <TableHead>Approved</TableHead>
+              <TableHead class="text-right">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow
+              v-for="declaration in pendingDeclarations"
+              :key="declaration.id"
+              class="hover:bg-muted/30"
+            >
+              <TableCell>
                 <span class="font-mono text-sm font-medium text-primary">{{ declaration.uniqueCode }}</span>
-              </td>
-              <td class="px-4 py-3">
+              </TableCell>
+              <TableCell>
                 <div>
                   <p class="font-medium text-foreground">{{ declaration.applicant.fullName }}</p>
                   <p class="text-sm text-muted-foreground">{{ declaration.applicant.designation }}</p>
                 </div>
-              </td>
-              <td class="px-4 py-3 text-sm text-muted-foreground">
+              </TableCell>
+              <TableCell class="text-sm text-muted-foreground">
                 {{ declaration.applicant.institution?.name || 'N/A' }}
-              </td>
-              <td class="px-4 py-3 text-sm text-muted-foreground">
+              </TableCell>
+              <TableCell class="text-sm text-muted-foreground">
                 {{ declaration.reviews[0] ? formatDate(declaration.reviews[0].reviewDate) : 'N/A' }}
-              </td>
-              <td class="px-4 py-3 text-right">
-                <button
-                  class="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700"
-                  @click="openGenerateModal(declaration)"
-                >
+              </TableCell>
+              <TableCell class="text-right">
+                <Button size="sm" variant="secondary" @click="openGenerateModal(declaration)">
                   Generate
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                </Button>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
 
-      <!-- Pagination -->
-      <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t">
-        <p class="text-sm text-muted-foreground">
-          Showing {{ (currentPage - 1) * limit + 1 }} to {{ Math.min(currentPage * limit, total) }} of {{ total }}
-        </p>
-        <div class="flex gap-2">
-          <button :disabled="currentPage <= 1" class="px-3 py-1 text-sm border rounded disabled:opacity-50" @click="currentPage--">Previous</button>
-          <button :disabled="currentPage >= totalPages" class="px-3 py-1 text-sm border rounded disabled:opacity-50" @click="currentPage++">Next</button>
+        <!-- Pagination -->
+        <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t">
+          <p class="text-sm text-muted-foreground">
+            Showing {{ (currentPage - 1) * limit + 1 }} to {{ Math.min(currentPage * limit, total) }} of {{ total }}
+          </p>
+          <div class="flex gap-2">
+            <Button variant="outline" size="sm" :disabled="currentPage <= 1" @click="currentPage--">
+              Previous
+            </Button>
+            <Button variant="outline" size="sm" :disabled="currentPage >= totalPages" @click="currentPage++">
+              Next
+            </Button>
+          </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
 
     <!-- Generate Modal -->
-    <Teleport to="body">
-      <div v-if="showGenerateModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" @click.self="showGenerateModal = false">
-        <div class="bg-card rounded-lg w-full max-w-lg">
-          <div class="p-6 border-b">
-            <h2 class="text-xl font-semibold text-foreground">Generate Receipt</h2>
-            <p class="text-sm text-muted-foreground mt-1">Generate official receipt for this declaration</p>
-          </div>
+    <Dialog :open="showGenerateModal" @update:open="showGenerateModal = $event">
+      <DialogContent class="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Generate Receipt</DialogTitle>
+          <DialogDescription>Generate official receipt for this declaration</DialogDescription>
+        </DialogHeader>
 
-          <div v-if="selectedDeclaration" class="p-6 space-y-4">
-            <div class="bg-muted/30 rounded-lg p-4 space-y-2">
-              <div class="flex justify-between">
-                <span class="text-sm text-muted-foreground">Code:</span>
-                <span class="font-mono font-medium">{{ selectedDeclaration.uniqueCode }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-sm text-muted-foreground">Applicant:</span>
-                <span class="font-medium">{{ selectedDeclaration.applicant.fullName }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-sm text-muted-foreground">Ghana Card:</span>
-                <span>{{ selectedDeclaration.applicant.ghanaCardNumber }}</span>
-              </div>
+        <div v-if="selectedDeclaration" class="space-y-4">
+          <div class="bg-muted/30 rounded-lg p-4 space-y-2">
+            <div class="flex justify-between">
+              <span class="text-sm text-muted-foreground">Code:</span>
+              <span class="font-mono font-medium">{{ selectedDeclaration.uniqueCode }}</span>
             </div>
-
-            <div class="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-              <p class="text-sm text-purple-700">
-                This will generate an official PDF receipt and notify the applicant via email and SMS.
-              </p>
+            <div class="flex justify-between">
+              <span class="text-sm text-muted-foreground">Applicant:</span>
+              <span class="font-medium">{{ selectedDeclaration.applicant.fullName }}</span>
             </div>
-
-            <div v-if="generateError" class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-              {{ generateError }}
+            <div class="flex justify-between">
+              <span class="text-sm text-muted-foreground">Ghana Card:</span>
+              <span>{{ selectedDeclaration.applicant.ghanaCardNumber }}</span>
             </div>
           </div>
 
-          <div class="p-6 border-t flex justify-end gap-3">
-            <button class="px-4 py-2 text-sm border rounded-lg hover:bg-muted" @click="showGenerateModal = false">Cancel</button>
-            <button
-              :disabled="isGenerating"
-              class="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
-              @click="generateReceipt"
-            >
-              {{ isGenerating ? 'Generating...' : 'Generate Receipt' }}
-            </button>
-          </div>
+          <Alert>
+            <AlertDescription>
+              This will generate an official PDF receipt and notify the applicant via email and SMS.
+            </AlertDescription>
+          </Alert>
+
+          <Alert v-if="generateError" variant="destructive">
+            <AlertDescription>{{ generateError }}</AlertDescription>
+          </Alert>
         </div>
-      </div>
-    </Teleport>
+
+        <DialogFooter>
+          <Button variant="outline" @click="showGenerateModal = false">Cancel</Button>
+          <Button :disabled="isGenerating" @click="generateReceipt">
+            {{ isGenerating ? 'Generating...' : 'Generate Receipt' }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>

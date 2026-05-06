@@ -45,79 +45,69 @@ const handleSubmit = async () => {
 
 <template>
   <div class="w-full max-w-md">
-    <div class="bg-card rounded-lg shadow-lg border p-8">
-      <div class="text-center mb-8">
-        <h2 class="text-2xl font-bold text-foreground">Welcome back</h2>
-        <p class="text-muted-foreground mt-2">Sign in to your account</p>
-      </div>
+    <Card>
+      <CardHeader class="text-center">
+        <CardTitle class="text-2xl">Welcome back</CardTitle>
+        <CardDescription>Sign in to your account</CardDescription>
+      </CardHeader>
 
-      <form @submit.prevent="handleSubmit" class="space-y-6">
-        <!-- Error Alert -->
-        <div
-          v-if="error"
-          class="p-4 rounded-md bg-destructive/10 text-destructive text-sm"
-        >
-          {{ error }}
-        </div>
+      <CardContent>
+        <form @submit.prevent="handleSubmit" class="space-y-6">
+          <!-- Error Alert -->
+          <Alert v-if="error" variant="destructive">
+            <AlertDescription>{{ error }}</AlertDescription>
+          </Alert>
 
-        <!-- Email Field -->
-        <div class="space-y-2">
-          <label for="email" class="text-sm font-medium text-foreground">
-            Email address
-          </label>
-          <input
-            id="email"
-            v-model="form.email"
-            type="email"
-            required
-            autocomplete="email"
-            class="w-full px-4 py-2 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            placeholder="you@example.com"
-          />
-        </div>
-
-        <!-- Password Field -->
-        <div class="space-y-2">
-          <div class="flex items-center justify-between">
-            <label for="password" class="text-sm font-medium text-foreground">
-              Password
-            </label>
-            <NuxtLink
-              to="/auth/forgot-password"
-              class="text-sm text-primary hover:underline"
-            >
-              Forgot password?
-            </NuxtLink>
+          <!-- Email Field -->
+          <div class="space-y-2">
+            <Label for="email">Email address</Label>
+            <Input
+              id="email"
+              v-model="form.email"
+              type="email"
+              required
+              autocomplete="email"
+              placeholder="you@example.com"
+            />
           </div>
-          <input
-            id="password"
-            v-model="form.password"
-            type="password"
-            required
-            autocomplete="current-password"
-            class="w-full px-4 py-2 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            placeholder="Enter your password"
-          />
-        </div>
 
-        <!-- Submit Button -->
-        <button
-          type="submit"
-          :disabled="isLoading"
-          class="w-full py-2 px-4 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          <span v-if="isLoading">Signing in...</span>
-          <span v-else>Sign in</span>
-        </button>
-      </form>
+          <!-- Password Field -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <Label for="password">Password</Label>
+              <NuxtLink
+                to="/auth/forgot-password"
+                class="text-sm text-primary hover:underline"
+              >
+                Forgot password?
+              </NuxtLink>
+            </div>
+            <Input
+              id="password"
+              v-model="form.password"
+              type="password"
+              required
+              autocomplete="current-password"
+              placeholder="Enter your password"
+            />
+          </div>
 
-      <!-- Register Link -->
-      <p class="mt-6 text-center text-sm text-muted-foreground">
-        Don't have an account?
-        <NuxtLink to="/auth/register" class="text-primary font-medium hover:underline">
-          Create account
-        </NuxtLink>
-      </p>
-    </div>
+          <!-- Submit Button -->
+          <Button type="submit" class="w-full" :disabled="isLoading">
+            <span v-if="isLoading">Signing in...</span>
+            <span v-else>Sign in</span>
+          </Button>
+        </form>
+      </CardContent>
+
+      <CardFooter class="flex-col gap-4">
+        <p class="text-center text-sm text-muted-foreground">
+          Don't have an account?
+          <NuxtLink to="/auth/register" class="text-primary font-medium hover:underline">
+            Create account
+          </NuxtLink>
+        </p>
+      </CardFooter>
+    </Card>
   </div>
 </template>

@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { useAuthStore } from "~/stores/auth";
-
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
 });
 
-const authStore = useAuthStore();
+const { getAuthHeaders } = useAuth();
 
 interface User {
   id: string;
@@ -60,7 +58,7 @@ const fetchUsers = async () => {
     if (selectedStatus.value) params.append("status", selectedStatus.value);
 
     const response = await $fetch(`/api/admin/users?${params}`, {
-      headers: authStore.getAuthHeaders(),
+      headers: getAuthHeaders(),
     });
 
     if (response.success) {
@@ -77,7 +75,7 @@ const fetchUsers = async () => {
 const fetchRoles = async () => {
   try {
     const response = await $fetch("/api/admin/roles", {
-      headers: authStore.getAuthHeaders(),
+      headers: getAuthHeaders(),
     });
 
     if (response.success) {
@@ -113,7 +111,7 @@ const saveUserRoles = async () => {
   try {
     const response = await $fetch(`/api/admin/users/${editingUser.value.id}/roles`, {
       method: "PUT",
-      headers: authStore.getAuthHeaders(),
+      headers: getAuthHeaders(),
       body: { roleIds: selectedRoles.value },
     });
 
@@ -132,7 +130,7 @@ const toggleUserStatus = async (user: User) => {
   try {
     const response = await $fetch(`/api/admin/users/${user.id}/status`, {
       method: "PATCH",
-      headers: authStore.getAuthHeaders(),
+      headers: getAuthHeaders(),
       body: { isActive: !user.isActive },
     });
 
@@ -168,136 +166,115 @@ const handlePageChange = (page: number) => {
 
 <template>
   <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-foreground">User Management</h1>
-        <p class="text-muted-foreground mt-1">
-          Manage system users and their roles
-        </p>
-      </div>
-    </div>
+    <PageHeader title="User Management" description="Manage system users and their roles" />
 
     <!-- Filters -->
-    <div class="bg-card border rounded-lg p-4">
-      <div class="flex flex-col md:flex-row gap-4">
-        <div class="flex-1">
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Search by email or name..."
-            class="w-full px-4 py-2 border rounded-md bg-background text-foreground"
-            @keyup.enter="handleSearch"
-          />
+    <Card>
+      <CardContent class="pt-6">
+        <div class="flex flex-col md:flex-row gap-4">
+          <div class="flex-1">
+            <Input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search by email or name..."
+              @keyup.enter="handleSearch"
+            />
+          </div>
+          <Select v-model="selectedRole" @update:model-value="handleSearch">
+            <SelectTrigger class="w-[180px]">
+              <SelectValue placeholder="All Roles" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Roles</SelectItem>
+              <SelectItem v-for="role in roles" :key="role.id" :value="role.name">
+                {{ role.name }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <Select v-model="selectedStatus" @update:model-value="handleSearch">
+            <SelectTrigger class="w-[180px]">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button @click="handleSearch">Search</Button>
         </div>
-        <select
-          v-model="selectedRole"
-          class="px-4 py-2 border rounded-md bg-background text-foreground"
-          @change="handleSearch"
-        >
-          <option value="">All Roles</option>
-          <option v-for="role in roles" :key="role.id" :value="role.name">
-            {{ role.name }}
-          </option>
-        </select>
-        <select
-          v-model="selectedStatus"
-          class="px-4 py-2 border rounded-md bg-background text-foreground"
-          @change="handleSearch"
-        >
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-        <button
-          class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          @click="handleSearch"
-        >
-          Search
-        </button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
 
     <!-- Loading -->
-    <div v-if="loading" class="flex justify-center py-12">
-      <div class="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
+    <div v-if="loading" class="space-y-3">
+      <Skeleton v-for="i in 5" :key="i" class="h-12 w-full rounded-lg" />
     </div>
 
     <!-- Users Table -->
-    <div v-else class="bg-card border rounded-lg overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead class="bg-muted/50">
-            <tr>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">User</th>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Roles</th>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Last Login</th>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Created</th>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="users.length === 0">
-              <td colspan="6" class="py-8 text-center text-muted-foreground">
-                No users found
-              </td>
-            </tr>
-            <tr v-for="user in users" :key="user.id" class="border-t">
-              <td class="py-3 px-4">
-                <div>
-                  <p class="text-sm font-medium text-foreground">{{ user.email }}</p>
-                  <p v-if="user.profile" class="text-xs text-muted-foreground">
-                    {{ user.profile.fullName }}
-                  </p>
-                </div>
-              </td>
-              <td class="py-3 px-4">
-                <div class="flex flex-wrap gap-1">
-                  <span
-                    v-for="role in user.roles"
-                    :key="role"
-                    class="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary"
-                  >
-                    {{ role }}
-                  </span>
-                </div>
-              </td>
-              <td class="py-3 px-4">
-                <span
-                  class="px-2 py-0.5 text-xs rounded-full"
-                  :class="user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+    <Card v-else>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>User</TableHead>
+            <TableHead>Roles</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Last Login</TableHead>
+            <TableHead>Created</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow v-if="users.length === 0">
+            <TableCell colspan="6" class="text-center py-8 text-muted-foreground">
+              No users found
+            </TableCell>
+          </TableRow>
+          <TableRow v-for="user in users" :key="user.id">
+            <TableCell>
+              <div>
+                <p class="text-sm font-medium text-foreground">{{ user.email }}</p>
+                <p v-if="user.profile" class="text-xs text-muted-foreground">
+                  {{ user.profile.fullName }}
+                </p>
+              </div>
+            </TableCell>
+            <TableCell>
+              <div class="flex flex-wrap gap-1">
+                <Badge v-for="role in user.roles" :key="role" variant="secondary">
+                  {{ role }}
+                </Badge>
+              </div>
+            </TableCell>
+            <TableCell>
+              <Badge :class="user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+                {{ user.isActive ? 'Active' : 'Inactive' }}
+              </Badge>
+            </TableCell>
+            <TableCell class="text-sm text-muted-foreground">
+              {{ formatDate(user.lastLoginAt) }}
+            </TableCell>
+            <TableCell class="text-sm text-muted-foreground">
+              {{ formatDate(user.createdAt) }}
+            </TableCell>
+            <TableCell>
+              <div class="flex items-center gap-2">
+                <Button variant="outline" size="sm" @click="openEditModal(user)">
+                  Edit Roles
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  :class="user.isActive ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'"
+                  @click="toggleUserStatus(user)"
                 >
-                  {{ user.isActive ? 'Active' : 'Inactive' }}
-                </span>
-              </td>
-              <td class="py-3 px-4 text-sm text-muted-foreground">
-                {{ formatDate(user.lastLoginAt) }}
-              </td>
-              <td class="py-3 px-4 text-sm text-muted-foreground">
-                {{ formatDate(user.createdAt) }}
-              </td>
-              <td class="py-3 px-4">
-                <div class="flex items-center gap-2">
-                  <button
-                    class="px-3 py-1 text-xs border rounded hover:bg-muted"
-                    @click="openEditModal(user)"
-                  >
-                    Edit Roles
-                  </button>
-                  <button
-                    class="px-3 py-1 text-xs border rounded hover:bg-muted"
-                    :class="user.isActive ? 'text-red-600' : 'text-green-600'"
-                    @click="toggleUserStatus(user)"
-                  >
-                    {{ user.isActive ? 'Deactivate' : 'Activate' }}
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                  {{ user.isActive ? 'Deactivate' : 'Activate' }}
+                </Button>
+              </div>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
 
       <!-- Pagination -->
       <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t">
@@ -305,39 +282,35 @@ const handlePageChange = (page: number) => {
           Showing {{ (currentPage - 1) * perPage + 1 }} to {{ Math.min(currentPage * perPage, totalUsers) }} of {{ totalUsers }} users
         </p>
         <div class="flex gap-2">
-          <button
-            class="px-3 py-1 text-sm border rounded hover:bg-muted disabled:opacity-50"
+          <Button
+            variant="outline"
+            size="sm"
             :disabled="currentPage === 1"
             @click="handlePageChange(currentPage - 1)"
           >
             Previous
-          </button>
-          <button
-            class="px-3 py-1 text-sm border rounded hover:bg-muted disabled:opacity-50"
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             :disabled="currentPage === totalPages"
             @click="handlePageChange(currentPage + 1)"
           >
             Next
-          </button>
+          </Button>
         </div>
       </div>
-    </div>
+    </Card>
 
     <!-- Edit Roles Modal -->
-    <div
-      v-if="showEditModal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      @click.self="closeEditModal"
-    >
-      <div class="bg-card border rounded-lg p-6 w-full max-w-md mx-4">
-        <h2 class="text-lg font-semibold text-foreground mb-4">
-          Edit User Roles
-        </h2>
-        <p class="text-sm text-muted-foreground mb-4">
-          {{ editingUser?.email }}
-        </p>
+    <Dialog :open="showEditModal" @update:open="(v: boolean) => { if (!v) closeEditModal() }">
+      <DialogContent class="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit User Roles</DialogTitle>
+          <DialogDescription>{{ editingUser?.email }}</DialogDescription>
+        </DialogHeader>
 
-        <div class="space-y-3 mb-6">
+        <div class="space-y-3">
           <label
             v-for="role in roles"
             :key="role.id"
@@ -358,22 +331,13 @@ const handlePageChange = (page: number) => {
           </label>
         </div>
 
-        <div class="flex justify-end gap-3">
-          <button
-            class="px-4 py-2 text-sm border rounded-md hover:bg-muted"
-            @click="closeEditModal"
-          >
-            Cancel
-          </button>
-          <button
-            class="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
-            :disabled="saving"
-            @click="saveUserRoles"
-          >
+        <DialogFooter>
+          <Button variant="outline" @click="closeEditModal">Cancel</Button>
+          <Button :disabled="saving" @click="saveUserRoles">
             {{ saving ? 'Saving...' : 'Save Changes' }}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>

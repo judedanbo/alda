@@ -3,6 +3,8 @@ import prisma from "~/server/utils/prisma";
 import { validateBody, registerSchema } from "~/server/utils/validators";
 import { generateTokenPair, getTokenExpiry } from "~/server/utils/jwt";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { sendWelcomeEmail, sendVerificationEmail } from "~/server/services/email.service";
+import { generateVerificationToken } from "~/server/utils/code-generator";
 
 export default defineEventHandler(async (event) => {
   // Validate request body
@@ -95,7 +97,26 @@ export default defineEventHandler(async (event) => {
     newValues: { email: user.email, phone: user.phone },
   });
 
-  // TODO: Send verification email
+  // Create email verification token
+  const verificationToken = generateVerificationToken();
+  const verificationExpiry = new Date();
+  verificationExpiry.setHours(verificationExpiry.getHours() + 24);
+
+  await prisma.emailVerificationToken.create({
+    data: {
+      userId: user.id,
+      token: verificationToken,
+      expiresAt: verificationExpiry,
+    },
+  });
+
+  // Send emails (non-blocking)
+  try {
+    await sendWelcomeEmail(user.email, user.email);
+    await sendVerificationEmail(user.email, user.email, verificationToken);
+  } catch (e) {
+    console.error("Failed to send registration emails:", e);
+  }
 
   return {
     success: true,

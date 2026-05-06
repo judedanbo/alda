@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { useAuthStore } from "~/stores/auth";
-
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
 });
 
-const authStore = useAuthStore();
+const { getAuthHeaders } = useAuth();
 
 interface Declaration {
   id: string;
@@ -79,7 +77,7 @@ const fetchDeclarations = async () => {
     if (dateTo.value) params.append("dateTo", dateTo.value);
 
     const response = await $fetch(`/api/admin/declarations?${params}`, {
-      headers: authStore.getAuthHeaders(),
+      headers: getAuthHeaders(),
     });
 
     if (response.success) {
@@ -96,18 +94,6 @@ const fetchDeclarations = async () => {
 await fetchDeclarations();
 
 const totalPages = computed(() => Math.ceil(total.value / limit));
-
-const getStatusColor = (status: string) => {
-  const colors: Record<string, string> = {
-    PENDING: "bg-yellow-100 text-yellow-800",
-    SUBMITTED: "bg-blue-100 text-blue-800",
-    UNDER_REVIEW: "bg-orange-100 text-orange-800",
-    APPROVED: "bg-green-100 text-green-800",
-    REJECTED: "bg-red-100 text-red-800",
-    SEALED: "bg-purple-100 text-purple-800",
-  };
-  return colors[status] || "bg-gray-100 text-gray-800";
-};
 
 const formatDate = (dateString: string | null) => {
   if (!dateString) return "-";
@@ -176,7 +162,7 @@ const submitReview = async () => {
   try {
     await $fetch("/api/reviews", {
       method: "POST",
-      headers: authStore.getAuthHeaders(),
+      headers: getAuthHeaders(),
       body: {
         declarationId: selectedDeclaration.value.id,
         status: reviewStatus.value,
@@ -212,157 +198,121 @@ const statuses = [
 
 <template>
   <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-foreground">All Declarations</h1>
-        <p class="text-muted-foreground mt-1">
-          View and manage all asset declarations
-        </p>
-      </div>
-      <div class="text-sm text-muted-foreground">
-        Total: {{ total }} declarations
-      </div>
-    </div>
+    <PageHeader title="All Declarations" description="View and manage all asset declarations">
+      <template #actions>
+        <span class="text-sm text-muted-foreground">Total: {{ total }} declarations</span>
+      </template>
+    </PageHeader>
 
     <!-- Filters -->
-    <div class="bg-card border rounded-lg p-4">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search by code or name..."
-          class="px-4 py-2 border rounded-md bg-background text-foreground"
-          @keyup.enter="handleSearch"
-        />
-        <select
-          v-model="selectedStatus"
-          class="px-4 py-2 border rounded-md bg-background text-foreground"
-          @change="handleSearch"
-        >
-          <option v-for="status in statuses" :key="status.value" :value="status.value">
-            {{ status.label }}
-          </option>
-        </select>
-        <input
-          v-model="dateFrom"
-          type="date"
-          class="px-4 py-2 border rounded-md bg-background text-foreground"
-          placeholder="From date"
-          @change="handleSearch"
-        />
-        <input
-          v-model="dateTo"
-          type="date"
-          class="px-4 py-2 border rounded-md bg-background text-foreground"
-          placeholder="To date"
-          @change="handleSearch"
-        />
-        <div class="flex gap-2">
-          <button
-            class="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-            @click="handleSearch"
-          >
-            Search
-          </button>
-          <button
-            class="px-4 py-2 border rounded-md hover:bg-muted"
-            @click="clearFilters"
-          >
-            Clear
-          </button>
+    <Card>
+      <CardContent class="pt-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <Input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search by code or name..."
+            @keyup.enter="handleSearch"
+          />
+          <Select v-model="selectedStatus" @update:model-value="handleSearch">
+            <SelectTrigger>
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="status in statuses" :key="status.value" :value="status.value || 'all'">
+                {{ status.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <Input
+            v-model="dateFrom"
+            type="date"
+            placeholder="From date"
+            @change="handleSearch"
+          />
+          <Input
+            v-model="dateTo"
+            type="date"
+            placeholder="To date"
+            @change="handleSearch"
+          />
+          <div class="flex gap-2">
+            <Button class="flex-1" @click="handleSearch">Search</Button>
+            <Button variant="outline" @click="clearFilters">Clear</Button>
+          </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
 
     <!-- Loading -->
-    <div v-if="loading" class="flex justify-center py-12">
-      <div class="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
+    <div v-if="loading" class="space-y-3">
+      <Skeleton v-for="i in 5" :key="i" class="h-12 w-full rounded-lg" />
     </div>
 
     <!-- Empty State -->
-    <div
-      v-else-if="declarations.length === 0"
-      class="text-center py-12 bg-card rounded-lg border"
-    >
-      <svg class="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
-      <h3 class="text-lg font-medium text-foreground mb-2">No declarations found</h3>
-      <p class="text-muted-foreground">
-        Try adjusting your search filters.
-      </p>
-    </div>
+    <Card v-else-if="declarations.length === 0" class="py-12">
+      <CardContent class="text-center">
+        <svg class="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h3 class="text-lg font-medium text-foreground mb-2">No declarations found</h3>
+        <p class="text-muted-foreground">Try adjusting your search filters.</p>
+      </CardContent>
+    </Card>
 
     <!-- Declarations Table -->
-    <div v-else class="bg-card border rounded-lg overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead class="bg-muted/50">
-            <tr>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Code</th>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Applicant</th>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Institution</th>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Submitted</th>
-              <th class="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="declaration in declarations" :key="declaration.id" class="border-t hover:bg-muted/30">
-              <td class="py-3 px-4">
-                <span class="font-mono text-sm font-medium text-primary">
-                  {{ declaration.uniqueCode }}
-                </span>
-              </td>
-              <td class="py-3 px-4">
-                <div>
-                  <p class="text-sm font-medium text-foreground">{{ declaration.applicant.fullName }}</p>
-                  <p class="text-xs text-muted-foreground">{{ declaration.applicant.ghanaCardNumber }}</p>
-                </div>
-              </td>
-              <td class="py-3 px-4 text-sm text-muted-foreground">
-                {{ declaration.applicant.institution?.name || '-' }}
-              </td>
-              <td class="py-3 px-4">
-                <span
-                  class="px-2 py-0.5 text-xs rounded-full"
-                  :class="getStatusColor(declaration.status)"
-                >
-                  {{ declaration.status }}
-                </span>
-              </td>
-              <td class="py-3 px-4 text-sm text-muted-foreground">
-                {{ formatDate(declaration.submittedAt) }}
-              </td>
-              <td class="py-3 px-4">
-                <div class="flex items-center gap-2">
-                  <button
-                    class="px-3 py-1 text-xs border rounded hover:bg-muted"
-                    @click="openDetailModal(declaration)"
-                  >
-                    View
-                  </button>
-                  <template v-if="canReview(declaration)">
-                    <button
-                      class="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
-                      @click="openReviewModal(declaration, 'APPROVED')"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      class="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
-                      @click="openReviewModal(declaration, 'REJECTED')"
-                    >
-                      Reject
-                    </button>
-                  </template>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <Card v-else>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Code</TableHead>
+            <TableHead>Applicant</TableHead>
+            <TableHead>Institution</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Submitted</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow v-for="declaration in declarations" :key="declaration.id">
+            <TableCell>
+              <span class="font-mono text-sm font-medium text-primary">
+                {{ declaration.uniqueCode }}
+              </span>
+            </TableCell>
+            <TableCell>
+              <div>
+                <p class="text-sm font-medium text-foreground">{{ declaration.applicant.fullName }}</p>
+                <p class="text-xs text-muted-foreground">{{ declaration.applicant.ghanaCardNumber }}</p>
+              </div>
+            </TableCell>
+            <TableCell class="text-sm text-muted-foreground">
+              {{ declaration.applicant.institution?.name || '-' }}
+            </TableCell>
+            <TableCell>
+              <StatusBadge :status="declaration.status" />
+            </TableCell>
+            <TableCell class="text-sm text-muted-foreground">
+              {{ formatDate(declaration.submittedAt) }}
+            </TableCell>
+            <TableCell>
+              <div class="flex items-center gap-2">
+                <Button variant="outline" size="sm" @click="openDetailModal(declaration)">
+                  View
+                </Button>
+                <template v-if="canReview(declaration)">
+                  <Button size="sm" class="bg-green-600 hover:bg-green-700" @click="openReviewModal(declaration, 'APPROVED')">
+                    Approve
+                  </Button>
+                  <Button variant="destructive" size="sm" @click="openReviewModal(declaration, 'REJECTED')">
+                    Reject
+                  </Button>
+                </template>
+              </div>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
 
       <!-- Pagination -->
       <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t">
@@ -370,45 +320,40 @@ const statuses = [
           Showing {{ (currentPage - 1) * limit + 1 }} to {{ Math.min(currentPage * limit, total) }} of {{ total }}
         </p>
         <div class="flex gap-2">
-          <button
-            class="px-3 py-1 text-sm border rounded hover:bg-muted disabled:opacity-50"
+          <Button
+            variant="outline"
+            size="sm"
             :disabled="currentPage === 1"
             @click="handlePageChange(currentPage - 1)"
           >
             Previous
-          </button>
-          <button
-            class="px-3 py-1 text-sm border rounded hover:bg-muted disabled:opacity-50"
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             :disabled="currentPage === totalPages"
             @click="handlePageChange(currentPage + 1)"
           >
             Next
-          </button>
+          </Button>
         </div>
       </div>
-    </div>
+    </Card>
 
     <!-- Detail Modal -->
-    <div
-      v-if="showDetailModal && selectedDeclaration"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      @click.self="closeDetailModal"
-    >
-      <div class="bg-card border rounded-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-        <div class="p-6 border-b flex items-center justify-between">
-          <div>
-            <h2 class="text-lg font-semibold text-foreground">Declaration Details</h2>
-            <p class="text-sm text-muted-foreground font-mono">{{ selectedDeclaration.uniqueCode }}</p>
+    <Dialog :open="showDetailModal && !!selectedDeclaration" @update:open="(v: boolean) => { if (!v) closeDetailModal() }">
+      <DialogScrollContent v-if="selectedDeclaration" class="max-w-2xl">
+        <DialogHeader>
+          <div class="flex items-center justify-between">
+            <div>
+              <DialogTitle>Declaration Details</DialogTitle>
+              <DialogDescription class="font-mono">{{ selectedDeclaration.uniqueCode }}</DialogDescription>
+            </div>
+            <StatusBadge :status="selectedDeclaration.status" />
           </div>
-          <span
-            class="px-3 py-1 text-sm rounded-full"
-            :class="getStatusColor(selectedDeclaration.status)"
-          >
-            {{ selectedDeclaration.status }}
-          </span>
-        </div>
+        </DialogHeader>
 
-        <div class="p-6 space-y-6">
+        <div class="space-y-6">
           <!-- Applicant Info -->
           <div>
             <h3 class="text-sm font-medium text-muted-foreground mb-3">Applicant Information</h3>
@@ -518,50 +463,35 @@ const statuses = [
           <div v-if="canReview(selectedDeclaration)" class="pt-4 border-t">
             <h3 class="text-sm font-medium text-muted-foreground mb-3">Review Actions</h3>
             <div class="flex gap-3">
-              <button
-                class="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                @click="openReviewModal(selectedDeclaration, 'APPROVED')"
-              >
+              <Button class="flex-1 bg-green-600 hover:bg-green-700" @click="openReviewModal(selectedDeclaration, 'APPROVED')">
                 Approve Declaration
-              </button>
-              <button
-                class="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-                @click="openReviewModal(selectedDeclaration, 'REJECTED')"
-              >
+              </Button>
+              <Button variant="destructive" class="flex-1" @click="openReviewModal(selectedDeclaration, 'REJECTED')">
                 Reject Declaration
-              </button>
+              </Button>
             </div>
           </div>
         </div>
 
-        <div class="p-6 border-t flex justify-end">
-          <button
-            class="px-4 py-2 text-sm border rounded-md hover:bg-muted"
-            @click="closeDetailModal"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+        <DialogFooter>
+          <Button variant="outline" @click="closeDetailModal">Close</Button>
+        </DialogFooter>
+      </DialogScrollContent>
+    </Dialog>
 
     <!-- Review Modal -->
-    <div
-      v-if="showReviewModal && selectedDeclaration"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      @click.self="closeReviewModal"
-    >
-      <div class="bg-card border rounded-lg w-full max-w-lg mx-4">
-        <div class="p-6 border-b">
-          <h2 class="text-lg font-semibold text-foreground">
+    <Dialog :open="showReviewModal && !!selectedDeclaration" @update:open="(v: boolean) => { if (!v) closeReviewModal() }">
+      <DialogContent v-if="selectedDeclaration" class="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>
             {{ reviewStatus === 'APPROVED' ? 'Approve' : 'Reject' }} Declaration
-          </h2>
-          <p class="text-sm text-muted-foreground mt-1">
+          </DialogTitle>
+          <DialogDescription>
             {{ reviewStatus === 'APPROVED' ? 'Confirm approval of this declaration' : 'Provide reason for rejection' }}
-          </p>
-        </div>
+          </DialogDescription>
+        </DialogHeader>
 
-        <div class="p-6 space-y-4">
+        <div class="space-y-4">
           <div class="bg-muted/30 rounded-lg p-4 space-y-2">
             <div class="flex justify-between">
               <span class="text-sm text-muted-foreground">Code:</span>
@@ -605,46 +535,38 @@ const statuses = [
           </div>
 
           <div v-if="reviewStatus === 'REJECTED'">
-            <label class="block text-sm font-medium text-foreground mb-1">
+            <Label for="rejection-reason">
               Rejection Reason <span class="text-red-500">*</span>
-            </label>
-            <textarea
+            </Label>
+            <Textarea
+              id="rejection-reason"
               v-model="rejectionReason"
-              rows="3"
+              :rows="3"
               placeholder="Explain why this declaration is being rejected..."
-              class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground"
+              class="mt-1"
             />
             <p class="text-xs text-muted-foreground mt-1">
               A new unique code will be issued for resubmission.
             </p>
           </div>
 
-          <div v-if="reviewError" class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-            {{ reviewError }}
-          </div>
+          <Alert v-if="reviewError" variant="destructive">
+            <AlertDescription>{{ reviewError }}</AlertDescription>
+          </Alert>
         </div>
 
-        <div class="p-6 border-t flex justify-end gap-3">
-          <button
-            class="px-4 py-2 text-sm border rounded-md hover:bg-muted"
-            @click="closeReviewModal"
-          >
-            Cancel
-          </button>
-          <button
+        <DialogFooter>
+          <Button variant="outline" @click="closeReviewModal">Cancel</Button>
+          <Button
             :disabled="isReviewing"
-            :class="[
-              'px-4 py-2 text-sm rounded-md disabled:opacity-50',
-              reviewStatus === 'APPROVED'
-                ? 'bg-green-600 text-white hover:bg-green-700'
-                : 'bg-red-600 text-white hover:bg-red-700'
-            ]"
+            :class="reviewStatus === 'APPROVED' ? 'bg-green-600 hover:bg-green-700' : ''"
+            :variant="reviewStatus === 'REJECTED' ? 'destructive' : 'default'"
             @click="submitReview"
           >
             {{ isReviewing ? 'Processing...' : (reviewStatus === 'APPROVED' ? 'Confirm Approval' : 'Confirm Rejection') }}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>

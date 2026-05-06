@@ -374,3 +374,42 @@ export async function sendDeclarationStatusEmail(
     },
   });
 }
+
+/**
+ * Send email verification email
+ */
+export async function sendVerificationEmail(
+  to: string,
+  name: string,
+  token: string
+): Promise<boolean> {
+  const config = useRuntimeConfig();
+  return sendEmail({
+    to,
+    subject: "Verify Your Email Address",
+    template: "email-verification",
+    data: {
+      name,
+      verificationUrl: `${config.public.appUrl}/auth/verify-email?token=${token}`,
+    },
+  });
+}
+
+/**
+ * Send contact acknowledgment email
+ */
+export async function sendContactAcknowledgment(
+  to: string,
+  name: string,
+  category: string
+): Promise<boolean> {
+  return sendEmail({
+    to,
+    subject: "We Received Your Inquiry",
+    template: "welcome",
+    data: {
+      name,
+      loginUrl: "",
+    },
+  });
+}

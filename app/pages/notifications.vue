@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useNotificationStore } from "~/stores/notifications";
-import { useAuthStore } from "~/stores/auth";
 
 definePageMeta({
   layout: "dashboard",
@@ -8,7 +7,7 @@ definePageMeta({
 });
 
 const notificationStore = useNotificationStore();
-const authStore = useAuthStore();
+const { hasUnread, markAsRead, markAllAsRead } = useNotifications();
 
 const showUnreadOnly = ref(false);
 const currentPage = ref(1);
@@ -62,11 +61,11 @@ const getNotificationIcon = (type: string) => {
 };
 
 const handleMarkAsRead = async (notificationId: string) => {
-  await notificationStore.markAsRead(notificationId);
+  await markAsRead(notificationId);
 };
 
 const handleMarkAllAsRead = async () => {
-  await notificationStore.markAllAsRead();
+  await markAllAsRead();
 };
 
 const totalPages = computed(() => Math.ceil(notificationStore.total / limit));
@@ -75,135 +74,149 @@ const totalPages = computed(() => Math.ceil(notificationStore.total / limit));
 <template>
   <div class="max-w-3xl mx-auto">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-8">
-      <div>
-        <h1 class="text-2xl font-bold text-foreground">Notifications</h1>
-        <p class="text-muted-foreground mt-1">
-          {{ notificationStore.unreadCount }} unread notification{{ notificationStore.unreadCount !== 1 ? 's' : '' }}
-        </p>
-      </div>
-      <button
-        v-if="notificationStore.hasUnread"
-        class="text-sm text-primary hover:underline"
-        @click="handleMarkAllAsRead"
-      >
-        Mark all as read
-      </button>
-    </div>
+    <PageHeader
+      title="Notifications"
+      :description="`${notificationStore.unreadCount} unread notification${notificationStore.unreadCount !== 1 ? 's' : ''}`"
+    >
+      <template #actions>
+        <Button
+          v-if="hasUnread"
+          variant="outline"
+          size="sm"
+          @click="handleMarkAllAsRead"
+        >
+          Mark all as read
+        </Button>
+      </template>
+    </PageHeader>
 
     <!-- Filters -->
-    <div class="mb-6">
-      <label class="inline-flex items-center gap-2 cursor-pointer">
-        <input
-          v-model="showUnreadOnly"
-          type="checkbox"
-          class="rounded border-gray-300 text-primary focus:ring-primary"
-        />
-        <span class="text-sm text-foreground">Show unread only</span>
-      </label>
+    <div class="mb-6 flex items-center gap-2">
+      <Switch
+        :checked="showUnreadOnly"
+        @update:checked="showUnreadOnly = $event"
+      />
+      <Label class="cursor-pointer" @click="showUnreadOnly = !showUnreadOnly">
+        Show unread only
+      </Label>
     </div>
 
     <!-- Loading -->
-    <div v-if="notificationStore.loading" class="text-center py-12">
-      <div class="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto" />
+    <div v-if="notificationStore.loading" class="space-y-3">
+      <div v-for="i in 4" :key="i" class="flex gap-4 p-4">
+        <Skeleton class="w-10 h-10 rounded-full shrink-0" />
+        <div class="flex-1 space-y-2">
+          <Skeleton class="h-4 w-3/4" />
+          <Skeleton class="h-3 w-full" />
+          <Skeleton class="h-3 w-1/4" />
+        </div>
+      </div>
     </div>
 
     <!-- Empty State -->
-    <div
+    <Card
       v-else-if="notificationStore.notifications.length === 0"
-      class="text-center py-12 bg-card rounded-lg border"
+      class="py-12"
     >
-      <svg class="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-      </svg>
-      <h3 class="text-lg font-medium text-foreground mb-2">No notifications</h3>
-      <p class="text-muted-foreground">
-        {{ showUnreadOnly ? 'No unread notifications' : 'You\'re all caught up!' }}
-      </p>
-    </div>
+      <CardContent class="text-center">
+        <svg class="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+        <h3 class="text-lg font-medium text-foreground mb-2">No notifications</h3>
+        <p class="text-muted-foreground">
+          {{ showUnreadOnly ? 'No unread notifications' : 'You\'re all caught up!' }}
+        </p>
+      </CardContent>
+    </Card>
 
     <!-- Notifications List -->
     <div v-else class="space-y-2">
-      <div
+      <Card
         v-for="notification in notificationStore.notifications"
         :key="notification.id"
-        class="p-4 bg-card rounded-lg border transition-colors"
         :class="{ 'bg-primary/5 border-primary/20': !notification.readAt }"
       >
-        <div class="flex gap-4">
-          <!-- Icon -->
-          <div
-            class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-            :class="notification.readAt ? 'bg-muted' : 'bg-primary/10'"
-          >
-            <svg
-              class="w-5 h-5"
-              :class="notification.readAt ? 'text-muted-foreground' : 'text-primary'"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+        <CardContent class="p-4">
+          <div class="flex gap-4">
+            <!-- Icon -->
+            <div
+              class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+              :class="notification.readAt ? 'bg-muted' : 'bg-primary/10'"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                :d="getNotificationIcon(notification.type)"
-              />
-            </svg>
-          </div>
-
-          <!-- Content -->
-          <div class="flex-1 min-w-0">
-            <div class="flex items-start justify-between gap-2">
-              <h3
-                class="font-medium"
-                :class="notification.readAt ? 'text-foreground' : 'text-foreground'"
+              <svg
+                class="w-5 h-5"
+                :class="notification.readAt ? 'text-muted-foreground' : 'text-primary'"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                {{ notification.title }}
-              </h3>
-              <time class="text-xs text-muted-foreground whitespace-nowrap">
-                {{ formatDate(notification.createdAt) }}
-              </time>
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  :d="getNotificationIcon(notification.type)"
+                />
+              </svg>
             </div>
-            <p class="text-sm text-muted-foreground mt-1">
-              {{ notification.message }}
-            </p>
 
-            <!-- Actions -->
-            <div v-if="!notification.readAt" class="mt-2">
-              <button
-                class="text-xs text-primary hover:underline"
-                @click="handleMarkAsRead(notification.id)"
-              >
-                Mark as read
-              </button>
+            <!-- Content -->
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <h3 class="font-medium text-foreground">
+                    {{ notification.title }}
+                  </h3>
+                  <Badge v-if="!notification.readAt" variant="default" class="text-xs">
+                    New
+                  </Badge>
+                </div>
+                <time class="text-xs text-muted-foreground whitespace-nowrap">
+                  {{ formatDate(notification.createdAt) }}
+                </time>
+              </div>
+              <p class="text-sm text-muted-foreground mt-1">
+                {{ notification.message }}
+              </p>
+
+              <!-- Actions -->
+              <div v-if="!notification.readAt" class="mt-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  @click="handleMarkAsRead(notification.id)"
+                >
+                  Mark as read
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       <!-- Pagination -->
       <div
         v-if="totalPages > 1"
         class="flex items-center justify-center gap-2 mt-6 pt-6 border-t"
       >
-        <button
+        <Button
+          variant="outline"
+          size="sm"
           :disabled="currentPage <= 1"
-          class="px-3 py-1 rounded border disabled:opacity-50"
           @click="currentPage--"
         >
           Previous
-        </button>
+        </Button>
         <span class="text-sm text-muted-foreground">
           Page {{ currentPage }} of {{ totalPages }}
         </span>
-        <button
+        <Button
+          variant="outline"
+          size="sm"
           :disabled="currentPage >= totalPages"
-          class="px-3 py-1 rounded border disabled:opacity-50"
           @click="currentPage++"
         >
           Next
-        </button>
+        </Button>
       </div>
     </div>
   </div>

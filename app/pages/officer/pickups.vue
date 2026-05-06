@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { useAuthStore } from "~/stores/auth";
-
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
 });
 
-const authStore = useAuthStore();
+const { getAuthHeaders } = useAuth();
 
 interface Pickup {
   id: string;
@@ -53,7 +51,7 @@ const fetchPendingPickups = async () => {
     }
 
     const response = await $fetch(`/api/pickup/pending?${query}`, {
-      headers: authStore.getAuthHeaders(),
+      headers: getAuthHeaders(),
     });
 
     if (response.success) {
@@ -86,7 +84,7 @@ const recordPickup = async () => {
   try {
     await $fetch(`/api/pickup/${selectedPickup.value.declaration.id}`, {
       method: "PATCH",
-      headers: authStore.getAuthHeaders(),
+      headers: getAuthHeaders(),
     });
 
     showPickupModal.value = false;
@@ -115,156 +113,155 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-foreground">Manage Pickups</h1>
-        <p class="text-muted-foreground mt-1">Record receipt pickups</p>
-      </div>
-      <NuxtLink to="/officer/dashboard" class="text-sm text-primary hover:underline">Back to Dashboard</NuxtLink>
-    </div>
+    <PageHeader title="Manage Pickups" description="Record receipt pickups">
+      <template #actions>
+        <Button variant="ghost" as-child>
+          <NuxtLink to="/officer/dashboard">Back to Dashboard</NuxtLink>
+        </Button>
+      </template>
+    </PageHeader>
 
     <!-- Search -->
-    <div class="bg-card border rounded-lg p-4">
-      <input
-        v-model="search"
-        type="text"
-        placeholder="Search by name or receipt number..."
-        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-      />
-    </div>
+    <Card>
+      <CardContent class="p-4">
+        <Input
+          v-model="search"
+          type="text"
+          placeholder="Search by name or receipt number..."
+        />
+      </CardContent>
+    </Card>
 
     <!-- Loading -->
-    <div v-if="loading" class="flex justify-center py-12">
-      <div class="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
-    </div>
+    <Card v-if="loading">
+      <CardContent class="p-6">
+        <div class="space-y-4">
+          <Skeleton class="h-8 w-full" />
+          <Skeleton class="h-8 w-full" />
+          <Skeleton class="h-8 w-full" />
+        </div>
+      </CardContent>
+    </Card>
 
     <!-- Empty State -->
-    <div v-else-if="pendingPickups.length === 0" class="text-center py-12 bg-card rounded-lg border">
-      <svg class="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-      </svg>
-      <h3 class="text-lg font-medium text-foreground mb-2">No pending pickups</h3>
-      <p class="text-muted-foreground">All receipts have been picked up.</p>
-    </div>
+    <Card v-else-if="pendingPickups.length === 0">
+      <CardContent class="text-center py-12">
+        <svg class="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+        </svg>
+        <h3 class="text-lg font-medium text-foreground mb-2">No pending pickups</h3>
+        <p class="text-muted-foreground">All receipts have been picked up.</p>
+      </CardContent>
+    </Card>
 
     <!-- Pickups Table -->
-    <div v-else class="bg-card border rounded-lg overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead class="bg-muted/50">
-            <tr>
-              <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Receipt</th>
-              <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Applicant</th>
-              <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Authorized Person</th>
-              <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Scheduled</th>
-              <th class="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Action</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y">
-            <tr v-for="pickup in pendingPickups" :key="pickup.id" class="hover:bg-muted/30">
-              <td class="px-4 py-3">
+    <Card v-else>
+      <CardContent class="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Receipt</TableHead>
+              <TableHead>Applicant</TableHead>
+              <TableHead>Authorized Person</TableHead>
+              <TableHead>Scheduled</TableHead>
+              <TableHead class="text-right">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="pickup in pendingPickups" :key="pickup.id" class="hover:bg-muted/30">
+              <TableCell>
                 <span class="font-mono text-sm font-medium text-primary">{{ pickup.declaration.receipts[0]?.receiptNumber }}</span>
                 <p class="text-xs text-muted-foreground">{{ pickup.declaration.uniqueCode }}</p>
-              </td>
-              <td class="px-4 py-3">
+              </TableCell>
+              <TableCell>
                 <p class="font-medium text-foreground">{{ pickup.declaration.applicant.fullName }}</p>
                 <p class="text-sm text-muted-foreground">{{ pickup.declaration.applicant.institution?.name || 'N/A' }}</p>
-              </td>
-              <td class="px-4 py-3">
+              </TableCell>
+              <TableCell>
                 <div class="flex items-center gap-2">
-                  <span
-                    :class="[
-                      'px-2 py-0.5 text-xs rounded-full',
-                      pickup.isSelfPickup ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
-                    ]"
-                  >
+                  <Badge :variant="pickup.isSelfPickup ? 'default' : 'outline'">
                     {{ pickup.isSelfPickup ? 'Self' : 'Third Party' }}
-                  </span>
+                  </Badge>
                   <span class="text-sm">{{ pickup.authorizedName }}</span>
                 </div>
                 <p v-if="pickup.authorizedPhone" class="text-xs text-muted-foreground">{{ pickup.authorizedPhone }}</p>
-              </td>
-              <td class="px-4 py-3 text-sm text-muted-foreground">{{ formatDate(pickup.createdAt) }}</td>
-              <td class="px-4 py-3 text-right">
-                <button
-                  class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
-                  @click="openPickupModal(pickup)"
-                >
+              </TableCell>
+              <TableCell class="text-sm text-muted-foreground">{{ formatDate(pickup.createdAt) }}</TableCell>
+              <TableCell class="text-right">
+                <Button size="sm" @click="openPickupModal(pickup)">
                   Record Pickup
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                </Button>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
 
-      <!-- Pagination -->
-      <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t">
-        <p class="text-sm text-muted-foreground">
-          Showing {{ (currentPage - 1) * limit + 1 }} to {{ Math.min(currentPage * limit, total) }} of {{ total }}
-        </p>
-        <div class="flex gap-2">
-          <button :disabled="currentPage <= 1" class="px-3 py-1 text-sm border rounded disabled:opacity-50" @click="currentPage--">Previous</button>
-          <button :disabled="currentPage >= totalPages" class="px-3 py-1 text-sm border rounded disabled:opacity-50" @click="currentPage++">Next</button>
+        <!-- Pagination -->
+        <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t">
+          <p class="text-sm text-muted-foreground">
+            Showing {{ (currentPage - 1) * limit + 1 }} to {{ Math.min(currentPage * limit, total) }} of {{ total }}
+          </p>
+          <div class="flex gap-2">
+            <Button variant="outline" size="sm" :disabled="currentPage <= 1" @click="currentPage--">
+              Previous
+            </Button>
+            <Button variant="outline" size="sm" :disabled="currentPage >= totalPages" @click="currentPage++">
+              Next
+            </Button>
+          </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
 
     <!-- Pickup Modal -->
-    <Teleport to="body">
-      <div v-if="showPickupModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" @click.self="showPickupModal = false">
-        <div class="bg-card rounded-lg w-full max-w-lg">
-          <div class="p-6 border-b">
-            <h2 class="text-xl font-semibold text-foreground">Confirm Pickup</h2>
-            <p class="text-sm text-muted-foreground mt-1">Record that this receipt has been collected</p>
-          </div>
+    <Dialog :open="showPickupModal" @update:open="showPickupModal = $event">
+      <DialogContent class="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Confirm Pickup</DialogTitle>
+          <DialogDescription>Record that this receipt has been collected</DialogDescription>
+        </DialogHeader>
 
-          <div v-if="selectedPickup" class="p-6 space-y-4">
-            <div class="bg-muted/30 rounded-lg p-4 space-y-2">
-              <div class="flex justify-between">
-                <span class="text-sm text-muted-foreground">Receipt:</span>
-                <span class="font-mono font-medium">{{ selectedPickup.declaration.receipts[0]?.receiptNumber }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-sm text-muted-foreground">Applicant:</span>
-                <span class="font-medium">{{ selectedPickup.declaration.applicant.fullName }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-sm text-muted-foreground">Collecting:</span>
-                <span>{{ selectedPickup.authorizedName }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-sm text-muted-foreground">Type:</span>
-                <span :class="selectedPickup.isSelfPickup ? 'text-blue-600' : 'text-orange-600'">
-                  {{ selectedPickup.isSelfPickup ? 'Self Pickup' : 'Third Party' }}
-                </span>
-              </div>
+        <div v-if="selectedPickup" class="space-y-4">
+          <div class="bg-muted/30 rounded-lg p-4 space-y-2">
+            <div class="flex justify-between">
+              <span class="text-sm text-muted-foreground">Receipt:</span>
+              <span class="font-mono font-medium">{{ selectedPickup.declaration.receipts[0]?.receiptNumber }}</span>
             </div>
-
-            <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p class="text-sm text-yellow-700">
-                Please verify the identity of the person collecting the receipt before confirming.
-                {{ !selectedPickup.isSelfPickup ? 'Ensure they have valid authorization from the applicant.' : '' }}
-              </p>
+            <div class="flex justify-between">
+              <span class="text-sm text-muted-foreground">Applicant:</span>
+              <span class="font-medium">{{ selectedPickup.declaration.applicant.fullName }}</span>
             </div>
-
-            <div v-if="recordError" class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-              {{ recordError }}
+            <div class="flex justify-between">
+              <span class="text-sm text-muted-foreground">Collecting:</span>
+              <span>{{ selectedPickup.authorizedName }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-muted-foreground">Type:</span>
+              <Badge :variant="selectedPickup.isSelfPickup ? 'default' : 'outline'">
+                {{ selectedPickup.isSelfPickup ? 'Self Pickup' : 'Third Party' }}
+              </Badge>
             </div>
           </div>
 
-          <div class="p-6 border-t flex justify-end gap-3">
-            <button class="px-4 py-2 text-sm border rounded-lg hover:bg-muted" @click="showPickupModal = false">Cancel</button>
-            <button
-              :disabled="isRecording"
-              class="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-              @click="recordPickup"
-            >
-              {{ isRecording ? 'Recording...' : 'Confirm Pickup' }}
-            </button>
-          </div>
+          <Alert>
+            <AlertDescription>
+              Please verify the identity of the person collecting the receipt before confirming.
+              {{ !selectedPickup.isSelfPickup ? 'Ensure they have valid authorization from the applicant.' : '' }}
+            </AlertDescription>
+          </Alert>
+
+          <Alert v-if="recordError" variant="destructive">
+            <AlertDescription>{{ recordError }}</AlertDescription>
+          </Alert>
         </div>
-      </div>
-    </Teleport>
+
+        <DialogFooter>
+          <Button variant="outline" @click="showPickupModal = false">Cancel</Button>
+          <Button :disabled="isRecording" @click="recordPickup">
+            {{ isRecording ? 'Recording...' : 'Confirm Pickup' }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>

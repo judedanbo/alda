@@ -80,162 +80,146 @@ const handleSubmit = async () => {
 
 <template>
   <div class="w-full max-w-2xl">
-    <div class="bg-card rounded-lg shadow-lg border p-8">
-      <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-foreground">Contact Us</h1>
-        <p class="text-muted-foreground mt-2">
+    <Card class="shadow-lg">
+      <CardHeader class="text-center">
+        <CardTitle class="text-3xl">Contact Us</CardTitle>
+        <CardDescription>
           Have questions? We're here to help with any inquiries about the Asset Declaration Portal.
-        </p>
-      </div>
+        </CardDescription>
+      </CardHeader>
 
-      <!-- Success Message -->
-      <div
-        v-if="success"
-        class="mb-6 p-4 rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
-      >
-        <div class="flex items-start gap-3">
-          <svg class="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <CardContent>
+        <!-- Success Message -->
+        <Alert v-if="success" class="mb-6 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200">
+          <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <div>
-            <h3 class="font-medium text-green-800 dark:text-green-200">Message Sent Successfully</h3>
-            <p class="text-sm text-green-700 dark:text-green-300 mt-1">
-              Thank you for contacting us. We will respond to your inquiry within 2-3 business days.
+          <AlertTitle>Message Sent Successfully</AlertTitle>
+          <AlertDescription class="text-green-700 dark:text-green-300">
+            Thank you for contacting us. We will respond to your inquiry within 2-3 business days.
+          </AlertDescription>
+        </Alert>
+
+        <form v-if="!success" class="space-y-5" @submit.prevent="handleSubmit">
+          <!-- Error Alert -->
+          <Alert v-if="error" variant="destructive">
+            <AlertDescription>{{ error }}</AlertDescription>
+          </Alert>
+
+          <!-- Name Field -->
+          <div class="space-y-2">
+            <Label for="name">
+              Full Name <span class="text-destructive">*</span>
+            </Label>
+            <Input
+              id="name"
+              v-model="form.name"
+              type="text"
+              required
+              autocomplete="name"
+              placeholder="Your full name"
+            />
+          </div>
+
+          <!-- Email and Phone Row -->
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <Label for="email">
+                Email Address <span class="text-destructive">*</span>
+              </Label>
+              <Input
+                id="email"
+                v-model="form.email"
+                type="email"
+                required
+                autocomplete="email"
+                placeholder="you@example.com"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="phone">
+                Phone Number
+              </Label>
+              <Input
+                id="phone"
+                v-model="form.phone"
+                type="tel"
+                autocomplete="tel"
+                placeholder="+233 XX XXX XXXX"
+              />
+            </div>
+          </div>
+
+          <!-- Category Field -->
+          <div class="space-y-2">
+            <Label for="category">
+              Category <span class="text-destructive">*</span>
+            </Label>
+            <Select v-model="form.category">
+              <SelectTrigger class="w-full">
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="cat in categories" :key="cat.value" :value="cat.value">
+                  {{ cat.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <!-- Subject Field -->
+          <div class="space-y-2">
+            <Label for="subject">
+              Subject <span class="text-destructive">*</span>
+            </Label>
+            <Input
+              id="subject"
+              v-model="form.subject"
+              type="text"
+              required
+              placeholder="Brief description of your inquiry"
+            />
+          </div>
+
+          <!-- Message Field -->
+          <div class="space-y-2">
+            <Label for="message">
+              Message <span class="text-destructive">*</span>
+            </Label>
+            <Textarea
+              id="message"
+              v-model="form.message"
+              required
+              :rows="5"
+              class="resize-none"
+              placeholder="Please provide details about your inquiry..."
+            />
+            <p class="text-xs text-muted-foreground">
+              {{ form.message.length }}/2000 characters
             </p>
           </div>
-        </div>
-      </div>
 
-      <form v-if="!success" @submit.prevent="handleSubmit" class="space-y-5">
-        <!-- Error Alert -->
-        <div
-          v-if="error"
-          class="p-4 rounded-md bg-destructive/10 text-destructive text-sm"
-        >
-          {{ error }}
-        </div>
-
-        <!-- Name Field -->
-        <div class="space-y-2">
-          <label for="name" class="text-sm font-medium text-foreground">
-            Full Name <span class="text-destructive">*</span>
-          </label>
-          <input
-            id="name"
-            v-model="form.name"
-            type="text"
-            required
-            autocomplete="name"
-            class="w-full px-4 py-2 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            placeholder="Your full name"
-          />
-        </div>
-
-        <!-- Email and Phone Row -->
-        <div class="grid md:grid-cols-2 gap-4">
-          <div class="space-y-2">
-            <label for="email" class="text-sm font-medium text-foreground">
-              Email Address <span class="text-destructive">*</span>
-            </label>
-            <input
-              id="email"
-              v-model="form.email"
-              type="email"
-              required
-              autocomplete="email"
-              class="w-full px-4 py-2 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="you@example.com"
-            />
-          </div>
-
-          <div class="space-y-2">
-            <label for="phone" class="text-sm font-medium text-foreground">
-              Phone Number
-            </label>
-            <input
-              id="phone"
-              v-model="form.phone"
-              type="tel"
-              autocomplete="tel"
-              class="w-full px-4 py-2 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="+233 XX XXX XXXX"
-            />
-          </div>
-        </div>
-
-        <!-- Category Field -->
-        <div class="space-y-2">
-          <label for="category" class="text-sm font-medium text-foreground">
-            Category <span class="text-destructive">*</span>
-          </label>
-          <select
-            id="category"
-            v-model="form.category"
-            required
-            class="w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          <!-- Submit Button -->
+          <Button
+            type="submit"
+            class="w-full"
+            :disabled="isLoading || !isFormValid"
           >
-            <option v-for="cat in categories" :key="cat.value" :value="cat.value">
-              {{ cat.label }}
-            </option>
-          </select>
+            <span v-if="isLoading">Sending Message...</span>
+            <span v-else>Send Message</span>
+          </Button>
+        </form>
+
+        <!-- Send Another Message -->
+        <div v-if="success" class="text-center">
+          <Button variant="link" @click="success = false">
+            Send another message
+          </Button>
         </div>
 
-        <!-- Subject Field -->
-        <div class="space-y-2">
-          <label for="subject" class="text-sm font-medium text-foreground">
-            Subject <span class="text-destructive">*</span>
-          </label>
-          <input
-            id="subject"
-            v-model="form.subject"
-            type="text"
-            required
-            class="w-full px-4 py-2 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            placeholder="Brief description of your inquiry"
-          />
-        </div>
-
-        <!-- Message Field -->
-        <div class="space-y-2">
-          <label for="message" class="text-sm font-medium text-foreground">
-            Message <span class="text-destructive">*</span>
-          </label>
-          <textarea
-            id="message"
-            v-model="form.message"
-            required
-            rows="5"
-            class="w-full px-4 py-2 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
-            placeholder="Please provide details about your inquiry..."
-          ></textarea>
-          <p class="text-xs text-muted-foreground">
-            {{ form.message.length }}/2000 characters
-          </p>
-        </div>
-
-        <!-- Submit Button -->
-        <button
-          type="submit"
-          :disabled="isLoading || !isFormValid"
-          class="w-full py-2.5 px-4 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          <span v-if="isLoading">Sending Message...</span>
-          <span v-else>Send Message</span>
-        </button>
-      </form>
-
-      <!-- Send Another Message -->
-      <div v-if="success" class="text-center">
-        <button
-          @click="success = false"
-          class="text-primary hover:underline text-sm font-medium"
-        >
-          Send another message
-        </button>
-      </div>
-
-      <!-- Contact Information -->
-      <div class="mt-8 pt-6 border-t">
+        <!-- Contact Information -->
+        <Separator class="my-6" />
         <h2 class="text-lg font-semibold text-foreground mb-4">Other Ways to Reach Us</h2>
         <div class="grid md:grid-cols-2 gap-4 text-sm">
           <div class="p-4 bg-muted/50 rounded-md">
@@ -255,9 +239,9 @@ const handleSubmit = async () => {
             </p>
           </div>
         </div>
-      </div>
+      </CardContent>
 
-      <div class="mt-6 flex items-center justify-center gap-4 text-sm">
+      <CardFooter class="flex items-center justify-center gap-4 text-sm">
         <NuxtLink
           to="/auth/login"
           class="text-primary hover:underline"
@@ -271,7 +255,7 @@ const handleSubmit = async () => {
         >
           Home
         </NuxtLink>
-      </div>
-    </div>
+      </CardFooter>
+    </Card>
   </div>
 </template>

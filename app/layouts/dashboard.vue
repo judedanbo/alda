@@ -1,5 +1,13 @@
 <script setup lang="ts">
 import { useAuthStore } from "~/stores/auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 
 const authStore = useAuthStore();
 const route = useRoute();
@@ -40,6 +48,7 @@ const navigation = computed(() => {
       { name: "Declarations", href: "/admin/declarations", icon: "file-text" },
       { name: "Users", href: "/admin/users", icon: "users" },
       { name: "Institutions", href: "/admin/institutions", icon: "building" },
+      { name: "Categories", href: "/admin/categories", icon: "tag" },
       { name: "Audit Logs", href: "/admin/audit-logs", icon: "shield" },
       { name: "Reports", href: "/admin/reports", icon: "bar-chart" },
     ];
@@ -90,44 +99,30 @@ const handleLogout = async () => {
           <!-- User Menu -->
           <div class="flex items-center gap-4">
             <!-- Notifications -->
-            <NuxtLink
-              to="/notifications"
-              class="p-2 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted"
-            >
-              <span class="sr-only">Notifications</span>
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </NuxtLink>
+            <AppNotificationBell />
 
             <!-- Profile Dropdown -->
-            <div class="relative">
-              <button
-                type="button"
-                class="flex items-center gap-2 p-2 text-sm rounded-md hover:bg-muted"
-              >
-                <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span class="text-primary font-medium">
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <button class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-muted">
+                  <div class="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
                     {{ authStore.user?.email?.charAt(0).toUpperCase() }}
-                  </span>
-                </div>
-                <span class="hidden sm:block text-foreground">
-                  {{ authStore.user?.email }}
-                </span>
-              </button>
-            </div>
-
-            <!-- Logout -->
-            <button
-              type="button"
-              class="p-2 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted"
-              @click="handleLogout"
-            >
-              <span class="sr-only">Logout</span>
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            </button>
+                  </div>
+                  <span class="hidden md:inline text-sm text-foreground">{{ authStore.user?.email }}</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" class="w-56">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem as-child>
+                  <NuxtLink to="/settings/preferences">Settings</NuxtLink>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem @click="handleLogout" class="text-destructive">
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
