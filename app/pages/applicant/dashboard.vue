@@ -4,7 +4,22 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { user, isEmailVerified } = useAuth();
+const { user, isEmailVerified, isVerified } = useAuth();
+
+const verificationInfo = ref<{ reason?: string; messageToApplicant?: string } | null>(null);
+
+async function fetchVerificationInfo() {
+  if (user.value?.hasProfile && !isVerified.value) {
+    try {
+      const response = await authFetch<{ data: { latestReview: any } }>("/api/applicant/verification");
+      verificationInfo.value = response.data.latestReview;
+    } catch {
+      // Ignore — banner will show without details
+    }
+  }
+}
+
+onMounted(fetchVerificationInfo);
 
 // Placeholder stats - will be populated from API
 const stats = ref([
@@ -106,6 +121,73 @@ async function resendVerification() {
       </AlertDescription>
     </Alert>
 
+    <!-- Verification Status Banner -->
+    <Alert
+      v-if="user?.hasProfile && user?.verificationStatus && user.verificationStatus !== 'VERIFIED'"
+      :class="{
+        'border-amber-200 bg-amber-50': user.verificationStatus === 'PENDING_VERIFICATION',
+        'border-orange-200 bg-orange-50': user.verificationStatus === 'ON_HOLD',
+        'border-blue-200 bg-blue-50': user.verificationStatus === 'MORE_INFO_REQUIRED',
+        'border-red-200 bg-red-50': user.verificationStatus === 'REJECTED',
+      }"
+    >
+      <svg
+        class="w-5 h-5"
+        :class="{
+          'text-amber-600': user.verificationStatus === 'PENDING_VERIFICATION',
+          'text-orange-600': user.verificationStatus === 'ON_HOLD',
+          'text-blue-600': user.verificationStatus === 'MORE_INFO_REQUIRED',
+          'text-red-600': user.verificationStatus === 'REJECTED',
+        }"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+        />
+      </svg>
+      <AlertTitle>
+        <span v-if="user.verificationStatus === 'PENDING_VERIFICATION'">Registration Under Review</span>
+        <span v-else-if="user.verificationStatus === 'ON_HOLD'">Registration Under Investigation</span>
+        <span v-else-if="user.verificationStatus === 'MORE_INFO_REQUIRED'">Action Required</span>
+        <span v-else-if="user.verificationStatus === 'REJECTED'">Registration Not Approved</span>
+      </AlertTitle>
+      <AlertDescription>
+        <p v-if="user.verificationStatus === 'PENDING_VERIFICATION'">
+          Your registration is being reviewed by the legal office. You will be notified once a decision is made.
+        </p>
+        <p v-else-if="user.verificationStatus === 'ON_HOLD'">
+          Your registration is under review. Please wait for further updates.
+        </p>
+        <div v-else-if="user.verificationStatus === 'MORE_INFO_REQUIRED'">
+          <p>The legal office has requested additional information.</p>
+          <p v-if="verificationInfo?.messageToApplicant" class="mt-2 p-3 bg-blue-100 rounded text-sm">
+            {{ verificationInfo.messageToApplicant }}
+          </p>
+          <div class="flex gap-2 mt-3">
+            <Button as-child size="sm">
+              <NuxtLink to="/applicant/profile/edit">Edit Profile</NuxtLink>
+            </Button>
+          </div>
+        </div>
+        <div v-else-if="user.verificationStatus === 'REJECTED'">
+          <p>Your registration was not approved.</p>
+          <p v-if="verificationInfo?.reason" class="mt-2 p-3 bg-red-100 rounded text-sm">
+            {{ verificationInfo.reason }}
+          </p>
+          <div class="flex gap-2 mt-3">
+            <Button as-child size="sm">
+              <NuxtLink to="/applicant/profile/edit">Edit Profile &amp; Resubmit</NuxtLink>
+            </Button>
+          </div>
+        </div>
+      </AlertDescription>
+    </Alert>
+
     <!-- Stats Grid -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <Card v-for="stat in stats" :key="stat.label">
@@ -129,7 +211,7 @@ async function resendVerification() {
             <NuxtLink
               to="/applicant/declaration/new"
               class="flex items-center gap-3 p-3 rounded-md hover:bg-muted transition-colors"
-              :class="{ 'opacity-50 pointer-events-none': !user?.hasProfile }"
+              :class="{ 'opacity-50 pointer-events-none': !user?.hasProfile || !isVerified }"
             >
               <div
                 class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center"
