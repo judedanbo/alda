@@ -5,9 +5,6 @@ import { z } from "zod";
 const updateProfileSchema = z.object({
   ghanaCardFrontUrl: z.string().url().optional(),
   ghanaCardBackUrl: z.string().url().optional(),
-  designation: z.string().min(2).max(255).optional(),
-  institutionId: z.string().uuid().optional(),
-  officeCategoryId: z.number().int().positive().optional(),
 });
 
 export default defineEventHandler(async (event) => {
@@ -42,17 +39,20 @@ export default defineEventHandler(async (event) => {
   }
 
   const oldValues = {
-    designation: profile.designation,
-    institutionId: profile.institutionId,
-    officeCategoryId: profile.officeCategoryId,
+    ghanaCardFrontUrl: profile.ghanaCardFrontUrl,
+    ghanaCardBackUrl: profile.ghanaCardBackUrl,
   };
 
   const updated = await prisma.applicantProfile.update({
     where: { userId: auth.userId },
     data: result.data,
     include: {
-      institution: true,
-      officeCategory: true,
+      offices: {
+        include: {
+          officeCategory: true,
+          institution: true,
+        },
+      },
     },
   });
 

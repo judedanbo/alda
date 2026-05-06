@@ -13,8 +13,13 @@ export default defineEventHandler(async (event) => {
   const profile = await prisma.applicantProfile.findUnique({
     where: { userId: auth.userId },
     include: {
-      institution: true,
-      officeCategory: true,
+      offices: {
+        include: {
+          officeCategory: true,
+          institution: true,
+        },
+        orderBy: { startDate: "desc" as const },
+      },
     },
   });
 
