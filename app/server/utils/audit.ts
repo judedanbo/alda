@@ -83,6 +83,11 @@ export const AuditActions = {
   USER_REACTIVATED: "user_reactivated",
   INSTITUTION_CREATED: "institution_created",
   INSTITUTION_UPDATED: "institution_updated",
+
+  // Categories
+  CATEGORY_CREATED: "category_created",
+  CATEGORY_UPDATED: "category_updated",
+  CATEGORY_DEACTIVATED: "category_deactivated",
 } as const;
 
 export type AuditAction = typeof AuditActions[keyof typeof AuditActions];
