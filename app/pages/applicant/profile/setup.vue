@@ -270,14 +270,19 @@ const handleSubmit = async () => {
                   id="front-upload"
                   @change="(e) => handleFileSelect(e, 'front')"
                 />
-                <Button
-                  type="button"
-                  size="sm"
-                  :variant="form.ghanaCardFrontUrl ? 'outline' : 'default'"
-                  @click="($refs as any)?.['front-upload']?.click?.() || document.getElementById('front-upload')?.click()"
+                <label
+                  for="front-upload"
+                  class="inline-block cursor-pointer"
                 >
-                  {{ form.ghanaCardFrontUrl ? 'Change Image' : 'Select Image' }}
-                </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    :variant="form.ghanaCardFrontUrl ? 'outline' : 'default'"
+                    as="span"
+                  >
+                    {{ form.ghanaCardFrontUrl ? 'Change Image' : 'Select Image' }}
+                  </Button>
+                </label>
               </div>
             </div>
 
@@ -314,14 +319,19 @@ const handleSubmit = async () => {
                   id="back-upload"
                   @change="(e) => handleFileSelect(e, 'back')"
                 />
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  @click="document.getElementById('back-upload')?.click()"
+                <label
+                  for="back-upload"
+                  class="inline-block cursor-pointer"
                 >
-                  {{ form.ghanaCardBackUrl ? 'Change Image' : 'Select Image' }}
-                </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    as="span"
+                  >
+                    {{ form.ghanaCardBackUrl ? 'Change Image' : 'Select Image' }}
+                  </Button>
+                </label>
               </div>
             </div>
           </div>

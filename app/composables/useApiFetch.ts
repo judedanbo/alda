@@ -1,7 +1,7 @@
 import { useAuthStore } from "~/stores/auth";
+import type { NitroFetchOptions } from "nitropack";
 
-interface ApiFetchOptions<T> extends Omit<Parameters<typeof $fetch>[1], "body"> {
-  body?: Record<string, unknown> | FormData;
+interface ApiFetchOptions extends NitroFetchOptions<string> {
   immediate?: boolean;
 }
 
@@ -11,11 +11,13 @@ interface ApiError {
   fieldErrors?: Record<string, string[]>;
 }
 
-export function useApiFetch<T = unknown>(url: string | Ref<string>, options: ApiFetchOptions<T> = {}) {
+export function useApiFetch<T = unknown>(url: string | Ref<string>, options: ApiFetchOptions = {}) {
   const authStore = useAuthStore();
   const data = ref<T | null>(null) as Ref<T | null>;
   const error = ref<ApiError | null>(null);
   const pending = ref(false);
+
+  const { immediate, ...fetchOptions } = options;
 
   async function execute() {
     error.value = null;
@@ -25,13 +27,13 @@ export function useApiFetch<T = unknown>(url: string | Ref<string>, options: Api
 
     try {
       const result = await $fetch<T>(resolvedUrl, {
-        ...options,
+        ...fetchOptions,
         headers: {
           ...authStore.getAuthHeaders(),
-          ...(options.headers || {}),
+          ...(fetchOptions.headers as Record<string, string> || {}),
         },
       });
-      data.value = result;
+      data.value = result as T;
       return result;
     } catch (e: any) {
       if (e.status === 401 || e.statusCode === 401) {
@@ -39,13 +41,13 @@ export function useApiFetch<T = unknown>(url: string | Ref<string>, options: Api
         if (refreshed) {
           try {
             const result = await $fetch<T>(resolvedUrl, {
-              ...options,
+              ...fetchOptions,
               headers: {
                 ...authStore.getAuthHeaders(),
-                ...(options.headers || {}),
+                ...(fetchOptions.headers as Record<string, string> || {}),
               },
             });
-            data.value = result;
+            data.value = result as T;
             return result;
           } catch (retryError: any) {
             error.value = normalizeError(retryError);
@@ -71,7 +73,7 @@ export function useApiFetch<T = unknown>(url: string | Ref<string>, options: Api
     };
   }
 
-  if (options.immediate !== false && options.method === undefined) {
+  if (immediate !== false && fetchOptions.method === undefined) {
     execute();
   }
 

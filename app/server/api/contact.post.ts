@@ -55,7 +55,7 @@ export default defineEventHandler(async (event) => {
     });
 
     try {
-      await sendContactAcknowledgment(data.email, data.name, data.category);
+      await sendContactAcknowledgment(email, name, category);
     } catch (e) {
       console.error("Failed to send contact acknowledgment:", e);
     }
