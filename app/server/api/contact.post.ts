@@ -1,5 +1,6 @@
 import { z } from "zod";
 import prisma from "~/server/utils/prisma";
+import { sendContactAcknowledgment } from "~/server/services/email.service";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(255),
@@ -53,8 +54,11 @@ export default defineEventHandler(async (event) => {
       },
     });
 
-    // TODO: Send confirmation email to user
-    // TODO: Send notification to support team
+    try {
+      await sendContactAcknowledgment(data.email, data.name, data.category);
+    } catch (e) {
+      console.error("Failed to send contact acknowledgment:", e);
+    }
 
     return {
       success: true,

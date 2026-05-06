@@ -2,6 +2,7 @@ import prisma from "~/server/utils/prisma";
 import { validateBody, forgotPasswordSchema } from "~/server/utils/validators";
 import { generateResetToken } from "~/server/utils/code-generator";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { sendPasswordResetEmail } from "~/server/services/email.service";
 
 export default defineEventHandler(async (event) => {
   const { email } = await validateBody(event, forgotPasswordSchema);
@@ -46,10 +47,10 @@ export default defineEventHandler(async (event) => {
     entityId: user.id,
   });
 
-  // TODO: Send password reset email
-  // For now, log the token in development
-  if (process.env.NODE_ENV === "development") {
-    console.log(`Password reset token for ${email}: ${token}`);
+  try {
+    await sendPasswordResetEmail(user.email, user.email, token);
+  } catch (e) {
+    console.error("Failed to send password reset email:", e);
   }
 
   return {
