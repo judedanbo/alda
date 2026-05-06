@@ -4,23 +4,68 @@ definePageMeta({
   middleware: "auth",
 });
 
-const recentVerifications = ref<Array<{
-  code: string;
-  applicantName: string;
-  status: string;
-  verifiedAt: string;
-}>>([]);
+const { data: statsData } = await useAsyncData(
+  "verification-stats",
+  () => authFetch<{ data: Record<string, number> }>("/api/legal/verifications/stats"),
+);
 
-const stats = ref({
-  todayVerifications: 0,
-  weekVerifications: 0,
-  monthVerifications: 0,
+const verificationStats = computed(() => statsData.value?.data || {
+  PENDING_VERIFICATION: 0,
+  ON_HOLD: 0,
+  MORE_INFO_REQUIRED: 0,
+  VERIFIED: 0,
+  REJECTED: 0,
+  total: 0,
 });
 </script>
 
 <template>
   <div class="space-y-6">
     <PageHeader title="Legal Unit Dashboard" description="Verify declaration codes and recall applicant information" />
+
+    <!-- Verification Summary -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <NuxtLink to="/legal/verifications?status=PENDING_VERIFICATION">
+        <Card class="hover:border-primary/50 transition-colors">
+          <CardContent class="p-6">
+            <p class="text-sm text-muted-foreground">Pending Review</p>
+            <p class="text-3xl font-bold text-amber-600 mt-2">
+              {{ verificationStats.PENDING_VERIFICATION }}
+            </p>
+          </CardContent>
+        </Card>
+      </NuxtLink>
+      <NuxtLink to="/legal/verifications?status=ON_HOLD">
+        <Card class="hover:border-primary/50 transition-colors">
+          <CardContent class="p-6">
+            <p class="text-sm text-muted-foreground">On Hold</p>
+            <p class="text-3xl font-bold text-orange-600 mt-2">
+              {{ verificationStats.ON_HOLD }}
+            </p>
+          </CardContent>
+        </Card>
+      </NuxtLink>
+      <NuxtLink to="/legal/verifications?status=MORE_INFO_REQUIRED">
+        <Card class="hover:border-primary/50 transition-colors">
+          <CardContent class="p-6">
+            <p class="text-sm text-muted-foreground">More Info Required</p>
+            <p class="text-3xl font-bold text-blue-600 mt-2">
+              {{ verificationStats.MORE_INFO_REQUIRED }}
+            </p>
+          </CardContent>
+        </Card>
+      </NuxtLink>
+      <NuxtLink to="/legal/verifications?status=VERIFIED">
+        <Card class="hover:border-primary/50 transition-colors">
+          <CardContent class="p-6">
+            <p class="text-sm text-muted-foreground">Verified</p>
+            <p class="text-3xl font-bold text-green-600 mt-2">
+              {{ verificationStats.VERIFIED }}
+            </p>
+          </CardContent>
+        </Card>
+      </NuxtLink>
+    </div>
 
     <!-- Quick Verify Card -->
     <Card>
