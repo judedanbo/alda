@@ -1,14 +1,18 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import { uploadBuffer } from "./storage.service";
 
+interface OfficeEntry {
+  designation: string;
+  institution: string;
+  officeCategory: string;
+}
+
 interface ReceiptData {
   receiptNumber: string;
   declarationCode: string;
   applicantName: string;
   ghanaCardNumber: string;
-  institution: string;
-  designation: string;
-  officeCategory: string;
+  offices: OfficeEntry[];
   submissionDate: Date;
   approvalDate: Date;
   approvedBy: string;
@@ -121,9 +125,6 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<string> {
     { label: "Declaration Code:", value: data.declarationCode },
     { label: "Full Name:", value: data.applicantName },
     { label: "Ghana Card Number:", value: data.ghanaCardNumber },
-    { label: "Institution:", value: data.institution },
-    { label: "Designation:", value: data.designation },
-    { label: "Public Office Category:", value: data.officeCategory },
     { label: "Submission Date:", value: formatDate(data.submissionDate) },
     { label: "Approval Date:", value: formatDate(data.approvalDate) },
   ];
@@ -145,6 +146,37 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<string> {
       color: blackColor,
     });
 
+    y -= lineHeight;
+  }
+
+  // Offices section
+  y -= 10;
+  page.drawText("Public Office(s) Held:", {
+    x: labelX,
+    y,
+    size: 11,
+    font: helveticaBold,
+    color: blackColor,
+  });
+  y -= lineHeight;
+
+  for (const office of data.offices) {
+    page.drawText(`${office.designation}`, {
+      x: labelX + 10,
+      y,
+      size: 10,
+      font: helveticaBold,
+      color: blackColor,
+    });
+    y -= 16;
+
+    page.drawText(`${office.officeCategory}${office.institution ? ` — ${office.institution}` : ""}`, {
+      x: labelX + 10,
+      y,
+      size: 10,
+      font: helvetica,
+      color: grayColor,
+    });
     y -= lineHeight;
   }
 
