@@ -40,7 +40,7 @@ const handleSubmit = async () => {
         </div>
         <h2 class="text-2xl font-bold text-foreground mb-2">Check your email</h2>
         <p class="text-muted-foreground mb-6">
-          If an account with that email exists, we've sent you a password reset link.
+          If an account with that email exists, we've sent a password reset link. Please check your inbox and spam folder.
         </p>
         <NuxtLink
           to="/auth/login"
