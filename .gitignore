@@ -1,0 +1,9 @@
+# Test artifacts
+test-card.png
+.playwright-mcp/
+
+# Claude Code
+.claude/
+
+# Root-level lockfile (real one is in app/)
+package-lock.json
