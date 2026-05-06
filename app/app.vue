@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const config = useRuntimeConfig();
+
 useHead({
   title: "Asset Declaration Portal",
   meta: [
@@ -15,4 +17,7 @@ useHead({
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>
+  <ClientOnly>
+    <DevUserSwitcher v-if="config.public.devMode" />
+  </ClientOnly>
 </template>
