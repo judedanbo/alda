@@ -196,41 +196,85 @@ async function main() {
   }
   console.log(`✅ Created ${retentionPolicies.length} data retention policies`);
 
-  // Create a default admin user for testing
-  console.log("Creating default admin user...");
-  const adminPassword = await bcrypt.hash("admin123", 12);
-  const adminRole = await prisma.role.findUnique({ where: { name: "admin" } });
+  // Create default users for testing (non-production only)
+  if (process.env.NODE_ENV === "production") {
+    console.log("⏭️  Skipping test user creation in production environment");
+  } else {
+    console.log("Creating default users...");
+    const defaultPassword = await bcrypt.hash("password123", 12);
 
-  if (adminRole) {
-    const adminUser = await prisma.user.upsert({
-      where: { email: "admin@adla.gov.gh" },
-      update: {},
-      create: {
+    const [adminRole, officerRole, legalRole] = await Promise.all([
+      prisma.role.findUnique({ where: { name: "admin" } }),
+      prisma.role.findUnique({ where: { name: "schedule_officer" } }),
+      prisma.role.findUnique({ where: { name: "legal_unit" } }),
+    ]);
+
+    const seedUsers = [
+      {
         email: "admin@adla.gov.gh",
-        passwordHash: adminPassword,
         phone: "+233200000000",
-        emailVerified: true,
-        roles: {
-          create: {
-            roleId: adminRole.id,
+        role: adminRole,
+        label: "admin",
+      },
+      {
+        email: "officer@adla.gov.gh",
+        phone: "+233200000001",
+        role: officerRole,
+        label: "schedule officer",
+      },
+      {
+        email: "officer2@adla.gov.gh",
+        phone: "+233200000002",
+        role: officerRole,
+        label: "schedule officer 2",
+      },
+      {
+        email: "legal@adla.gov.gh",
+        phone: "+233200000003",
+        role: legalRole,
+        label: "legal unit",
+      },
+      {
+        email: "legal2@adla.gov.gh",
+        phone: "+233200000004",
+        role: legalRole,
+        label: "legal unit 2",
+      },
+    ];
+
+    for (const { email, phone, role, label } of seedUsers) {
+      if (!role) {
+        console.warn(`⚠️  Skipping ${label}: role not found`);
+        continue;
+      }
+
+      const user = await prisma.user.upsert({
+        where: { email },
+        update: {},
+        create: {
+          email,
+          passwordHash: defaultPassword,
+          phone,
+          emailVerified: true,
+          roles: {
+            create: { roleId: role.id },
           },
         },
-      },
-    });
+      });
 
-    // Create notification preferences for admin
-    await prisma.notificationPreference.upsert({
-      where: { userId: adminUser.id },
-      update: {},
-      create: {
-        userId: adminUser.id,
-        emailEnabled: true,
-        smsEnabled: true,
-        inAppEnabled: true,
-      },
-    });
+      await prisma.notificationPreference.upsert({
+        where: { userId: user.id },
+        update: {},
+        create: {
+          userId: user.id,
+          emailEnabled: true,
+          smsEnabled: true,
+          inAppEnabled: true,
+        },
+      });
 
-    console.log(`✅ Created admin user: admin@adla.gov.gh (password: admin123)`);
+      console.log(`✅ Created ${label} user: ${email} (password: password123)`);
+    }
   }
 
   console.log("\n🎉 Database seed completed successfully!");
