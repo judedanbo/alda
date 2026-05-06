@@ -36,8 +36,13 @@ export default defineEventHandler(async (event) => {
               phone: true,
             },
           },
-          institution: true,
-          officeCategory: true,
+          offices: {
+            include: {
+              officeCategory: true,
+              institution: true,
+            },
+            orderBy: { startDate: "desc" as const },
+          },
         },
       },
       submissions: {

@@ -72,9 +72,12 @@ export default defineEventHandler(async (event) => {
           select: {
             fullName: true,
             ghanaCardNumber: true,
-            designation: true,
-            institution: {
-              select: { name: true },
+            offices: {
+              include: {
+                officeCategory: true,
+                institution: true,
+              },
+              orderBy: { startDate: "desc" as const },
             },
           },
         },
@@ -102,8 +105,7 @@ export default defineEventHandler(async (event) => {
           ? {
               fullName: user.applicantProfile.fullName,
               ghanaCardNumber: user.applicantProfile.ghanaCardNumber,
-              designation: user.applicantProfile.designation,
-              institution: user.applicantProfile.institution?.name || null,
+              offices: user.applicantProfile.offices,
             }
           : null,
       })),
