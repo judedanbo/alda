@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 
-interface User {
+export interface User {
   id: string;
   email: string;
   phone: string | null;
@@ -10,7 +10,7 @@ interface User {
   hasProfile?: boolean;
 }
 
-interface Tokens {
+export interface Tokens {
   accessToken: string;
   refreshToken: string;
 }

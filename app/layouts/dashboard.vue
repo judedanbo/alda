@@ -98,31 +98,40 @@ const handleLogout = async () => {
 
           <!-- User Menu -->
           <div class="flex items-center gap-4">
-            <!-- Notifications -->
-            <AppNotificationBell />
+            <ClientOnly>
+              <!-- Notifications -->
+              <AppNotificationBell />
 
-            <!-- Profile Dropdown -->
-            <DropdownMenu>
-              <DropdownMenuTrigger as-child>
-                <button class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-muted">
-                  <div class="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
-                    {{ authStore.user?.email?.charAt(0).toUpperCase() }}
-                  </div>
-                  <span class="hidden md:inline text-sm text-foreground">{{ authStore.user?.email }}</span>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" class="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem as-child>
-                  <NuxtLink to="/settings/preferences">Settings</NuxtLink>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem @click="handleLogout" class="text-destructive">
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              <!-- Profile Dropdown -->
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                  <button class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-muted">
+                    <div class="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+                      {{ authStore.user?.email?.charAt(0).toUpperCase() }}
+                    </div>
+                    <span class="hidden md:inline text-sm text-foreground">{{ authStore.user?.email }}</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" class="w-56">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem as-child>
+                    <NuxtLink to="/settings/preferences">Settings</NuxtLink>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem @click="handleLogout" class="text-destructive">
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <template #fallback>
+                <div class="flex items-center gap-2 px-3 py-1.5">
+                  <div class="w-8 h-8 bg-muted rounded-full animate-pulse" />
+                  <div class="hidden md:block w-24 h-4 bg-muted rounded animate-pulse" />
+                </div>
+              </template>
+            </ClientOnly>
           </div>
         </div>
       </div>
