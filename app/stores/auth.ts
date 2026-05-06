@@ -33,32 +33,14 @@ export const useAuthStore = defineStore("auth", () => {
   // Actions
   function setTokens(newTokens: Tokens) {
     tokens.value = newTokens;
-    if (import.meta.client) {
-      localStorage.setItem("adla_tokens", JSON.stringify(newTokens));
-    }
   }
 
   function clearTokens() {
     tokens.value = null;
-    if (import.meta.client) {
-      localStorage.removeItem("adla_tokens");
-    }
   }
 
   async function initialize() {
     if (initialized.value) return;
-
-    if (import.meta.client) {
-      const stored = localStorage.getItem("adla_tokens");
-      if (stored) {
-        try {
-          tokens.value = JSON.parse(stored);
-          await fetchUser();
-        } catch {
-          clearTokens();
-        }
-      }
-    }
     initialized.value = true;
   }
 
