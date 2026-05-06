@@ -28,6 +28,7 @@ const selectedStatus = ref("");
 const showModal = ref(false);
 const isEditing = ref(false);
 const saving = ref(false);
+const { fieldErrors, clearFieldError, clearAll: clearFieldErrors } = useFieldErrors();
 
 const formData = ref({
   id: "",
@@ -68,12 +69,14 @@ const totalPages = computed(() => Math.ceil(totalInstitutions.value / perPage));
 
 const openCreateModal = () => {
   isEditing.value = false;
+  clearFieldErrors();
   formData.value = { id: "", name: "", type: "", isActive: true };
   showModal.value = true;
 };
 
 const openEditModal = (institution: Institution) => {
   isEditing.value = true;
+  clearFieldErrors();
   formData.value = {
     id: institution.id,
     name: institution.name,
@@ -85,10 +88,18 @@ const openEditModal = (institution: Institution) => {
 
 const closeModal = () => {
   showModal.value = false;
+  clearFieldErrors();
   formData.value = { id: "", name: "", type: "", isActive: true };
 };
 
 const saveInstitution = async () => {
+  clearFieldErrors();
+
+  if (!formData.value.name.trim()) {
+    fieldErrors.name = "Institution name is required";
+    return;
+  }
+
   saving.value = true;
   try {
     if (isEditing.value) {
@@ -289,7 +300,7 @@ const institutionTypes = [
         </DialogHeader>
 
         <div class="space-y-4">
-          <div>
+          <div class="space-y-2">
             <Label for="inst-name">
               Name <span class="text-red-500">*</span>
             </Label>
@@ -298,8 +309,12 @@ const institutionTypes = [
               v-model="formData.name"
               type="text"
               placeholder="Institution name"
-              class="mt-1"
+              :class="{ 'border-destructive': fieldErrors.name }"
+              @input="clearFieldError('name')"
             />
+            <p v-if="fieldErrors.name" class="text-xs text-destructive">
+              {{ fieldErrors.name }}
+            </p>
           </div>
 
           <div>

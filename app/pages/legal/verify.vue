@@ -68,16 +68,19 @@ interface VerificationResult {
 const code = ref("");
 const isVerifying = ref(false);
 const verificationError = ref("");
+const codeError = ref("");
 const verificationResult = ref<VerificationResult | null>(null);
 
 const verifyCode = async () => {
+  codeError.value = "";
+  verificationError.value = "";
+
   if (!code.value.trim()) {
-    verificationError.value = "Please enter a code";
+    codeError.value = "Please enter a declaration code";
     return;
   }
 
   isVerifying.value = true;
-  verificationError.value = "";
   verificationResult.value = null;
 
   try {
@@ -89,7 +92,7 @@ const verifyCode = async () => {
       verificationResult.value = response.data as unknown as VerificationResult;
     }
   } catch (error: any) {
-    verificationError.value = error.data?.statusMessage || "Verification failed. Code may be invalid.";
+    codeError.value = error.data?.statusMessage || "Verification failed. Code may be invalid.";
   } finally {
     isVerifying.value = false;
   }
@@ -99,6 +102,7 @@ const clearResults = () => {
   code.value = "";
   verificationResult.value = null;
   verificationError.value = "";
+  codeError.value = "";
 };
 
 const formatDate = (date: string) => {
@@ -134,27 +138,23 @@ const formatDate = (date: string) => {
               type="text"
               placeholder="ADLA-XXXXXXXX-XXXXX"
               class="flex-1 font-mono uppercase"
+              :class="{ 'border-destructive': codeError }"
               @keyup.enter="verifyCode"
+              @input="codeError = ''"
             />
             <Button :disabled="isVerifying" @click="verifyCode">
               {{ isVerifying ? 'Verifying...' : 'Verify' }}
             </Button>
           </div>
-          <p class="text-xs text-muted-foreground mt-2">
+          <p v-if="codeError" class="text-xs text-destructive mt-2">
+            {{ codeError }}
+          </p>
+          <p v-else class="text-xs text-muted-foreground mt-2">
             Enter the unique declaration code to verify its authenticity
           </p>
         </div>
       </CardContent>
     </Card>
-
-    <!-- Error -->
-    <Alert v-if="verificationError" variant="destructive">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      <AlertTitle>Verification Failed</AlertTitle>
-      <AlertDescription>{{ verificationError }}</AlertDescription>
-    </Alert>
 
     <!-- Verification Result -->
     <div v-if="verificationResult" class="space-y-6">

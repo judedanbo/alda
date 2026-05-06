@@ -29,6 +29,7 @@ const form = reactive({
 const isLoading = ref(false);
 const error = ref("");
 const success = ref(false);
+const { fieldErrors, clearFieldError, clearAll, handleServerError } = useFieldErrors();
 
 const isFormValid = computed(() => {
   return (
@@ -40,10 +41,16 @@ const isFormValid = computed(() => {
 });
 
 const handleSubmit = async () => {
-  if (!isFormValid.value) return;
+  error.value = "";
+  clearAll();
+
+  if (!form.name.trim()) fieldErrors.name = "Full name is required";
+  if (!form.email.trim()) fieldErrors.email = "Email is required";
+  if (!form.subject.trim()) fieldErrors.subject = "Subject is required";
+  if (!form.message.trim()) fieldErrors.message = "Message is required";
+  if (Object.keys(fieldErrors).length > 0) return;
 
   isLoading.value = true;
-  error.value = "";
   success.value = false;
 
   try {
@@ -61,7 +68,6 @@ const handleSubmit = async () => {
 
     if (response.success) {
       success.value = true;
-      // Reset form
       form.name = "";
       form.email = "";
       form.phone = "";
@@ -70,8 +76,7 @@ const handleSubmit = async () => {
       form.message = "";
     }
   } catch (err: unknown) {
-    const fetchError = err as { data?: { message?: string } };
-    error.value = fetchError.data?.message || "Failed to submit your message. Please try again.";
+    error.value = handleServerError(err);
   } finally {
     isLoading.value = false;
   }
@@ -118,7 +123,12 @@ const handleSubmit = async () => {
               required
               autocomplete="name"
               placeholder="Your full name"
+              :class="{ 'border-destructive': fieldErrors.name }"
+              @input="clearFieldError('name')"
             />
+            <p v-if="fieldErrors.name" class="text-xs text-destructive">
+              {{ fieldErrors.name }}
+            </p>
           </div>
 
           <!-- Email and Phone Row -->
@@ -134,7 +144,12 @@ const handleSubmit = async () => {
                 required
                 autocomplete="email"
                 placeholder="you@example.com"
+                :class="{ 'border-destructive': fieldErrors.email }"
+                @input="clearFieldError('email')"
               />
+              <p v-if="fieldErrors.email" class="text-xs text-destructive">
+                {{ fieldErrors.email }}
+              </p>
             </div>
 
             <div class="space-y-2">
@@ -147,7 +162,12 @@ const handleSubmit = async () => {
                 type="tel"
                 autocomplete="tel"
                 placeholder="+233 XX XXX XXXX"
+                :class="{ 'border-destructive': fieldErrors.phone }"
+                @input="clearFieldError('phone')"
               />
+              <p v-if="fieldErrors.phone" class="text-xs text-destructive">
+                {{ fieldErrors.phone }}
+              </p>
             </div>
           </div>
 
@@ -179,7 +199,12 @@ const handleSubmit = async () => {
               type="text"
               required
               placeholder="Brief description of your inquiry"
+              :class="{ 'border-destructive': fieldErrors.subject }"
+              @input="clearFieldError('subject')"
             />
+            <p v-if="fieldErrors.subject" class="text-xs text-destructive">
+              {{ fieldErrors.subject }}
+            </p>
           </div>
 
           <!-- Message Field -->
@@ -193,9 +218,14 @@ const handleSubmit = async () => {
               required
               :rows="5"
               class="resize-none"
+              :class="{ 'border-destructive': fieldErrors.message }"
               placeholder="Please provide details about your inquiry..."
+              @input="clearFieldError('message')"
             />
-            <p class="text-xs text-muted-foreground">
+            <p v-if="fieldErrors.message" class="text-xs text-destructive">
+              {{ fieldErrors.message }}
+            </p>
+            <p v-else class="text-xs text-muted-foreground">
               {{ form.message.length }}/2000 characters
             </p>
           </div>

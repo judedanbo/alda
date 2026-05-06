@@ -63,6 +63,9 @@ export const useAuthStore = defineStore("auth", () => {
       return {
         success: false,
         error: error.data?.message || "Registration failed",
+        fieldErrors: error.data?.data?.fieldErrors as
+          | Record<string, string[]>
+          | undefined,
       };
     } finally {
       loading.value = false;
@@ -88,6 +91,9 @@ export const useAuthStore = defineStore("auth", () => {
       return {
         success: false,
         error: error.data?.message || "Login failed",
+        fieldErrors: error.data?.data?.fieldErrors as
+          | Record<string, string[]>
+          | undefined,
       };
     } finally {
       loading.value = false;

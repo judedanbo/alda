@@ -11,9 +11,17 @@ const email = ref("");
 const error = ref("");
 const success = ref(false);
 const isLoading = ref(false);
+const { fieldErrors, clearFieldError, clearAll } = useFieldErrors();
 
 const handleSubmit = async () => {
   error.value = "";
+  clearAll();
+
+  if (!email.value) {
+    fieldErrors.email = "Email is required";
+    return;
+  }
+
   isLoading.value = true;
 
   const result = await authStore.forgotPassword(email.value);
@@ -75,7 +83,12 @@ const handleSubmit = async () => {
                 required
                 autocomplete="email"
                 placeholder="you@example.com"
+                :class="{ 'border-destructive': fieldErrors.email }"
+                @input="clearFieldError('email')"
               />
+              <p v-if="fieldErrors.email" class="text-xs text-destructive">
+                {{ fieldErrors.email }}
+              </p>
             </div>
 
             <!-- Submit Button -->

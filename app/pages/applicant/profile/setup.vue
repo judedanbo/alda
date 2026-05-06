@@ -25,6 +25,7 @@ const error = ref("");
 const isLoading = ref(false);
 const currentStep = ref(1);
 const totalSteps = 3;
+const { fieldErrors, clearFieldError, clearAll, handleServerError } = useFieldErrors();
 
 // Fetch reference data
 const { data: categories } = await useFetch("/api/categories");
@@ -53,6 +54,7 @@ const uploadGhanaCard = async (file: File, side: "front" | "back") => {
     if (response.success) {
       if (side === "front") {
         form.ghanaCardFrontUrl = response.data.url;
+        clearFieldError("ghanaCardFront");
       } else {
         form.ghanaCardBackUrl = response.data.url;
       }
@@ -99,9 +101,40 @@ watch(() => form.ghanaCardNumber, (newVal) => {
   }
 });
 
+// Validate and show field errors for current step
+const validateStep = (): boolean => {
+  clearAll();
+  switch (currentStep.value) {
+    case 1:
+      if (!form.fullName || form.fullName.length < 2) {
+        fieldErrors.fullName = "Name must be at least 2 characters";
+      }
+      if (!form.ghanaCardNumber) {
+        fieldErrors.ghanaCardNumber = "Ghana Card number is required";
+      } else if (!isGhanaCardValid.value) {
+        fieldErrors.ghanaCardNumber = "Invalid format. Use: GHA-XXXXXXXXX-X";
+      }
+      break;
+    case 2:
+      if (!form.ghanaCardFrontUrl) {
+        fieldErrors.ghanaCardFront = "Ghana Card front image is required";
+      }
+      break;
+    case 3:
+      if (!form.designation || form.designation.length < 2) {
+        fieldErrors.designation = "Designation is required";
+      }
+      if (!form.officeCategoryId) {
+        fieldErrors.officeCategoryId = "Please select a category";
+      }
+      break;
+  }
+  return Object.keys(fieldErrors).length === 0;
+};
+
 // Go to next step
 const nextStep = () => {
-  if (currentStep.value < totalSteps && isStepValid.value) {
+  if (currentStep.value < totalSteps && validateStep()) {
     currentStep.value++;
   }
 };
@@ -109,13 +142,14 @@ const nextStep = () => {
 // Go to previous step
 const prevStep = () => {
   if (currentStep.value > 1) {
+    clearAll();
     currentStep.value--;
   }
 };
 
 // Submit profile
 const handleSubmit = async () => {
-  if (!isStepValid.value) return;
+  if (!validateStep()) return;
 
   error.value = "";
   isLoading.value = true;
@@ -136,12 +170,11 @@ const handleSubmit = async () => {
     });
 
     if (response.success) {
-      // Refresh user data
       await authStore.fetchUser();
       router.push("/applicant/dashboard");
     }
-  } catch (err: any) {
-    error.value = err.data?.message || "Failed to create profile";
+  } catch (err: unknown) {
+    error.value = handleServerError(err);
   } finally {
     isLoading.value = false;
   }
@@ -204,9 +237,13 @@ const handleSubmit = async () => {
                 type="text"
                 required
                 placeholder="Enter your full name"
-                :class="{ 'border-destructive': form.fullName && form.fullName.length < 2 }"
+                :class="{ 'border-destructive': fieldErrors.fullName || (form.fullName && form.fullName.length < 2) }"
+                @input="clearFieldError('fullName')"
               />
-              <p v-if="form.fullName && form.fullName.length < 2" class="text-xs text-destructive">
+              <p v-if="fieldErrors.fullName" class="text-xs text-destructive">
+                {{ fieldErrors.fullName }}
+              </p>
+              <p v-else-if="form.fullName && form.fullName.length < 2" class="text-xs text-destructive">
                 Name must be at least 2 characters
               </p>
             </div>
@@ -222,9 +259,13 @@ const handleSubmit = async () => {
                 required
                 class="uppercase"
                 placeholder="GHA-XXXXXXXXX-X"
-                :class="{ 'border-destructive': form.ghanaCardNumber && !isGhanaCardValid }"
+                :class="{ 'border-destructive': fieldErrors.ghanaCardNumber || (form.ghanaCardNumber && !isGhanaCardValid) }"
+                @input="clearFieldError('ghanaCardNumber')"
               />
-              <p v-if="form.ghanaCardNumber && !isGhanaCardValid" class="text-xs text-destructive">
+              <p v-if="fieldErrors.ghanaCardNumber" class="text-xs text-destructive">
+                {{ fieldErrors.ghanaCardNumber }}
+              </p>
+              <p v-else-if="form.ghanaCardNumber && !isGhanaCardValid" class="text-xs text-destructive">
                 Invalid format. Use: GHA-XXXXXXXXX-X (e.g., GHA-123456789-0)
               </p>
               <p v-else class="text-xs text-muted-foreground">
@@ -244,7 +285,7 @@ const handleSubmit = async () => {
               </Label>
               <div
                 class="border-2 border-dashed rounded-lg p-6 text-center transition-colors"
-                :class="form.ghanaCardFrontUrl ? 'border-primary bg-primary/5' : 'border-muted-foreground/30'"
+                :class="form.ghanaCardFrontUrl ? 'border-primary bg-primary/5' : fieldErrors.ghanaCardFront ? 'border-destructive' : 'border-muted-foreground/30'"
               >
                 <div v-if="uploadingFront" class="text-muted-foreground">
                   Uploading...
@@ -284,6 +325,9 @@ const handleSubmit = async () => {
                   </Button>
                 </label>
               </div>
+              <p v-if="fieldErrors.ghanaCardFront" class="text-xs text-destructive">
+                {{ fieldErrors.ghanaCardFront }}
+              </p>
             </div>
 
             <!-- Back (Optional) -->
@@ -349,6 +393,8 @@ const handleSubmit = async () => {
                 v-model="form.officeCategoryId"
                 required
                 class="w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                :class="{ 'border-destructive': fieldErrors.officeCategoryId }"
+                @change="clearFieldError('officeCategoryId')"
               >
                 <option :value="null" disabled>Select category</option>
                 <option
@@ -359,7 +405,10 @@ const handleSubmit = async () => {
                   {{ cat.name }}
                 </option>
               </select>
-              <p class="text-xs text-muted-foreground">
+              <p v-if="fieldErrors.officeCategoryId" class="text-xs text-destructive">
+                {{ fieldErrors.officeCategoryId }}
+              </p>
+              <p v-else class="text-xs text-muted-foreground">
                 Article 286(5) of the 1992 Constitution
               </p>
             </div>
@@ -394,7 +443,12 @@ const handleSubmit = async () => {
                 type="text"
                 required
                 placeholder="e.g., Deputy Minister, Director, etc."
+                :class="{ 'border-destructive': fieldErrors.designation }"
+                @input="clearFieldError('designation')"
               />
+              <p v-if="fieldErrors.designation" class="text-xs text-destructive">
+                {{ fieldErrors.designation }}
+              </p>
             </div>
           </div>
 
@@ -412,7 +466,7 @@ const handleSubmit = async () => {
 
             <Button
               type="submit"
-              :disabled="!isStepValid || isLoading"
+              :disabled="isLoading"
             >
               <span v-if="isLoading">Creating...</span>
               <span v-else-if="currentStep === totalSteps">Complete Setup</span>

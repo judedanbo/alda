@@ -11,6 +11,7 @@ const confirmPassword = ref("");
 const error = ref("");
 const success = ref(false);
 const isLoading = ref(false);
+const { fieldErrors, clearFieldError, clearAll, handleServerError } = useFieldErrors();
 
 const passwordStrength = computed(() => {
   const p = password.value;
@@ -40,6 +41,20 @@ const canSubmit = computed(
 
 const handleSubmit = async () => {
   error.value = "";
+  clearAll();
+
+  if (!password.value) {
+    fieldErrors.password = "Password is required";
+  } else if (!isPasswordValid.value) {
+    fieldErrors.password = "Password does not meet requirements";
+  }
+  if (!confirmPassword.value) {
+    fieldErrors.confirmPassword = "Please confirm your password";
+  } else if (password.value !== confirmPassword.value) {
+    fieldErrors.confirmPassword = "Passwords do not match";
+  }
+  if (Object.keys(fieldErrors).length > 0) return;
+
   isLoading.value = true;
 
   try {
@@ -49,9 +64,7 @@ const handleSubmit = async () => {
     });
     success.value = true;
   } catch (err: unknown) {
-    const e = err as { data?: { message?: string }; message?: string };
-    error.value =
-      e?.data?.message || e?.message || "Failed to reset password. Please try again.";
+    error.value = handleServerError(err);
   } finally {
     isLoading.value = false;
   }
@@ -125,10 +138,15 @@ const handleSubmit = async () => {
                 required
                 autocomplete="new-password"
                 placeholder="Enter new password"
+                :class="{ 'border-destructive': fieldErrors.password }"
+                @input="clearFieldError('password')"
               />
+              <p v-if="fieldErrors.password" class="text-xs text-destructive">
+                {{ fieldErrors.password }}
+              </p>
 
               <!-- Strength Indicators -->
-              <div v-if="password" class="space-y-1 mt-2">
+              <div v-if="password && !fieldErrors.password" class="space-y-1 mt-2">
                 <div class="flex items-center gap-2 text-xs">
                   <svg
                     class="w-3.5 h-3.5 shrink-0"
@@ -225,10 +243,14 @@ const handleSubmit = async () => {
                 type="password"
                 required
                 autocomplete="new-password"
-                :class="{ 'border-destructive focus:ring-destructive': confirmPassword && !passwordsMatch }"
+                :class="{ 'border-destructive': fieldErrors.confirmPassword || (confirmPassword && !passwordsMatch) }"
                 placeholder="Confirm new password"
+                @input="clearFieldError('confirmPassword')"
               />
-              <p v-if="confirmPassword && !passwordsMatch" class="text-xs text-destructive">
+              <p v-if="fieldErrors.confirmPassword" class="text-xs text-destructive">
+                {{ fieldErrors.confirmPassword }}
+              </p>
+              <p v-else-if="confirmPassword && !passwordsMatch" class="text-xs text-destructive">
                 Passwords do not match
               </p>
             </div>

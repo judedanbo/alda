@@ -21,6 +21,7 @@ const showModal = ref(false);
 const isEditing = ref(false);
 const saving = ref(false);
 const errorMessage = ref("");
+const { fieldErrors, clearFieldError, clearAll: clearFieldErrors } = useFieldErrors();
 
 const formData = ref({
   id: 0,
@@ -55,6 +56,7 @@ await fetchCategories();
 const openCreateModal = () => {
   isEditing.value = false;
   errorMessage.value = "";
+  clearFieldErrors();
   formData.value = {
     id: 0,
     name: "",
@@ -68,6 +70,7 @@ const openCreateModal = () => {
 const openEditModal = (category: Category) => {
   isEditing.value = true;
   errorMessage.value = "";
+  clearFieldErrors();
   formData.value = {
     id: category.id,
     name: category.name,
@@ -81,6 +84,7 @@ const openEditModal = (category: Category) => {
 const closeModal = () => {
   showModal.value = false;
   errorMessage.value = "";
+  clearFieldErrors();
   formData.value = {
     id: 0,
     name: "",
@@ -91,8 +95,15 @@ const closeModal = () => {
 };
 
 const saveCategory = async () => {
-  saving.value = true;
   errorMessage.value = "";
+  clearFieldErrors();
+
+  if (!formData.value.name.trim()) {
+    fieldErrors.name = "Category name is required";
+    return;
+  }
+
+  saving.value = true;
   try {
     if (isEditing.value) {
       await $fetch(`/api/admin/categories/${formData.value.id}`, {
@@ -234,7 +245,7 @@ const toggleStatus = async (category: Category) => {
         </Alert>
 
         <div class="space-y-4">
-          <div>
+          <div class="space-y-2">
             <Label for="cat-name">
               Name <span class="text-red-500">*</span>
             </Label>
@@ -243,8 +254,12 @@ const toggleStatus = async (category: Category) => {
               v-model="formData.name"
               type="text"
               placeholder="Category name"
-              class="mt-1"
+              :class="{ 'border-destructive': fieldErrors.name }"
+              @input="clearFieldError('name')"
             />
+            <p v-if="fieldErrors.name" class="text-xs text-destructive">
+              {{ fieldErrors.name }}
+            </p>
           </div>
 
           <div>

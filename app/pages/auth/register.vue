@@ -18,6 +18,8 @@ const form = reactive({
 
 const error = ref("");
 const isLoading = ref(false);
+const submitted = ref(false);
+const { fieldErrors, clearFieldError, clearAll } = useFieldErrors();
 
 const passwordErrors = computed(() => {
   const errors: string[] = [];
@@ -54,9 +56,20 @@ const isFormValid = computed(() => {
 });
 
 const handleSubmit = async () => {
+  submitted.value = true;
+  clearAll();
+  error.value = "";
+
+  if (!form.email) fieldErrors.email = "Email is required";
+  if (!form.password) fieldErrors.password = "Password is required";
+  else if (passwordErrors.value.length > 0) fieldErrors.password = passwordErrors.value[0];
+  if (!form.confirmPassword) fieldErrors.confirmPassword = "Please confirm your password";
+  else if (!passwordsMatch.value) fieldErrors.confirmPassword = "Passwords do not match";
+  if (!form.acceptTerms) fieldErrors.acceptTerms = "You must accept the terms";
+
+  if (Object.keys(fieldErrors).length > 0) return;
   if (!isFormValid.value) return;
 
-  error.value = "";
   isLoading.value = true;
 
   const result = await authStore.register(
@@ -68,7 +81,14 @@ const handleSubmit = async () => {
   if (result.success) {
     router.push("/applicant/profile/setup");
   } else {
-    error.value = result.error || "Registration failed";
+    if (result.fieldErrors) {
+      for (const [field, messages] of Object.entries(result.fieldErrors)) {
+        if (messages?.length) fieldErrors[field] = messages[0];
+      }
+    }
+    if (!result.fieldErrors || Object.keys(result.fieldErrors).length === 0) {
+      error.value = result.error || "Registration failed";
+    }
   }
 
   isLoading.value = false;
@@ -102,7 +122,12 @@ const handleSubmit = async () => {
               required
               autocomplete="email"
               placeholder="you@example.com"
+              :class="{ 'border-destructive': fieldErrors.email }"
+              @input="clearFieldError('email')"
             />
+            <p v-if="fieldErrors.email" class="text-xs text-destructive">
+              {{ fieldErrors.email }}
+            </p>
           </div>
 
           <!-- Phone Field -->
@@ -114,8 +139,13 @@ const handleSubmit = async () => {
               type="tel"
               autocomplete="tel"
               placeholder="+233 XX XXX XXXX"
+              :class="{ 'border-destructive': fieldErrors.phone }"
+              @input="clearFieldError('phone')"
             />
-            <p class="text-xs text-muted-foreground">
+            <p v-if="fieldErrors.phone" class="text-xs text-destructive">
+              {{ fieldErrors.phone }}
+            </p>
+            <p v-else class="text-xs text-muted-foreground">
               Ghana phone number format: +233XXXXXXXXX or 0XXXXXXXXX
             </p>
           </div>
@@ -132,8 +162,13 @@ const handleSubmit = async () => {
               required
               autocomplete="new-password"
               placeholder="Create a strong password"
+              :class="{ 'border-destructive': fieldErrors.password }"
+              @input="clearFieldError('password')"
             />
-            <ul v-if="passwordErrors.length > 0" class="text-xs text-destructive space-y-1 mt-1">
+            <p v-if="fieldErrors.password" class="text-xs text-destructive">
+              {{ fieldErrors.password }}
+            </p>
+            <ul v-else-if="passwordErrors.length > 0" class="text-xs text-destructive space-y-1 mt-1">
               <li v-for="err in passwordErrors" :key="err">{{ err }}</li>
             </ul>
           </div>
@@ -150,9 +185,17 @@ const handleSubmit = async () => {
               required
               autocomplete="new-password"
               placeholder="Confirm your password"
+              :class="{ 'border-destructive': fieldErrors.confirmPassword || (form.confirmPassword && !passwordsMatch) }"
+              @input="clearFieldError('confirmPassword')"
             />
             <p
-              v-if="form.confirmPassword && !passwordsMatch"
+              v-if="fieldErrors.confirmPassword"
+              class="text-xs text-destructive"
+            >
+              {{ fieldErrors.confirmPassword }}
+            </p>
+            <p
+              v-else-if="form.confirmPassword && !passwordsMatch"
               class="text-xs text-destructive"
             >
               Passwords do not match
@@ -160,20 +203,26 @@ const handleSubmit = async () => {
           </div>
 
           <!-- Terms Checkbox -->
-          <div class="flex items-start gap-3">
-            <input
-              id="terms"
-              v-model="form.acceptTerms"
-              type="checkbox"
-              required
-              class="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-            />
-            <label for="terms" class="text-sm text-muted-foreground">
-              I agree to the
-              <NuxtLink to="/terms" class="text-primary hover:underline">Terms of Service</NuxtLink>
-              and
-              <NuxtLink to="/privacy" class="text-primary hover:underline">Privacy Policy</NuxtLink>
-            </label>
+          <div>
+            <div class="flex items-start gap-3">
+              <input
+                id="terms"
+                v-model="form.acceptTerms"
+                type="checkbox"
+                required
+                class="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                @change="clearFieldError('acceptTerms')"
+              />
+              <label for="terms" class="text-sm text-muted-foreground">
+                I agree to the
+                <NuxtLink to="/terms" class="text-primary hover:underline">Terms of Service</NuxtLink>
+                and
+                <NuxtLink to="/privacy" class="text-primary hover:underline">Privacy Policy</NuxtLink>
+              </label>
+            </div>
+            <p v-if="fieldErrors.acceptTerms" class="text-xs text-destructive mt-1">
+              {{ fieldErrors.acceptTerms }}
+            </p>
           </div>
 
           <!-- Submit Button -->

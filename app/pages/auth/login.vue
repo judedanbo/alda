@@ -15,15 +15,21 @@ const form = reactive({
 
 const error = ref("");
 const isLoading = ref(false);
+const { fieldErrors, clearFieldError, clearAll } = useFieldErrors();
 
 const handleSubmit = async () => {
   error.value = "";
+  clearAll();
+
+  if (!form.email) fieldErrors.email = "Email is required";
+  if (!form.password) fieldErrors.password = "Password is required";
+  if (Object.keys(fieldErrors).length > 0) return;
+
   isLoading.value = true;
 
   const result = await authStore.login(form.email, form.password);
 
   if (result.success) {
-    // Redirect based on user role
     if (authStore.isAdmin) {
       router.push("/admin/dashboard");
     } else if (authStore.isOfficer) {
@@ -36,7 +42,14 @@ const handleSubmit = async () => {
       router.push("/applicant/profile/setup");
     }
   } else {
-    error.value = result.error || "Login failed";
+    if (result.fieldErrors) {
+      for (const [field, messages] of Object.entries(result.fieldErrors)) {
+        if (messages?.length) fieldErrors[field] = messages[0];
+      }
+    }
+    if (!result.fieldErrors || Object.keys(result.fieldErrors).length === 0) {
+      error.value = result.error || "Login failed";
+    }
   }
 
   isLoading.value = false;
@@ -68,7 +81,12 @@ const handleSubmit = async () => {
               required
               autocomplete="email"
               placeholder="you@example.com"
+              :class="{ 'border-destructive': fieldErrors.email }"
+              @input="clearFieldError('email')"
             />
+            <p v-if="fieldErrors.email" class="text-xs text-destructive">
+              {{ fieldErrors.email }}
+            </p>
           </div>
 
           <!-- Password Field -->
@@ -89,7 +107,12 @@ const handleSubmit = async () => {
               required
               autocomplete="current-password"
               placeholder="Enter your password"
+              :class="{ 'border-destructive': fieldErrors.password }"
+              @input="clearFieldError('password')"
             />
+            <p v-if="fieldErrors.password" class="text-xs text-destructive">
+              {{ fieldErrors.password }}
+            </p>
           </div>
 
           <!-- Submit Button -->

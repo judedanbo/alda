@@ -26,6 +26,7 @@ const isLoading = ref(true);
 const isSaving = ref(false);
 const error = ref("");
 const success = ref("");
+const { fieldErrors, clearFieldError, clearAll, handleServerError } = useFieldErrors();
 
 // Fetch profile, institutions, and categories in parallel
 const [profileRes, institutionsRes, categoriesRes] = await Promise.all([
@@ -50,6 +51,16 @@ isLoading.value = false;
 async function handleSave() {
   error.value = "";
   success.value = "";
+  clearAll();
+
+  if (!form.designation || form.designation.length < 2) {
+    fieldErrors.designation = "Designation is required (at least 2 characters)";
+  }
+  if (!form.officeCategoryId) {
+    fieldErrors.officeCategoryId = "Please select a category";
+  }
+  if (Object.keys(fieldErrors).length > 0) return;
+
   isSaving.value = true;
 
   try {
@@ -65,8 +76,8 @@ async function handleSave() {
     });
 
     success.value = "Profile updated successfully.";
-  } catch (err: any) {
-    error.value = err.data?.message || "Failed to update profile.";
+  } catch (err: unknown) {
+    error.value = handleServerError(err);
   } finally {
     isSaving.value = false;
   }
@@ -134,7 +145,12 @@ async function handleSave() {
               type="text"
               placeholder="e.g., Deputy Minister, Director, etc."
               required
+              :class="{ 'border-destructive': fieldErrors.designation }"
+              @input="clearFieldError('designation')"
             />
+            <p v-if="fieldErrors.designation" class="text-xs text-destructive">
+              {{ fieldErrors.designation }}
+            </p>
           </div>
 
           <!-- Editable: Institution -->
@@ -160,8 +176,12 @@ async function handleSave() {
           <!-- Editable: Office Category -->
           <div class="space-y-2">
             <Label for="officeCategory">Public Office Category <span class="text-destructive">*</span></Label>
-            <Select v-model="form.officeCategoryId">
-              <SelectTrigger id="officeCategory" class="w-full">
+            <Select v-model="form.officeCategoryId" @update:model-value="clearFieldError('officeCategoryId')">
+              <SelectTrigger
+                id="officeCategory"
+                class="w-full"
+                :class="{ 'border-destructive': fieldErrors.officeCategoryId }"
+              >
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
@@ -174,7 +194,10 @@ async function handleSave() {
                 </SelectItem>
               </SelectContent>
             </Select>
-            <p class="text-xs text-muted-foreground">Article 286(5) of the 1992 Constitution</p>
+            <p v-if="fieldErrors.officeCategoryId" class="text-xs text-destructive">
+              {{ fieldErrors.officeCategoryId }}
+            </p>
+            <p v-else class="text-xs text-muted-foreground">Article 286(5) of the 1992 Constitution</p>
           </div>
 
           <!-- Actions -->
