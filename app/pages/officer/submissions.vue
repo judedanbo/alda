@@ -12,9 +12,14 @@ interface Declaration {
   applicant: {
     fullName: string;
     ghanaCardNumber: string;
-    designation: string;
-    institution: { name: string } | null;
-    officeCategory: { name: string } | null;
+    offices: Array<{
+      id: string;
+      designation: string;
+      startDate: string;
+      endDate: string | null;
+      officeCategory: { name: string } | null;
+      institution: { name: string } | null;
+    }>;
     user: {
       email: string;
       phone: string | null;
@@ -181,11 +186,11 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
               <TableCell>
                 <div>
                   <p class="font-medium text-foreground">{{ declaration.applicant.fullName }}</p>
-                  <p class="text-sm text-muted-foreground">{{ declaration.applicant.designation }}</p>
+                  <p class="text-sm text-muted-foreground">{{ declaration.applicant.offices?.[0]?.designation || 'N/A' }}</p>
                 </div>
               </TableCell>
               <TableCell class="text-sm text-muted-foreground">
-                {{ declaration.applicant.institution?.name || 'N/A' }}
+                {{ declaration.applicant.offices?.[0]?.institution?.name || 'N/A' }}
               </TableCell>
               <TableCell class="text-sm text-muted-foreground">
                 {{ declaration.submittedAt ? formatDate(declaration.submittedAt) : '-' }}
@@ -254,7 +259,7 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
             </div>
             <div class="flex justify-between">
               <span class="text-sm text-muted-foreground">Institution:</span>
-              <span>{{ selectedDeclaration.applicant.institution?.name || 'N/A' }}</span>
+              <span>{{ selectedDeclaration.applicant.offices?.[0]?.institution?.name || 'N/A' }}</span>
             </div>
           </div>
 

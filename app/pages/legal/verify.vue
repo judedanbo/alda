@@ -14,11 +14,16 @@ interface VerificationResult {
     applicant: {
       fullName: string;
       ghanaCardNumber: string;
-      designation: string;
       ghanaCardFrontUrl: string | null;
       ghanaCardBackUrl: string | null;
-      institution: { name: string } | null;
-      officeCategory: { name: string; articleReference: string | null } | null;
+      offices: Array<{
+        id: string;
+        designation: string;
+        startDate: string;
+        endDate: string | null;
+        officeCategory: { name: string; articleReference: string | null } | null;
+        institution: { name: string } | null;
+      }>;
       user: {
         email: string;
         phone: string | null;
@@ -212,19 +217,19 @@ const formatDate = (date: string) => {
               <div class="space-y-3 text-sm">
                 <div class="flex justify-between">
                   <span class="text-muted-foreground">Designation:</span>
-                  <span class="font-medium">{{ verificationResult.declaration.applicant.designation }}</span>
+                  <span class="font-medium">{{ verificationResult.declaration.applicant.offices?.[0]?.designation || 'N/A' }}</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-muted-foreground">Institution:</span>
-                  <span>{{ verificationResult.declaration.applicant.institution?.name || 'N/A' }}</span>
+                  <span>{{ verificationResult.declaration.applicant.offices?.[0]?.institution?.name || 'N/A' }}</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-muted-foreground">Category:</span>
-                  <span>{{ verificationResult.declaration.applicant.officeCategory?.name || 'N/A' }}</span>
+                  <span>{{ verificationResult.declaration.applicant.offices?.[0]?.officeCategory?.name || 'N/A' }}</span>
                 </div>
-                <div v-if="verificationResult.declaration.applicant.officeCategory?.articleReference" class="flex justify-between">
+                <div v-if="verificationResult.declaration.applicant.offices?.[0]?.officeCategory?.articleReference" class="flex justify-between">
                   <span class="text-muted-foreground">Article:</span>
-                  <span>{{ verificationResult.declaration.applicant.officeCategory.articleReference }}</span>
+                  <span>{{ verificationResult.declaration.applicant.offices?.[0]?.officeCategory?.articleReference }}</span>
                 </div>
               </div>
             </div>

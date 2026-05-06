@@ -13,9 +13,14 @@ interface Declaration {
   applicant: {
     fullName: string;
     ghanaCardNumber: string;
-    designation: string;
-    institution: { name: string } | null;
-    officeCategory: { name: string } | null;
+    offices: Array<{
+      id: string;
+      designation: string;
+      startDate: string;
+      endDate: string | null;
+      officeCategory: { name: string } | null;
+      institution: { name: string } | null;
+    }>;
     user: {
       email: string;
       phone: string | null;
@@ -282,7 +287,7 @@ const statuses = [
               </div>
             </TableCell>
             <TableCell class="text-sm text-muted-foreground">
-              {{ declaration.applicant.institution?.name || '-' }}
+              {{ declaration.applicant.offices?.[0]?.institution?.name || '-' }}
             </TableCell>
             <TableCell>
               <StatusBadge :status="declaration.status" />
@@ -372,15 +377,15 @@ const statuses = [
                 </div>
                 <div>
                   <p class="text-xs text-muted-foreground">Designation</p>
-                  <p class="text-sm text-foreground">{{ selectedDeclaration.applicant.designation }}</p>
+                  <p class="text-sm text-foreground">{{ selectedDeclaration.applicant.offices?.[0]?.designation || '-' }}</p>
                 </div>
                 <div>
                   <p class="text-xs text-muted-foreground">Institution</p>
-                  <p class="text-sm text-foreground">{{ selectedDeclaration.applicant.institution?.name || '-' }}</p>
+                  <p class="text-sm text-foreground">{{ selectedDeclaration.applicant.offices?.[0]?.institution?.name || '-' }}</p>
                 </div>
                 <div class="col-span-2">
                   <p class="text-xs text-muted-foreground">Office Category</p>
-                  <p class="text-sm text-foreground">{{ selectedDeclaration.applicant.officeCategory?.name || '-' }}</p>
+                  <p class="text-sm text-foreground">{{ selectedDeclaration.applicant.offices?.[0]?.officeCategory?.name || '-' }}</p>
                 </div>
               </div>
             </div>
