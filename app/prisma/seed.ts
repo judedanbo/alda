@@ -203,13 +203,20 @@ async function main() {
     console.log("Creating default users...");
     const defaultPassword = await bcrypt.hash("password123", 12);
 
-    const [adminRole, officerRole, legalRole] = await Promise.all([
+    const [adminRole, officerRole, legalRole, applicantRole] = await Promise.all([
       prisma.role.findUnique({ where: { name: "admin" } }),
       prisma.role.findUnique({ where: { name: "schedule_officer" } }),
       prisma.role.findUnique({ where: { name: "legal_unit" } }),
+      prisma.role.findUnique({ where: { name: "applicant" } }),
     ]);
 
     const seedUsers = [
+      {
+        email: "applicant@adla.gov.gh",
+        phone: "+233200000005",
+        role: applicantRole,
+        label: "applicant",
+      },
       {
         email: "admin@adla.gov.gh",
         phone: "+233200000000",
@@ -274,6 +281,32 @@ async function main() {
       });
 
       console.log(`✅ Created ${label} user: ${email} (password: password123)`);
+    }
+
+    const applicantUser = await prisma.user.findUnique({
+      where: { email: "applicant@adla.gov.gh" },
+    });
+
+    if (applicantUser) {
+      const firstInstitution = await prisma.institution.findFirst();
+      const firstCategory = await prisma.publicOfficeCategory.findFirst();
+
+      if (firstInstitution && firstCategory) {
+        await prisma.applicantProfile.upsert({
+          where: { userId: applicantUser.id },
+          update: {},
+          create: {
+            userId: applicantUser.id,
+            fullName: "Kwame Asante",
+            ghanaCardNumber: "GHA-000000001-0",
+            ghanaCardFrontUrl: "https://placeholder.local/ghana-card-front.jpg",
+            designation: "Director of Finance",
+            institutionId: firstInstitution.id,
+            officeCategoryId: firstCategory.id,
+          },
+        });
+        console.log("✅ Created applicant profile for applicant@adla.gov.gh");
+      }
     }
   }
 
