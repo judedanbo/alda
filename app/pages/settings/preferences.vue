@@ -11,7 +11,6 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { getAuthHeaders } = useAuth();
 
 const loading = ref(true);
 const saving = ref(false);
@@ -28,12 +27,10 @@ let successTimer: ReturnType<typeof setTimeout> | null = null;
 
 onMounted(async () => {
   try {
-    const response = await $fetch<{
+    const response = await authFetch<{
       success: boolean;
       data: { emailEnabled: boolean; smsEnabled: boolean; inAppEnabled: boolean };
-    }>("/api/notifications/preferences", {
-      headers: getAuthHeaders(),
-    });
+    }>("/api/notifications/preferences");
     if (response.success) {
       preferences.emailEnabled = response.data.emailEnabled;
       preferences.smsEnabled = response.data.smsEnabled;
@@ -52,9 +49,8 @@ const savePreferences = async () => {
   successMessage.value = "";
 
   try {
-    await $fetch("/api/notifications/preferences", {
+    await authFetch("/api/notifications/preferences", {
       method: "PATCH",
-      headers: getAuthHeaders(),
       body: {
         emailEnabled: preferences.emailEnabled,
         smsEnabled: preferences.smsEnabled,

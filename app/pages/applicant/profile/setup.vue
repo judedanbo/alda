@@ -7,7 +7,6 @@ definePageMeta({
 });
 
 const authStore = useAuthStore();
-const { getAuthHeaders } = useAuth();
 const router = useRouter();
 
 // Form state
@@ -45,10 +44,9 @@ const uploadGhanaCard = async (file: File, side: "front" | "back") => {
     formData.append("file", file);
     formData.append("side", side);
 
-    const response = await $fetch("/api/upload/ghana-card", {
+    const response = await authFetch<{ success: boolean; data: { url: string } }>("/api/upload/ghana-card", {
       method: "POST",
       body: formData,
-      headers: getAuthHeaders(),
     });
 
     if (response.success) {
@@ -155,7 +153,7 @@ const handleSubmit = async () => {
   isLoading.value = true;
 
   try {
-    const response = await $fetch("/api/profile", {
+    const response = await authFetch<{ success: boolean }>("/api/profile", {
       method: "POST",
       body: {
         fullName: form.fullName,
@@ -166,7 +164,6 @@ const handleSubmit = async () => {
         institutionId: form.institutionId || undefined,
         officeCategoryId: form.officeCategoryId,
       },
-      headers: getAuthHeaders(),
     });
 
     if (response.success) {

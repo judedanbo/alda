@@ -4,8 +4,6 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { getAuthHeaders } = useAuth();
-
 interface Institution {
   id: string;
   name: string;
@@ -48,9 +46,7 @@ const fetchInstitutions = async () => {
     if (searchQuery.value) params.append("search", searchQuery.value);
     if (selectedStatus.value) params.append("status", selectedStatus.value);
 
-    const response = await $fetch(`/api/admin/institutions?${params}`, {
-      headers: getAuthHeaders(),
-    });
+    const response = await authFetch<any>(`/api/admin/institutions?${params}`);
 
     if (response.success) {
       institutions.value = response.data.institutions;
@@ -103,9 +99,8 @@ const saveInstitution = async () => {
   saving.value = true;
   try {
     if (isEditing.value) {
-      await $fetch(`/api/admin/institutions/${formData.value.id}`, {
+      await authFetch(`/api/admin/institutions/${formData.value.id}`, {
         method: "PUT",
-        headers: getAuthHeaders(),
         body: {
           name: formData.value.name,
           type: formData.value.type || null,
@@ -113,9 +108,8 @@ const saveInstitution = async () => {
         },
       });
     } else {
-      await $fetch("/api/admin/institutions", {
+      await authFetch("/api/admin/institutions", {
         method: "POST",
-        headers: getAuthHeaders(),
         body: {
           name: formData.value.name,
           type: formData.value.type || null,
@@ -133,9 +127,8 @@ const saveInstitution = async () => {
 
 const toggleStatus = async (institution: Institution) => {
   try {
-    await $fetch(`/api/admin/institutions/${institution.id}`, {
+    await authFetch(`/api/admin/institutions/${institution.id}`, {
       method: "PUT",
-      headers: getAuthHeaders(),
       body: {
         name: institution.name,
         type: institution.type,

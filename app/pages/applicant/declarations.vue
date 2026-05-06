@@ -4,8 +4,6 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { getAuthHeaders } = useAuth();
-
 const page = ref(1);
 const statusFilter = ref("ALL");
 
@@ -13,15 +11,13 @@ const statusFilter = ref("ALL");
 const statusQuery = computed(() => statusFilter.value === "ALL" ? "" : statusFilter.value);
 
 // Fetch declarations
-const { data, pending, error, refresh } = await useFetch("/api/declarations", {
-  headers: getAuthHeaders(),
-  query: {
-    page,
-    limit: 10,
-    status: statusQuery,
-  },
-  watch: [page, statusQuery],
-});
+const { data, pending, error, refresh } = await useAsyncData(
+  "applicant-declarations",
+  () => authFetch<{ data: { declarations: any[]; pagination: any } }>("/api/declarations", {
+    query: { page: page.value, limit: 10, status: statusQuery.value },
+  }),
+  { watch: [page, statusQuery] },
+);
 
 const declarations = computed(() => data.value?.data?.declarations || []);
 const pagination = computed(() => data.value?.data?.pagination);

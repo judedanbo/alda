@@ -4,7 +4,7 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { user, isEmailVerified, getAuthHeaders } = useAuth();
+const { user, isEmailVerified } = useAuth();
 
 // Placeholder stats - will be populated from API
 const stats = ref([
@@ -21,9 +21,8 @@ const resendLoading = ref(false);
 async function resendVerification() {
   resendLoading.value = true;
   try {
-    await $fetch("/api/auth/resend-verification", {
+    await authFetch("/api/auth/resend-verification", {
       method: "POST",
-      headers: getAuthHeaders(),
     });
     alert("Verification email sent! Check your inbox.");
   } catch (e: any) {

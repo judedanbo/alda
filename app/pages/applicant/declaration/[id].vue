@@ -5,14 +5,14 @@ definePageMeta({
 });
 
 const route = useRoute();
-const { getAuthHeaders } = useAuth();
 
 const id = route.params.id as string;
 
 // Fetch declaration status
-const { data, pending, error, refresh } = await useFetch(`/api/declarations/${id}/status`, {
-  headers: getAuthHeaders(),
-});
+const { data, pending, error, refresh } = await useAsyncData(
+  `declaration-${id}`,
+  () => authFetch<{ data: any }>(`/api/declarations/${id}/status`),
+);
 
 const declaration = computed(() => data.value?.data);
 

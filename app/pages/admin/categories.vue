@@ -4,8 +4,6 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { getAuthHeaders } = useAuth();
-
 interface Category {
   id: number;
   name: string;
@@ -34,11 +32,8 @@ const formData = ref({
 const fetchCategories = async () => {
   loading.value = true;
   try {
-    const response = await $fetch(
+    const response = await authFetch<any>(
       "/api/admin/categories?includeInactive=true",
-      {
-        headers: getAuthHeaders(),
-      }
     );
 
     if (response.success) {
@@ -106,9 +101,8 @@ const saveCategory = async () => {
   saving.value = true;
   try {
     if (isEditing.value) {
-      await $fetch(`/api/admin/categories/${formData.value.id}`, {
+      await authFetch(`/api/admin/categories/${formData.value.id}`, {
         method: "PUT",
-        headers: getAuthHeaders(),
         body: {
           name: formData.value.name,
           description: formData.value.description || null,
@@ -117,9 +111,8 @@ const saveCategory = async () => {
         },
       });
     } else {
-      await $fetch("/api/admin/categories", {
+      await authFetch("/api/admin/categories", {
         method: "POST",
-        headers: getAuthHeaders(),
         body: {
           name: formData.value.name,
           description: formData.value.description || null,
@@ -141,17 +134,13 @@ const saveCategory = async () => {
 const toggleStatus = async (category: Category) => {
   try {
     if (category.isActive) {
-      // Deactivate via DELETE endpoint (soft-delete)
-      await $fetch(`/api/admin/categories/${category.id}`, {
+      await authFetch(`/api/admin/categories/${category.id}`, {
         method: "DELETE",
-        headers: getAuthHeaders(),
       });
       category.isActive = false;
     } else {
-      // Reactivate via PUT endpoint
-      await $fetch(`/api/admin/categories/${category.id}`, {
+      await authFetch(`/api/admin/categories/${category.id}`, {
         method: "PUT",
-        headers: getAuthHeaders(),
         body: {
           isActive: true,
         },

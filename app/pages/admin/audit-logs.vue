@@ -4,8 +4,6 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { getAuthHeaders } = useAuth();
-
 interface AuditLog {
   id: string;
   action: string;
@@ -51,9 +49,7 @@ const fetchLogs = async () => {
     if (dateFrom.value) params.append("dateFrom", dateFrom.value);
     if (dateTo.value) params.append("dateTo", dateTo.value);
 
-    const response = await $fetch(`/api/admin/audit-logs?${params}`, {
-      headers: getAuthHeaders(),
-    });
+    const response = await authFetch<any>(`/api/admin/audit-logs?${params}`);
 
     if (response.success) {
       logs.value = response.data.logs;

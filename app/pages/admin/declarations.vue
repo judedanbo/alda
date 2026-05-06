@@ -4,8 +4,6 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { getAuthHeaders } = useAuth();
-
 interface Declaration {
   id: string;
   uniqueCode: string;
@@ -76,9 +74,7 @@ const fetchDeclarations = async () => {
     if (dateFrom.value) params.append("dateFrom", dateFrom.value);
     if (dateTo.value) params.append("dateTo", dateTo.value);
 
-    const response = await $fetch(`/api/admin/declarations?${params}`, {
-      headers: getAuthHeaders(),
-    });
+    const response = await authFetch<any>(`/api/admin/declarations?${params}`);
 
     if (response.success) {
       declarations.value = response.data.declarations;
@@ -160,9 +156,8 @@ const submitReview = async () => {
   reviewError.value = "";
 
   try {
-    await $fetch("/api/reviews", {
+    await authFetch("/api/reviews", {
       method: "POST",
-      headers: getAuthHeaders(),
       body: {
         declarationId: selectedDeclaration.value.id,
         status: reviewStatus.value,
