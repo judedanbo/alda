@@ -18,6 +18,7 @@ const publicRoutes = [
   "/api/health",
   "/api/categories",
   "/api/institutions",
+  ...(process.env.NODE_ENV !== "production" ? ["/api/dev"] : []),
 ];
 
 // Routes that require specific roles

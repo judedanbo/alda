@@ -64,6 +64,7 @@ export default defineNuxtConfig({
     public: {
       appName: "Asset Declaration Portal",
       appUrl: process.env.APP_URL || "http://localhost:3000",
+      devMode: process.env.NODE_ENV !== "production",
     },
   },
 
