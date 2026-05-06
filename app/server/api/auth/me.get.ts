@@ -54,6 +54,7 @@ export default defineEventHandler(async (event) => {
             designation: user.applicantProfile.designation,
             institution: user.applicantProfile.institution,
             officeCategory: user.applicantProfile.officeCategory,
+            verificationStatus: user.applicantProfile.verificationStatus,
           }
         : null,
       notificationPreferences: user.notificationPrefs,

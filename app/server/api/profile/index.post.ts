@@ -1,6 +1,7 @@
 import prisma from "~/server/utils/prisma";
 import { validateBody, applicantProfileSchema } from "~/server/utils/validators";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { notifyVerificationSubmitted } from "~/server/services/notification.service";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -99,6 +100,20 @@ export default defineEventHandler(async (event) => {
       designation: profile.designation,
     },
   });
+
+  // Log verification request
+  await createAuditLog(event, {
+    userId: auth.userId,
+    action: AuditActions.APPLICANT_VERIFICATION_REQUESTED,
+    entityType: "applicant_profile",
+    entityId: profile.id,
+    newValues: {
+      verificationStatus: "PENDING_VERIFICATION",
+    },
+  });
+
+  // Notify applicant that verification is in progress
+  await notifyVerificationSubmitted(auth.userId, data.fullName);
 
   return {
     success: true,
