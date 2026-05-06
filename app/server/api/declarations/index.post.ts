@@ -29,6 +29,14 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  if (!profile.user.emailVerified) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: "Forbidden",
+      message: "Please verify your email address before creating a declaration",
+    });
+  }
+
   // Check for pending or in-review declarations
   const existingPending = await prisma.declaration.findFirst({
     where: {

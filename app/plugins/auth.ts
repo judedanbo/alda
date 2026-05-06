@@ -24,6 +24,8 @@ export default defineNuxtPlugin(() => {
         userCookie.value = null;
       }
     }
+
+    authStore.fetchUser();
   }
 
   authStore.initialized = true;
