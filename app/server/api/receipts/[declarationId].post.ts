@@ -45,8 +45,12 @@ export default defineEventHandler(async (event) => {
       applicant: {
         include: {
           user: true,
-          institution: true,
-          officeCategory: true,
+          offices: {
+            include: {
+              officeCategory: true,
+              institution: true,
+            },
+          },
         },
       },
       reviews: {
@@ -95,14 +99,21 @@ export default defineEventHandler(async (event) => {
   const reviewer = review?.reviewer;
 
   // Generate PDF
+  const today = new Date();
+  const activeOffices = declaration.applicant.offices
+    .filter((o: { endDate: Date | null }) => !o.endDate || new Date(o.endDate) > today)
+    .map((o: { designation: string; institution: { name: string } | null; officeCategory: { name: string } | null }) => ({
+      designation: o.designation,
+      institution: o.institution?.name || "N/A",
+      officeCategory: o.officeCategory?.name || "N/A",
+    }));
+
   const pdfUrl = await generateReceiptPDF({
     receiptNumber,
     declarationCode: declaration.uniqueCode,
     applicantName: declaration.applicant.fullName,
     ghanaCardNumber: declaration.applicant.ghanaCardNumber,
-    institution: declaration.applicant.institution?.name || "N/A",
-    designation: declaration.applicant.designation,
-    officeCategory: declaration.applicant.officeCategory?.name || "N/A",
+    offices: activeOffices,
     submissionDate: declaration.submittedAt || declaration.createdAt,
     approvalDate: review?.reviewDate || new Date(),
     approvedBy: reviewer?.email || "System",

@@ -116,19 +116,33 @@ model ApplicantProfile {
   ghanaCardNumber  String   @unique @map("ghana_card_number") @db.VarChar(20)
   ghanaCardFrontUrl String  @map("ghana_card_front_url") @db.Text
   ghanaCardBackUrl  String? @map("ghana_card_back_url") @db.Text
-  institutionId    String?  @map("institution_id") @db.Uuid
-  designation      String   @db.VarChar(255)
-  officeCategoryId Int      @map("office_category_id")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   // Relations
-  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  institution    Institution?         @relation(fields: [institutionId], references: [id])
-  officeCategory PublicOfficeCategory @relation(fields: [officeCategoryId], references: [id])
-  declarations   Declaration[]
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  offices      ApplicantOffice[]
+  declarations Declaration[]
 
   @@map("applicant_profiles")
+}
+
+model ApplicantOffice {
+  id               String    @id @default(uuid()) @db.Uuid
+  profileId        String    @map("profile_id") @db.Uuid
+  designation      String    @db.VarChar(255)
+  officeCategoryId Int       @map("office_category_id")
+  institutionId    String?   @map("institution_id") @db.Uuid
+  startDate        DateTime  @map("start_date") @db.Date
+  endDate          DateTime? @map("end_date") @db.Date
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  profile        ApplicantProfile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  officeCategory PublicOfficeCategory @relation(fields: [officeCategoryId], references: [id])
+  institution    Institution?         @relation(fields: [institutionId], references: [id])
+
+  @@map("applicant_offices")
 }
 
 // ============================================
@@ -143,7 +157,7 @@ model PublicOfficeCategory {
   isActive         Boolean @default(true) @map("is_active")
 
   // Relations
-  applicantProfiles ApplicantProfile[]
+  applicantOffices ApplicantOffice[]
 
   @@map("public_office_categories")
 }
@@ -155,7 +169,7 @@ model Institution {
   isActive Boolean @default(true) @map("is_active")
 
   // Relations
-  applicantProfiles ApplicantProfile[]
+  applicantOffices ApplicantOffice[]
 
   @@map("institutions")
 }
