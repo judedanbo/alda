@@ -28,6 +28,7 @@ export const useAuthStore = defineStore("auth", () => {
   const isOfficer = computed(() => user.value?.roles.includes("schedule_officer") ?? false);
   const isLegalUnit = computed(() => user.value?.roles.includes("legal_unit") ?? false);
   const isAdmin = computed(() => user.value?.roles.includes("admin") ?? false);
+  const isEmailVerified = computed(() => user.value?.emailVerified ?? false);
 
   // Actions
   function setTokens(newTokens: Tokens) {
@@ -240,6 +241,7 @@ export const useAuthStore = defineStore("auth", () => {
     isOfficer,
     isLegalUnit,
     isAdmin,
+    isEmailVerified,
     // Actions
     setTokens,
     clearTokens,
