@@ -303,6 +303,7 @@ async function main() {
             designation: "Director of Finance",
             institutionId: firstInstitution.id,
             officeCategoryId: firstCategory.id,
+            verificationStatus: "VERIFIED",
           },
         });
         console.log("✅ Created applicant profile for applicant@adla.gov.gh");
