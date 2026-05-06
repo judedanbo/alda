@@ -170,7 +170,7 @@ async function resendVerification() {
           </p>
           <div class="flex gap-2 mt-3">
             <Button as-child size="sm">
-              <NuxtLink to="/applicant/profile/edit">Edit Profile</NuxtLink>
+              <NuxtLink to="/applicant/profile/edit">Edit Profile &amp; Resubmit</NuxtLink>
             </Button>
           </div>
         </div>

@@ -251,7 +251,7 @@ const formatDate = (date: string) =>
 
                 <Button
                   class="w-full"
-                  :disabled="!reviewForm.status || !reviewForm.reason || submitting"
+                  :disabled="!reviewForm.status || !reviewForm.reason || submitting || (reviewForm.status === 'MORE_INFO_REQUIRED' && !reviewForm.messageToApplicant)"
                   @click="submitReview"
                 >
                   {{ submitting ? "Submitting..." : "Submit Decision" }}

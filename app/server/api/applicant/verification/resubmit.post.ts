@@ -44,6 +44,14 @@ export default defineEventHandler(async (event) => {
     newValues: { verificationStatus: "PENDING_VERIFICATION" },
   });
 
+  await createAuditLog(event, {
+    userId: auth.userId,
+    action: AuditActions.APPLICANT_VERIFICATION_REQUESTED,
+    entityType: "applicant_profile",
+    entityId: profile.id,
+    newValues: { verificationStatus: "PENDING_VERIFICATION" },
+  });
+
   await notifyVerificationSubmitted(auth.userId, profile.fullName);
 
   return {

@@ -52,7 +52,7 @@ export default defineEventHandler(async (event) => {
 
   await createAuditLog(event, {
     userId: auth.userId,
-    action: statusAuditMap[body.status]!,
+    action: AuditActions.APPLICANT_VERIFICATION_REVIEWED,
     entityType: "applicant_profile",
     entityId: id,
     oldValues: { verificationStatus: oldStatus },
@@ -62,6 +62,15 @@ export default defineEventHandler(async (event) => {
       messageToApplicant: body.messageToApplicant,
       reviewerId: auth.userId,
     },
+  });
+
+  await createAuditLog(event, {
+    userId: auth.userId,
+    action: statusAuditMap[body.status]!,
+    entityType: "applicant_profile",
+    entityId: id,
+    oldValues: { verificationStatus: oldStatus },
+    newValues: { verificationStatus: body.status },
   });
 
   await notifyVerificationStatusChanged(
