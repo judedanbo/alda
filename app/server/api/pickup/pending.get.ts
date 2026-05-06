@@ -55,7 +55,13 @@ export default defineEventHandler(async (event) => {
           include: {
             applicant: {
               include: {
-                institution: true,
+                offices: {
+                  include: {
+                    officeCategory: true,
+                    institution: true,
+                  },
+                  orderBy: { startDate: "desc" as const },
+                },
               },
             },
             receipts: { orderBy: { createdAt: "desc" }, take: 1 },
