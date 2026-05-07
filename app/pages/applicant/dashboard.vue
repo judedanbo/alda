@@ -160,9 +160,12 @@ async function resendVerification() {
         <p v-if="user.verificationStatus === 'PENDING_VERIFICATION'">
           Your registration is being reviewed by the legal office. You will be notified once a decision is made.
         </p>
-        <p v-else-if="user.verificationStatus === 'ON_HOLD'">
-          Your registration is under review. Please wait for further updates.
-        </p>
+        <div v-else-if="user.verificationStatus === 'ON_HOLD'">
+          <p>Your registration is under review. Please wait for further updates.</p>
+          <p v-if="verificationInfo?.messageToApplicant" class="mt-2 p-3 bg-orange-100 rounded text-sm">
+            {{ verificationInfo.messageToApplicant }}
+          </p>
+        </div>
         <div v-else-if="user.verificationStatus === 'MORE_INFO_REQUIRED'">
           <p>The legal office has requested additional information.</p>
           <p v-if="verificationInfo?.messageToApplicant" class="mt-2 p-3 bg-blue-100 rounded text-sm">

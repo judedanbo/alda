@@ -233,7 +233,7 @@ const formatDate = (date: string) =>
                   />
                 </div>
 
-                <div v-if="reviewForm.status === 'MORE_INFO_REQUIRED' || reviewForm.status === 'REJECTED'">
+                <div v-if="reviewForm.status === 'MORE_INFO_REQUIRED' || reviewForm.status === 'REJECTED' || reviewForm.status === 'ON_HOLD'">
                   <label class="text-sm font-medium mb-2 block">
                     Message to Applicant
                     <span v-if="reviewForm.status === 'MORE_INFO_REQUIRED'" class="text-destructive">*</span>

@@ -24,6 +24,7 @@ const verificationStats = computed(() => statsData.value?.data || {
     <PageHeader title="Legal Unit Dashboard" description="Verify declaration codes and recall applicant information" />
 
     <!-- Verification Summary -->
+    <h2 class="text-lg font-semibold text-foreground">Applicant Verification Statistics</h2>
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <NuxtLink to="/legal/verifications?status=PENDING_VERIFICATION">
         <Card class="hover:border-primary/50 transition-colors">
