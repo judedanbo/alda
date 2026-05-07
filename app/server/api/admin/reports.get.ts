@@ -80,7 +80,7 @@ export default defineEventHandler(async (event) => {
     .map(([month, count]) => ({ month, count }));
 
   // Top institutions
-  const topInstitutions = await prisma.applicantProfile.groupBy({
+  const topInstitutions = await prisma.applicantOffice.groupBy({
     by: ["institutionId"],
     _count: { institutionId: true },
     where: {

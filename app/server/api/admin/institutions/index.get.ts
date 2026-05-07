@@ -47,7 +47,7 @@ export default defineEventHandler(async (event) => {
       where,
       include: {
         _count: {
-          select: { applicantProfiles: true },
+          select: { applicantOffices: true },
         },
       },
       orderBy: { name: "asc" },
