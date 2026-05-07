@@ -18,7 +18,6 @@ process.stderr.write = ((chunk: unknown, ...rest: unknown[]) => {
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-01-15",
-  devtools: { enabled: true },
 
   modules: [
     "shadcn-nuxt",
