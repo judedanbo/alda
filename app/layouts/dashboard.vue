@@ -12,8 +12,15 @@ import {
 const authStore = useAuthStore();
 const route = useRoute();
 
-const navigation = computed(() => {
-  const baseNav = [
+interface NavItem {
+  name: string;
+  href: string;
+  icon: string;
+  disabled?: boolean;
+}
+
+const navigation = computed<NavItem[]>(() => {
+  const baseNav: NavItem[] = [
     { name: "Dashboard", href: "/applicant/dashboard", icon: "home" },
   ];
 
