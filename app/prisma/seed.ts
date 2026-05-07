@@ -292,7 +292,7 @@ async function main() {
       const firstCategory = await prisma.publicOfficeCategory.findFirst();
 
       if (firstInstitution && firstCategory) {
-        await prisma.applicantProfile.upsert({
+        const profile = await prisma.applicantProfile.upsert({
           where: { userId: applicantUser.id },
           update: {},
           create: {
@@ -300,13 +300,26 @@ async function main() {
             fullName: "Kwame Asante",
             ghanaCardNumber: "GHA-000000001-0",
             ghanaCardFrontUrl: "https://placeholder.local/ghana-card-front.jpg",
-            designation: "Director of Finance",
-            institutionId: firstInstitution.id,
-            officeCategoryId: firstCategory.id,
             verificationStatus: "VERIFIED",
           },
         });
-        console.log("✅ Created applicant profile for applicant@adla.gov.gh");
+
+        const existingOffice = await prisma.applicantOffice.findFirst({
+          where: { profileId: profile.id },
+        });
+        if (!existingOffice) {
+          await prisma.applicantOffice.create({
+            data: {
+              profileId: profile.id,
+              designation: "Director of Finance",
+              institutionId: firstInstitution.id,
+              officeCategoryId: firstCategory.id,
+              startDate: new Date("2024-01-15"),
+            },
+          });
+        }
+
+        console.log("✅ Created applicant profile and office for applicant@adla.gov.gh");
       }
     }
   }

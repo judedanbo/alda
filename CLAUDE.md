@@ -22,6 +22,7 @@ npm run lint             # ESLint (@nuxt/eslint flat config)
 
 npm run db:generate      # regenerate Prisma client after schema.prisma changes
 npm run db:migrate       # create+apply a dev migration
+npm run db:reset         # drop DB, re-apply all migrations, and re-seed
 npm run db:push          # push schema without a migration (prototype only)
 npm run db:seed          # tsx prisma/seed.ts
 npm run db:studio        # Prisma Studio GUI

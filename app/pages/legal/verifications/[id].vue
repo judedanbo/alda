@@ -176,25 +176,28 @@ const formatDate = (date: string) =>
           <Card>
             <CardHeader><CardTitle>Office Details</CardTitle></CardHeader>
             <CardContent>
-              <dl class="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <dt class="text-muted-foreground">Designation</dt>
-                  <dd class="font-medium">{{ profile.designation }}</dd>
-                </div>
-                <div>
-                  <dt class="text-muted-foreground">Office Category</dt>
-                  <dd class="font-medium">
-                    {{ profile.officeCategory?.name }}
-                    <span v-if="profile.officeCategory?.articleReference" class="text-xs text-muted-foreground ml-1">
-                      ({{ profile.officeCategory.articleReference }})
-                    </span>
-                  </dd>
-                </div>
-                <div v-if="profile.institution">
-                  <dt class="text-muted-foreground">Institution</dt>
-                  <dd class="font-medium">{{ profile.institution.name }}</dd>
-                </div>
-              </dl>
+              <div v-if="profile.offices?.length" class="space-y-4">
+                <dl v-for="office in profile.offices" :key="office.id" class="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <dt class="text-muted-foreground">Designation</dt>
+                    <dd class="font-medium">{{ office.designation }}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-muted-foreground">Office Category</dt>
+                    <dd class="font-medium">
+                      {{ office.officeCategory?.name }}
+                      <span v-if="office.officeCategory?.articleReference" class="text-xs text-muted-foreground ml-1">
+                        ({{ office.officeCategory.articleReference }})
+                      </span>
+                    </dd>
+                  </div>
+                  <div v-if="office.institution">
+                    <dt class="text-muted-foreground">Institution</dt>
+                    <dd class="font-medium">{{ office.institution.name }}</dd>
+                  </div>
+                </dl>
+              </div>
+              <p v-else class="text-sm text-muted-foreground">No office details on record.</p>
             </CardContent>
           </Card>
         </div>

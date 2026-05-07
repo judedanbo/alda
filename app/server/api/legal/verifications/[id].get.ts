@@ -20,8 +20,13 @@ export default defineEventHandler(async (event) => {
           createdAt: true,
         },
       },
-      institution: true,
-      officeCategory: true,
+      offices: {
+        include: {
+          institution: true,
+          officeCategory: true,
+        },
+        orderBy: { startDate: "desc" as const },
+      },
       verificationReviews: {
         orderBy: { createdAt: "desc" },
         include: {

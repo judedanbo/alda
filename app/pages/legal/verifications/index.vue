@@ -126,9 +126,12 @@ const formatDate = (date: string) =>
                     {{ profile.ghanaCardNumber }} &bull; {{ profile.user?.email }}
                   </p>
                   <p class="text-xs text-muted-foreground mt-1">
-                    {{ profile.officeCategory?.name }}
-                    <span v-if="profile.institution"> &bull; {{ profile.institution.name }}</span>
-                    &bull; Registered {{ formatDate(profile.createdAt) }}
+                    <template v-if="profile.offices?.[0]">
+                      {{ profile.offices[0].officeCategory?.name }}
+                      <span v-if="profile.offices[0].institution"> &bull; {{ profile.offices[0].institution.name }}</span>
+                      &bull;
+                    </template>
+                    Registered {{ formatDate(profile.createdAt) }}
                   </p>
                 </div>
               </div>

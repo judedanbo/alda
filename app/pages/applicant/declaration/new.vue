@@ -172,19 +172,19 @@ const handleSubmit = async () => {
               <dt class="text-muted-foreground">Ghana Card</dt>
               <dd class="font-medium text-foreground">{{ profile?.ghanaCardNumber }}</dd>
             </div>
-            <div class="flex justify-between">
-              <dt class="text-muted-foreground">Office Category</dt>
-              <dd class="font-medium text-foreground">{{ profile?.officeCategory?.name }}</dd>
-            </div>
-            <div class="flex justify-between">
-              <dt class="text-muted-foreground">Designation</dt>
-              <dd class="font-medium text-foreground">{{ profile?.designation }}</dd>
-            </div>
-            <div v-if="profile?.institution" class="flex justify-between">
-              <dt class="text-muted-foreground">Institution</dt>
-              <dd class="font-medium text-foreground">{{ profile?.institution?.name }}</dd>
-            </div>
           </dl>
+          <div v-if="profile?.offices?.length" class="mt-4">
+            <p class="text-sm text-muted-foreground mb-2">Office(s) Held:</p>
+            <div
+              v-for="office in profile.offices"
+              :key="office.id"
+              class="text-sm border-l-2 border-primary/30 pl-3 mb-2"
+            >
+              <p class="font-medium text-foreground">{{ office.designation }}</p>
+              <p class="text-muted-foreground">{{ office.officeCategory?.name }}</p>
+              <p v-if="office.institution" class="text-muted-foreground">{{ office.institution.name }}</p>
+            </div>
+          </div>
         </div>
 
         <!-- Terms -->

@@ -59,10 +59,18 @@ export const applicantProfileSchema = z.object({
     .regex(ghanaCardRegex, "Invalid Ghana Card number format (GHA-XXXXXXXXX-X)"),
   ghanaCardFrontUrl: z.string().url("Invalid Ghana Card front image URL").optional(),
   ghanaCardBackUrl: z.string().url("Invalid Ghana Card back image URL").optional(),
-  designation: z.string().min(2, "Designation is required"),
-  institutionId: z.string().uuid("Invalid institution ID").optional().nullable(),
-  officeCategoryId: z.number().int().positive("Office category is required"),
 });
+
+export const officeSchema = z.object({
+  designation: z.string().min(2, "Designation is required").max(255),
+  officeCategoryId: z.number().int().positive("Office category is required"),
+  institutionId: z.string().uuid("Invalid institution ID").optional().nullable(),
+  startDate: z.coerce.date({ required_error: "Start date is required" }),
+  endDate: z.coerce.date().optional().nullable(),
+}).refine(
+  (data) => !data.endDate || data.endDate > data.startDate,
+  { message: "End date must be after start date", path: ["endDate"] }
+);
 
 /**
  * Declaration submission schema

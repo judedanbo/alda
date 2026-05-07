@@ -50,8 +50,13 @@ export default defineEventHandler(async (event) => {
           include: {
             applicant: {
               include: {
-                institution: true,
-                officeCategory: true,
+                offices: {
+                  include: {
+                    officeCategory: true,
+                    institution: true,
+                  },
+                  orderBy: { startDate: "desc" as const },
+                },
               },
             },
           },

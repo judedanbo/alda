@@ -16,8 +16,11 @@ interface User {
   profile: {
     fullName: string;
     ghanaCardNumber: string;
-    designation: string;
-    institution: string | null;
+    offices: Array<{
+      designation: string;
+      officeCategory: { name: string } | null;
+      institution: { name: string } | null;
+    }>;
   } | null;
 }
 

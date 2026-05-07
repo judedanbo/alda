@@ -22,8 +22,13 @@ export default defineEventHandler(async (event) => {
       },
       applicantProfile: {
         include: {
-          institution: true,
-          officeCategory: true,
+          offices: {
+            include: {
+              officeCategory: true,
+              institution: true,
+            },
+            orderBy: { startDate: "desc" as const },
+          },
         },
       },
       notificationPrefs: true,
@@ -51,9 +56,7 @@ export default defineEventHandler(async (event) => {
             id: user.applicantProfile.id,
             fullName: user.applicantProfile.fullName,
             ghanaCardNumber: user.applicantProfile.ghanaCardNumber,
-            designation: user.applicantProfile.designation,
-            institution: user.applicantProfile.institution,
-            officeCategory: user.applicantProfile.officeCategory,
+            offices: user.applicantProfile.offices,
             verificationStatus: user.applicantProfile.verificationStatus,
           }
         : null,

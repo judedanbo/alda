@@ -64,8 +64,13 @@ export default defineEventHandler(async (event) => {
       include: {
         applicant: {
           include: {
-            institution: true,
-            officeCategory: true,
+            offices: {
+              include: {
+                officeCategory: true,
+                institution: true,
+              },
+              orderBy: { startDate: "desc" as const },
+            },
             user: {
               select: {
                 email: true,
@@ -116,9 +121,7 @@ export default defineEventHandler(async (event) => {
         applicant: {
           fullName: d.applicant.fullName,
           ghanaCardNumber: d.applicant.ghanaCardNumber,
-          designation: d.applicant.designation,
-          institution: d.applicant.institution,
-          officeCategory: d.applicant.officeCategory,
+          offices: d.applicant.offices,
           user: d.applicant.user,
         },
         submission: d.submissions[0]

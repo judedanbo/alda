@@ -33,8 +33,14 @@ export default defineEventHandler(async (event) => {
       where,
       include: {
         user: { select: { email: true, phone: true, createdAt: true } },
-        institution: { select: { name: true } },
-        officeCategory: { select: { name: true, articleReference: true } },
+        offices: {
+          include: {
+            institution: { select: { name: true } },
+            officeCategory: { select: { name: true, articleReference: true } },
+          },
+          orderBy: { startDate: "desc" as const },
+          take: 1,
+        },
         verificationReviews: {
           orderBy: { createdAt: "desc" },
           take: 1,

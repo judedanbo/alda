@@ -42,34 +42,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Verify institution exists if provided
-  if (data.institutionId) {
-    const institution = await prisma.institution.findUnique({
-      where: { id: data.institutionId },
-    });
-
-    if (!institution) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: "Bad Request",
-        message: "Invalid institution ID",
-      });
-    }
-  }
-
-  // Verify office category exists
-  const category = await prisma.publicOfficeCategory.findUnique({
-    where: { id: data.officeCategoryId },
-  });
-
-  if (!category) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: "Bad Request",
-      message: "Invalid office category ID",
-    });
-  }
-
   // Create profile
   const profile = await prisma.applicantProfile.create({
     data: {
@@ -78,13 +50,14 @@ export default defineEventHandler(async (event) => {
       ghanaCardNumber: data.ghanaCardNumber,
       ghanaCardFrontUrl: data.ghanaCardFrontUrl || "",
       ghanaCardBackUrl: data.ghanaCardBackUrl,
-      institutionId: data.institutionId,
-      designation: data.designation,
-      officeCategoryId: data.officeCategoryId,
     },
     include: {
-      institution: true,
-      officeCategory: true,
+      offices: {
+        include: {
+          officeCategory: true,
+          institution: true,
+        },
+      },
     },
   });
 
@@ -97,7 +70,6 @@ export default defineEventHandler(async (event) => {
     newValues: {
       fullName: profile.fullName,
       ghanaCardNumber: profile.ghanaCardNumber,
-      designation: profile.designation,
     },
   });
 

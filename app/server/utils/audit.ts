@@ -61,6 +61,11 @@ export const AuditActions = {
   PROFILE_CREATED: "profile_created",
   PROFILE_UPDATED: "profile_updated",
 
+  // Offices
+  OFFICE_ADDED: "office_added",
+  OFFICE_UPDATED: "office_updated",
+  OFFICE_REMOVED: "office_removed",
+
   // Declarations
   DECLARATION_CREATED: "declaration_created",
   DECLARATION_SUBMITTED: "declaration_submitted",

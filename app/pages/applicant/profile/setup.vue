@@ -31,12 +31,34 @@ onMounted(async () => {
 const form = reactive({
   fullName: "",
   ghanaCardNumber: "",
-  designation: "",
-  institutionId: null as string | null,
-  officeCategoryId: null as number | null,
   ghanaCardFrontUrl: "",
   ghanaCardBackUrl: "",
 });
+
+interface OfficeEntry {
+  id?: string;
+  designation: string;
+  institutionId: string | null;
+  officeCategoryId: number | null;
+  startDate: string;
+  endDate: string;
+}
+
+const officeForm = reactive<OfficeEntry>({
+  designation: "",
+  institutionId: null,
+  officeCategoryId: null,
+  startDate: new Date().toISOString().split("T")[0],
+  endDate: "",
+});
+
+const offices = ref<(OfficeEntry & { id: string; categoryName?: string; institutionName?: string })[]>([]);
+const addingOffice = ref(false);
+
+const formatDate = (dateStr: string) => {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+};
 
 const error = ref("");
 const isLoading = ref(false);
@@ -103,7 +125,7 @@ const isStepValid = computed(() => {
     case 2:
       return form.ghanaCardFrontUrl !== "";
     case 3:
-      return form.designation.length >= 2 && form.officeCategoryId !== null;
+      return offices.value.length > 0;
     default:
       return false;
   }
@@ -137,20 +159,31 @@ const validateStep = (): boolean => {
       }
       break;
     case 3:
-      if (!form.designation || form.designation.length < 2) {
-        fieldErrors.designation = "Designation is required";
-      }
-      if (!form.officeCategoryId) {
-        fieldErrors.officeCategoryId = "Please select a category";
-      }
       break;
   }
   return Object.keys(fieldErrors).length === 0;
 };
 
 // Go to next step
-const nextStep = () => {
-  if (currentStep.value < totalSteps && validateStep()) {
+const nextStep = async () => {
+  if (!validateStep()) return;
+
+  if (currentStep.value === 2) {
+    try {
+      await createProfile();
+    } catch (err: unknown) {
+      const e = err as { status?: number; statusCode?: number; data?: { statusCode?: number } };
+      const status = e?.status ?? e?.statusCode ?? e?.data?.statusCode;
+      if (status !== 409) {
+        return;
+      }
+      error.value = "";
+    }
+    currentStep.value = 3;
+    return;
+  }
+
+  if (currentStep.value < totalSteps) {
     currentStep.value++;
   }
 };
@@ -163,36 +196,111 @@ const prevStep = () => {
   }
 };
 
-// Submit profile
-const handleSubmit = async () => {
-  if (!validateStep()) return;
-
+// Create profile (called when moving from step 2 to step 3)
+const createProfile = async () => {
   error.value = "";
   isLoading.value = true;
 
   try {
-    const response = await authFetch<{ success: boolean }>("/api/profile", {
+    await authFetch("/api/profile", {
       method: "POST",
       body: {
         fullName: form.fullName,
         ghanaCardNumber: form.ghanaCardNumber,
         ghanaCardFrontUrl: form.ghanaCardFrontUrl,
         ghanaCardBackUrl: form.ghanaCardBackUrl || undefined,
-        designation: form.designation,
-        institutionId: form.institutionId || undefined,
-        officeCategoryId: form.officeCategoryId,
+      },
+    });
+  } catch (err: unknown) {
+    error.value = handleServerError(err);
+    throw err;
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Validate office form fields
+const validateOfficeForm = (): boolean => {
+  clearAll();
+  if (!officeForm.designation || officeForm.designation.length < 2) {
+    fieldErrors.designation = "Designation is required (at least 2 characters)";
+  }
+  if (!officeForm.officeCategoryId) {
+    fieldErrors.officeCategoryId = "Please select a category";
+  }
+  if (!officeForm.startDate) {
+    fieldErrors.startDate = "Start date is required";
+  }
+  if (officeForm.endDate && officeForm.startDate && officeForm.endDate <= officeForm.startDate) {
+    fieldErrors.endDate = "End date must be after start date";
+  }
+  return Object.keys(fieldErrors).length === 0;
+};
+
+// Add an office
+const addOffice = async () => {
+  if (!validateOfficeForm()) return;
+
+  addingOffice.value = true;
+  error.value = "";
+
+  try {
+    const response = await authFetch<{ success: boolean; data: any }>("/api/profile/offices", {
+      method: "POST",
+      body: {
+        designation: officeForm.designation,
+        officeCategoryId: officeForm.officeCategoryId,
+        institutionId: officeForm.institutionId || undefined,
+        startDate: officeForm.startDate,
+        endDate: officeForm.endDate || undefined,
       },
     });
 
     if (response.success) {
-      await authStore.fetchUser();
-      router.push("/applicant/dashboard");
+      offices.value.push({
+        id: response.data.id,
+        designation: response.data.designation,
+        officeCategoryId: response.data.officeCategoryId,
+        institutionId: response.data.institutionId,
+        startDate: response.data.startDate,
+        endDate: response.data.endDate || "",
+        categoryName: response.data.officeCategory?.name,
+        institutionName: response.data.institution?.name,
+      });
+
+      officeForm.designation = "";
+      officeForm.institutionId = null;
+      officeForm.officeCategoryId = null;
+      officeForm.startDate = new Date().toISOString().split("T")[0];
+      officeForm.endDate = "";
+      clearAll();
     }
   } catch (err: unknown) {
     error.value = handleServerError(err);
   } finally {
-    isLoading.value = false;
+    addingOffice.value = false;
   }
+};
+
+// Remove an office
+const removeOffice = async (officeId: string) => {
+  try {
+    await authFetch(`/api/profile/offices/${officeId}`, { method: "DELETE" });
+    offices.value = offices.value.filter((o) => o.id !== officeId);
+  } catch (err: unknown) {
+    error.value = handleServerError(err);
+  }
+};
+
+// Complete setup
+const handleSubmit = async () => {
+  if (offices.value.length === 0) {
+    error.value = "Please add at least one office.";
+    return;
+  }
+
+  await authStore.fetchUser();
+  router.push("/applicant/dashboard");
 };
 </script>
 
@@ -401,72 +509,140 @@ const handleSubmit = async () => {
           <!-- Step 3: Office Details -->
           <div v-show="currentStep === 3" class="space-y-6">
             <h3 class="text-lg font-semibold text-foreground">Office Details</h3>
+            <p class="text-sm text-muted-foreground">Add at least one public office you currently hold or have held.</p>
 
-            <div class="space-y-2">
-              <Label for="officeCategoryId">
-                Public Office Category <span class="text-destructive">*</span>
-              </Label>
-              <select
-                id="officeCategoryId"
-                v-model="form.officeCategoryId"
-                required
-                class="w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                :class="{ 'border-destructive': fieldErrors.officeCategoryId }"
-                @change="clearFieldError('officeCategoryId')"
+            <!-- Added offices list -->
+            <div v-if="offices.length > 0" class="space-y-3">
+              <div
+                v-for="office in offices"
+                :key="office.id"
+                class="flex items-start justify-between p-4 border rounded-lg bg-muted/30"
               >
-                <option :value="null" disabled>Select category</option>
-                <option
-                  v-for="cat in categories?.data || []"
-                  :key="cat.id"
-                  :value="cat.id"
+                <div>
+                  <p class="font-medium text-foreground">{{ office.designation }}</p>
+                  <p class="text-sm text-muted-foreground">{{ office.categoryName }}</p>
+                  <p v-if="office.institutionName" class="text-sm text-muted-foreground">{{ office.institutionName }}</p>
+                  <p class="text-xs text-muted-foreground mt-1">
+                    From {{ formatDate(office.startDate) }}
+                    <span v-if="office.endDate"> to {{ formatDate(office.endDate) }}</span>
+                    <span v-else class="text-primary font-medium"> — Current</span>
+                  </p>
+                </div>
+                <Button
+                  v-if="offices.length > 1"
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  class="text-destructive"
+                  @click="removeOffice(office.id)"
                 >
-                  {{ cat.name }}
-                </option>
-              </select>
-              <p v-if="fieldErrors.officeCategoryId" class="text-xs text-destructive">
-                {{ fieldErrors.officeCategoryId }}
-              </p>
-              <p v-else class="text-xs text-muted-foreground">
-                Article 286(5) of the 1992 Constitution
-              </p>
+                  Remove
+                </Button>
+              </div>
             </div>
 
-            <div class="space-y-2">
-              <Label for="institutionId">
-                Institution
-              </Label>
-              <select
-                id="institutionId"
-                v-model="form.institutionId"
-                class="w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option :value="null">Select institution (optional)</option>
-                <option
-                  v-for="inst in institutions?.data || []"
-                  :key="inst.id"
-                  :value="inst.id"
-                >
-                  {{ inst.name }}
-                </option>
-              </select>
-            </div>
+            <!-- Add office form -->
+            <div class="border rounded-lg p-4 space-y-4">
+              <h4 class="text-sm font-medium text-foreground">Add Office</h4>
 
-            <div class="space-y-2">
-              <Label for="designation">
-                Designation / Position <span class="text-destructive">*</span>
-              </Label>
-              <Input
-                id="designation"
-                v-model="form.designation"
-                type="text"
-                required
-                placeholder="e.g., Deputy Minister, Director, etc."
-                :class="{ 'border-destructive': fieldErrors.designation }"
-                @input="clearFieldError('designation')"
-              />
-              <p v-if="fieldErrors.designation" class="text-xs text-destructive">
-                {{ fieldErrors.designation }}
-              </p>
+              <div class="space-y-2">
+                <Label for="officeCategoryId">
+                  Public Office Category <span class="text-destructive">*</span>
+                </Label>
+                <select
+                  id="officeCategoryId"
+                  v-model="officeForm.officeCategoryId"
+                  class="w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  :class="{ 'border-destructive': fieldErrors.officeCategoryId }"
+                  @change="clearFieldError('officeCategoryId')"
+                >
+                  <option :value="null" disabled>Select category</option>
+                  <option
+                    v-for="cat in categories?.data || []"
+                    :key="cat.id"
+                    :value="cat.id"
+                  >
+                    {{ cat.name }}
+                  </option>
+                </select>
+                <p v-if="fieldErrors.officeCategoryId" class="text-xs text-destructive">
+                  {{ fieldErrors.officeCategoryId }}
+                </p>
+              </div>
+
+              <div class="space-y-2">
+                <Label for="institutionId">Institution</Label>
+                <select
+                  id="institutionId"
+                  v-model="officeForm.institutionId"
+                  class="w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option :value="null">Select institution (optional)</option>
+                  <option
+                    v-for="inst in institutions?.data || []"
+                    :key="inst.id"
+                    :value="inst.id"
+                  >
+                    {{ inst.name }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="space-y-2">
+                <Label for="designation">
+                  Designation / Position <span class="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="designation"
+                  v-model="officeForm.designation"
+                  type="text"
+                  placeholder="e.g., Deputy Minister, Director, etc."
+                  :class="{ 'border-destructive': fieldErrors.designation }"
+                  @input="clearFieldError('designation')"
+                />
+                <p v-if="fieldErrors.designation" class="text-xs text-destructive">
+                  {{ fieldErrors.designation }}
+                </p>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <Label for="startDate">
+                    Start Date <span class="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="startDate"
+                    v-model="officeForm.startDate"
+                    type="date"
+                    :class="{ 'border-destructive': fieldErrors.startDate }"
+                    @input="clearFieldError('startDate')"
+                  />
+                  <p v-if="fieldErrors.startDate" class="text-xs text-destructive">
+                    {{ fieldErrors.startDate }}
+                  </p>
+                </div>
+                <div class="space-y-2">
+                  <Label for="endDate">End Date</Label>
+                  <Input
+                    id="endDate"
+                    v-model="officeForm.endDate"
+                    type="date"
+                  />
+                  <p v-if="fieldErrors.endDate" class="text-xs text-destructive">
+                    {{ fieldErrors.endDate }}
+                  </p>
+                  <p v-else class="text-xs text-muted-foreground">Leave blank if current</p>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                :disabled="addingOffice"
+                @click="addOffice"
+              >
+                {{ addingOffice ? "Adding..." : "Add Office" }}
+              </Button>
             </div>
           </div>
 
@@ -483,11 +659,19 @@ const handleSubmit = async () => {
             <div v-else />
 
             <Button
+              v-if="currentStep === totalSteps"
+              type="submit"
+              :disabled="isLoading || offices.length === 0"
+            >
+              <span v-if="isLoading">Completing...</span>
+              <span v-else>Complete Setup</span>
+            </Button>
+            <Button
+              v-else
               type="submit"
               :disabled="isLoading"
             >
-              <span v-if="isLoading">Creating...</span>
-              <span v-else-if="currentStep === totalSteps">Complete Setup</span>
+              <span v-if="isLoading">Loading...</span>
               <span v-else>Continue</span>
             </Button>
           </div>
