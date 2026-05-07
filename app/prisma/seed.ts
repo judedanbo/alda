@@ -300,6 +300,7 @@ async function main() {
             fullName: "Kwame Asante",
             ghanaCardNumber: "GHA-000000001-0",
             ghanaCardFrontUrl: "https://placeholder.local/ghana-card-front.jpg",
+            verificationStatus: "VERIFIED",
           },
         });
 

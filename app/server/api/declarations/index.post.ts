@@ -37,6 +37,15 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  // Check verification status
+  if (profile.verificationStatus !== "VERIFIED") {
+    throw createError({
+      statusCode: 403,
+      statusMessage: "Forbidden",
+      message: "Your registration must be verified before creating declarations",
+    });
+  }
+
   // Check for pending or in-review declarations
   const existingPending = await prisma.declaration.findFirst({
     where: {

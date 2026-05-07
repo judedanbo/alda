@@ -12,8 +12,15 @@ import {
 const authStore = useAuthStore();
 const route = useRoute();
 
-const navigation = computed(() => {
-  const baseNav = [
+interface NavItem {
+  name: string;
+  href: string;
+  icon: string;
+  disabled?: boolean;
+}
+
+const navigation = computed<NavItem[]>(() => {
+  const baseNav: NavItem[] = [
     { name: "Dashboard", href: "/applicant/dashboard", icon: "home" },
   ];
 
@@ -21,7 +28,7 @@ const navigation = computed(() => {
     return [
       ...baseNav,
       { name: "My Declarations", href: "/applicant/declarations", icon: "file-text" },
-      { name: "New Declaration", href: "/applicant/declaration/new", icon: "plus-circle" },
+      { name: "New Declaration", href: "/applicant/declaration/new", icon: "plus-circle", disabled: !authStore.isVerified },
     ];
   }
 
@@ -38,6 +45,7 @@ const navigation = computed(() => {
   if (authStore.isLegalUnit) {
     return [
       { name: "Dashboard", href: "/legal/dashboard", icon: "home" },
+      { name: "Applicant Verifications", href: "/legal/verifications", icon: "user-check" },
       { name: "Verify Code", href: "/legal/verify", icon: "search" },
     ];
   }
@@ -81,19 +89,27 @@ const handleLogout = async () => {
 
           <!-- Navigation Links -->
           <nav class="hidden md:flex items-center gap-1">
-            <NuxtLink
-              v-for="item in navigation"
-              :key="item.name"
-              :to="item.href"
-              class="px-3 py-2 text-sm font-medium rounded-md transition-colors"
-              :class="[
-                route.path === item.href || route.path.startsWith(item.href + '/')
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-              ]"
-            >
-              {{ item.name }}
-            </NuxtLink>
+            <template v-for="item in navigation" :key="item.name">
+              <NuxtLink
+                v-if="!item.disabled"
+                :to="item.href"
+                class="px-3 py-2 text-sm font-medium rounded-md transition-colors"
+                :class="[
+                  route.path === item.href || route.path.startsWith(item.href + '/')
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                ]"
+              >
+                {{ item.name }}
+              </NuxtLink>
+              <span
+                v-else
+                class="px-3 py-2 text-sm font-medium rounded-md text-muted-foreground/50 cursor-not-allowed"
+                :title="'Registration verification required'"
+              >
+                {{ item.name }}
+              </span>
+            </template>
           </nav>
 
           <!-- User Menu -->
@@ -138,19 +154,27 @@ const handleLogout = async () => {
 
       <!-- Mobile Navigation -->
       <nav class="md:hidden border-t px-4 py-2 flex gap-1 overflow-x-auto">
-        <NuxtLink
-          v-for="item in navigation"
-          :key="item.name"
-          :to="item.href"
-          class="px-3 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors"
-          :class="[
-            route.path === item.href || route.path.startsWith(item.href + '/')
-              ? 'bg-primary text-primary-foreground'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-          ]"
-        >
-          {{ item.name }}
-        </NuxtLink>
+        <template v-for="item in navigation" :key="item.name">
+          <NuxtLink
+            v-if="!item.disabled"
+            :to="item.href"
+            class="px-3 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors"
+            :class="[
+              route.path === item.href || route.path.startsWith(item.href + '/')
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            ]"
+          >
+            {{ item.name }}
+          </NuxtLink>
+          <span
+            v-else
+            class="px-3 py-2 text-sm font-medium rounded-md whitespace-nowrap text-muted-foreground/50 cursor-not-allowed"
+            :title="'Registration verification required'"
+          >
+            {{ item.name }}
+          </span>
+        </template>
       </nav>
     </header>
 

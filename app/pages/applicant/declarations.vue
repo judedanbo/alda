@@ -22,6 +22,8 @@ const { data, pending, error, refresh } = await useAsyncData(
 const declarations = computed(() => data.value?.data?.declarations || []);
 const pagination = computed(() => data.value?.data?.pagination);
 
+const { isVerified } = useAuth();
+
 const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString("en-GB", {
     day: "numeric",
@@ -36,8 +38,15 @@ const formatDate = (date: string) => {
     <!-- Header -->
     <PageHeader title="My Declarations" description="Track and manage your asset declarations">
       <template #actions>
-        <Button as-child>
-          <NuxtLink to="/applicant/declaration/new" class="flex items-center gap-2">
+        <Button
+          as-child
+          :disabled="!isVerified"
+          :class="{ 'opacity-50 pointer-events-none': !isVerified }"
+        >
+          <NuxtLink
+            :to="isVerified ? '/applicant/declaration/new' : undefined"
+            class="flex items-center gap-2"
+          >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
@@ -108,7 +117,7 @@ const formatDate = (date: string) => {
         <p class="text-muted-foreground mb-6">
           {{ statusFilter !== 'ALL' ? 'No declarations match the selected filter' : 'Create your first asset declaration' }}
         </p>
-        <Button v-if="statusFilter === 'ALL'" as-child>
+        <Button v-if="statusFilter === 'ALL' && isVerified" as-child>
           <NuxtLink to="/applicant/declaration/new">Create Declaration</NuxtLink>
         </Button>
       </CardContent>

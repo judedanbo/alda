@@ -93,6 +93,15 @@ export const AuditActions = {
   CATEGORY_CREATED: "category_created",
   CATEGORY_UPDATED: "category_updated",
   CATEGORY_DEACTIVATED: "category_deactivated",
+
+  // Applicant Verification
+  APPLICANT_VERIFICATION_REQUESTED: "applicant_verification_requested",
+  APPLICANT_VERIFICATION_REVIEWED: "applicant_verification_reviewed",
+  APPLICANT_VERIFICATION_VERIFIED: "applicant_verification_verified",
+  APPLICANT_VERIFICATION_ON_HOLD: "applicant_verification_on_hold",
+  APPLICANT_VERIFICATION_MORE_INFO: "applicant_verification_more_info",
+  APPLICANT_VERIFICATION_REJECTED: "applicant_verification_rejected",
+  APPLICANT_VERIFICATION_RESUBMITTED: "applicant_verification_resubmitted",
 } as const;
 
 export type AuditAction = typeof AuditActions[keyof typeof AuditActions];

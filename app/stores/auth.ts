@@ -8,6 +8,7 @@ export interface User {
   emailVerified: boolean;
   roles: string[];
   hasProfile?: boolean;
+  verificationStatus?: string;
 }
 
 export interface Tokens {
@@ -29,6 +30,7 @@ export const useAuthStore = defineStore("auth", () => {
   const isLegalUnit = computed(() => user.value?.roles.includes("legal_unit") ?? false);
   const isAdmin = computed(() => user.value?.roles.includes("admin") ?? false);
   const isEmailVerified = computed(() => user.value?.emailVerified ?? false);
+  const isVerified = computed(() => user.value?.verificationStatus === "VERIFIED");
 
   // Actions
   function setTokens(newTokens: Tokens) {
@@ -160,6 +162,7 @@ export const useAuthStore = defineStore("auth", () => {
           emailVerified: response.data.emailVerified,
           roles: response.data.roles,
           hasProfile: !!response.data.profile,
+          verificationStatus: response.data.profile?.verificationStatus,
         };
       }
     } catch (error: any) {
@@ -230,6 +233,7 @@ export const useAuthStore = defineStore("auth", () => {
     isLegalUnit,
     isAdmin,
     isEmailVerified,
+    isVerified,
     // Actions
     setTokens,
     clearTokens,

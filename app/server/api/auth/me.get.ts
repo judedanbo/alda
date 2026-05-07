@@ -57,6 +57,7 @@ export default defineEventHandler(async (event) => {
             fullName: user.applicantProfile.fullName,
             ghanaCardNumber: user.applicantProfile.ghanaCardNumber,
             offices: user.applicantProfile.offices,
+            verificationStatus: user.applicantProfile.verificationStatus,
           }
         : null,
       notificationPreferences: user.notificationPrefs,

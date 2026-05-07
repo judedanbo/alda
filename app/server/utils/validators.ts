@@ -103,6 +103,21 @@ export const reviewSchema = z.object({
 );
 
 /**
+ * Verification review schema (legal officer decision)
+ */
+export const verificationReviewSchema = z.object({
+  status: z.enum(["VERIFIED", "ON_HOLD", "MORE_INFO_REQUIRED", "REJECTED"]),
+  reason: z.string().min(1, "Reason is required"),
+  messageToApplicant: z.string().optional(),
+}).refine(
+  (data) => data.status !== "MORE_INFO_REQUIRED" || (data.messageToApplicant && data.messageToApplicant.length > 0),
+  {
+    message: "A message to the applicant is required when requesting more information",
+    path: ["messageToApplicant"],
+  }
+);
+
+/**
  * Pickup authorization schema (request body — declarationId comes from the URL)
  */
 const pickupAuthorizationRefinement = (data: { isSelfPickup: boolean; authorizedName?: string; authorizedPhone?: string }) =>
