@@ -8,6 +8,7 @@ export interface User {
   emailVerified: boolean;
   roles: string[];
   hasProfile?: boolean;
+  fullName?: string;
   verificationStatus?: string;
 }
 
@@ -162,6 +163,7 @@ export const useAuthStore = defineStore("auth", () => {
           emailVerified: response.data.emailVerified,
           roles: response.data.roles,
           hasProfile: !!response.data.profile,
+          fullName: response.data.profile?.fullName,
           verificationStatus: response.data.profile?.verificationStatus,
         };
       }

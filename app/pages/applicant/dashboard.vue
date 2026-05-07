@@ -19,15 +19,30 @@ async function fetchVerificationInfo() {
   }
 }
 
-onMounted(fetchVerificationInfo);
+onMounted(() => {
+  fetchVerificationInfo();
+  fetchStats();
+});
 
-// Placeholder stats - will be populated from API
 const stats = ref([
   { label: "Total Declarations", value: "0", icon: "file-text" },
   { label: "Pending Review", value: "0", icon: "clock" },
   { label: "Approved", value: "0", icon: "check-circle" },
   { label: "Rejected", value: "0", icon: "x-circle" },
 ]);
+
+async function fetchStats() {
+  try {
+    const response = await authFetch<{ data: { total: number; pending: number; approved: number; rejected: number } }>("/api/declarations/stats");
+    const d = response.data;
+    stats.value[0].value = String(d.total);
+    stats.value[1].value = String(d.pending);
+    stats.value[2].value = String(d.approved);
+    stats.value[3].value = String(d.rejected);
+  } catch {
+    // Stats will remain at 0
+  }
+}
 
 const recentDeclarations = ref<any[]>([]);
 
@@ -53,7 +68,7 @@ async function resendVerification() {
     <!-- Welcome Header -->
     <PageHeader
       :title="
-        'Welcome back' + (user?.email ? ', ' + user.email.split('@')[0] : '')
+        'Welcome' + (user?.fullName ? ', ' + user.fullName : '')
       "
       description="Manage your asset declarations and track their status"
     />
