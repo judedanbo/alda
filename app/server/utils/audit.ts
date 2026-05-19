@@ -68,6 +68,8 @@ export const AuditActions = {
 
   // Declarations
   DECLARATION_CREATED: "declaration_created",
+  FORM_COLLECTION_RECORDED: "form_collection_recorded",
+  FORM_RETURNED: "form_returned",
   DECLARATION_SUBMITTED: "declaration_submitted",
   DECLARATION_REVIEWED: "declaration_reviewed",
   DECLARATION_APPROVED: "declaration_approved",

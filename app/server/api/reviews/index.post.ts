@@ -131,7 +131,7 @@ export default defineEventHandler(async (event) => {
         data: {
           applicantId: declaration.applicantId,
           uniqueCode: newCode,
-          status: "PENDING",
+          status: "CODE_GENERATED",
           previousDeclarationId: declaration.id,
         },
       });

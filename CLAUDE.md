@@ -43,12 +43,12 @@ This brings up Postgres on `:5432`, Redis on `:6379`, MinIO on `:9000`/`:9001`, 
 
 Asset Declaration Portal (ADLA) for Ghana's Article 286(5) compliance. Three actor types interact through a state-machine workflow:
 
-- **Applicant** registers, uploads Ghana Card images, completes profile, then creates a `Declaration` (gets a unique code).
-- **Schedule Officer** records physical submission (`Submission`), reviews, and generates `Receipt`.
+- **Applicant** registers, uploads Ghana Card images, completes profile, then creates a `Declaration` (gets a unique code). Everything after that is officer-driven.
+- **Schedule Officer** records form collection (`FormCollection`, capturing the `CollectionOffice` the physical form was collected from), records the returned form, records physical submission (`Submission`), reviews, and generates `Receipt`.
 - **Legal Unit** verifies authenticity using the unique code.
 - **Admin** has access to everything plus audit logs, reports, user/institution management.
 
-`Declaration.status` drives the workflow: `PENDING → SUBMITTED → UNDER_REVIEW → APPROVED|REJECTED → SEALED`. A rejection issues a new unique code (the applicant cannot have another active declaration while one is `PENDING`/`SUBMITTED`/`UNDER_REVIEW` — see `app/server/api/declarations/index.post.ts`).
+`Declaration.status` drives the workflow: `CODE_GENERATED → FORM_COLLECTED → SUBMITTED → UNDER_REVIEW → APPROVED|REJECTED → SEALED → COMPLETED`. The applicant only initiates the declaration (`CODE_GENERATED`); a Schedule Officer/Admin drives `FORM_COLLECTED` (form collected from a `CollectionOffice`), `SUBMITTED` (filled form returned), and every later transition. A rejection issues a new unique code and a fresh `CODE_GENERATED` declaration (the applicant cannot have another active declaration while one is `CODE_GENERATED`/`FORM_COLLECTED`/`SUBMITTED`/`UNDER_REVIEW` — see `app/server/api/declarations/index.post.ts`).
 
 ## Architecture: how the layers wire together
 

@@ -88,6 +88,25 @@ export const submissionRecordSchema = z.object({
 });
 
 /**
+ * Form collection recording schema (GAS Officer records that the applicant
+ * collected the physical declaration form from a collection office).
+ */
+export const formCollectionRecordSchema = z.object({
+  declarationId: z.string().uuid("Invalid declaration ID"),
+  collectionOfficeId: z.string().uuid("Invalid collection office ID"),
+  notes: z.string().optional(),
+});
+
+/**
+ * Form return recording schema (GAS Officer records that the applicant filled
+ * and returned the physical declaration form).
+ */
+export const formReturnRecordSchema = z.object({
+  declarationId: z.string().uuid("Invalid declaration ID"),
+  notes: z.string().optional(),
+});
+
+/**
  * Review schema
  */
 export const reviewSchema = z.object({

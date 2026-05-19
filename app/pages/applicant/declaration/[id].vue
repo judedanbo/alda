@@ -30,6 +30,7 @@ const formatDate = (date: string) => {
 const getTimelineIcon = (status: string) => {
   const icons: Record<string, string> = {
     CREATED: "M12 4v16m8-8H4",
+    FORM_COLLECTED: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
     SUBMITTED: "M12 19l9 2-9-18-9 18 9-2zm0 0v-8",
     RECORDED: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
     APPROVED: "M5 13l4 4L19 7",
@@ -183,21 +184,6 @@ const getTimelineIcon = (status: string) => {
           </div>
         </CardContent>
       </Card>
-
-      <!-- Actions -->
-      <div
-        v-if="declaration.status === 'PENDING'"
-        class="mt-6 p-4 bg-muted/50 rounded-lg flex items-center justify-between"
-      >
-        <p class="text-muted-foreground">
-          Your declaration is pending submission
-        </p>
-        <Button as-child>
-          <NuxtLink :to="`/applicant/declaration/${id}/submit`">
-            Submit Declaration
-          </NuxtLink>
-        </Button>
-      </div>
     </template>
   </div>
 </template>

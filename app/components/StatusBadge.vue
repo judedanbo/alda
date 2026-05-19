@@ -7,7 +7,8 @@ const props = defineProps<{
 
 const config = computed(() => {
   const map: Record<string, { label: string; class: string }> = {
-    PENDING: { label: "Pending", class: "border-amber-300 text-amber-700 bg-amber-50" },
+    CODE_GENERATED: { label: "Code Generated", class: "border-amber-300 text-amber-700 bg-amber-50" },
+    FORM_COLLECTED: { label: "Form Collected", class: "bg-cyan-100 text-cyan-700" },
     SUBMITTED: { label: "Submitted", class: "bg-blue-100 text-blue-700" },
     UNDER_REVIEW: { label: "Under Review", class: "bg-purple-100 text-purple-700" },
     APPROVED: { label: "Approved", class: "bg-green-100 text-green-700" },

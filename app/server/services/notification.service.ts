@@ -156,6 +156,8 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
 function mapNotificationTypeToEmailTemplate(type: NotificationType): EmailTemplate {
   const mapping: Record<NotificationType, EmailTemplate> = {
     UNIQUE_CODE_GENERATED: "unique-code",
+    FORM_COLLECTED: "declaration-submitted",
+    FORM_RETURNED: "declaration-submitted",
     SUBMISSION_RECORDED: "declaration-submitted",
     REVIEW_APPROVED: "declaration-approved",
     REVIEW_REJECTED: "declaration-rejected",

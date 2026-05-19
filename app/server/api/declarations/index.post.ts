@@ -51,7 +51,7 @@ export default defineEventHandler(async (event) => {
     where: {
       applicantId: profile.id,
       status: {
-        in: ["PENDING", "SUBMITTED", "UNDER_REVIEW"],
+        in: ["CODE_GENERATED", "FORM_COLLECTED", "SUBMITTED", "UNDER_REVIEW"],
       },
     },
   });
@@ -83,7 +83,7 @@ export default defineEventHandler(async (event) => {
     data: {
       applicantId: profile.id,
       uniqueCode,
-      status: "PENDING",
+      status: "CODE_GENERATED",
     },
   });
 

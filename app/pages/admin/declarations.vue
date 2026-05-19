@@ -26,6 +26,11 @@ interface Declaration {
       phone: string | null;
     };
   };
+  formCollection: {
+    collectedAt: string;
+    officeName: string;
+    notes: string | null;
+  } | null;
   submission: {
     submissionDate: string;
     notes: string | null;
@@ -187,7 +192,8 @@ const canReview = (declaration: Declaration) => {
 
 const statuses = [
   { value: "", label: "All Statuses" },
-  { value: "PENDING", label: "Pending" },
+  { value: "CODE_GENERATED", label: "Code Generated" },
+  { value: "FORM_COLLECTED", label: "Form Collected" },
   { value: "SUBMITTED", label: "Submitted" },
   { value: "UNDER_REVIEW", label: "Under Review" },
   { value: "APPROVED", label: "Approved" },
@@ -396,10 +402,24 @@ const statuses = [
             <h3 class="text-sm font-medium text-muted-foreground mb-3">Timeline</h3>
             <div class="space-y-3">
               <div class="flex items-start gap-3">
-                <div class="w-2 h-2 mt-2 rounded-full bg-blue-500" />
+                <div class="w-2 h-2 mt-2 rounded-full bg-amber-500" />
                 <div>
-                  <p class="text-sm font-medium text-foreground">Created</p>
+                  <p class="text-sm font-medium text-foreground">Initiated</p>
                   <p class="text-xs text-muted-foreground">{{ formatDate(selectedDeclaration.createdAt) }}</p>
+                </div>
+              </div>
+
+              <div v-if="selectedDeclaration.formCollection" class="flex items-start gap-3">
+                <div class="w-2 h-2 mt-2 rounded-full bg-cyan-500" />
+                <div>
+                  <p class="text-sm font-medium text-foreground">Form Collected</p>
+                  <p class="text-xs text-muted-foreground">
+                    {{ formatDate(selectedDeclaration.formCollection.collectedAt) }}
+                    from {{ selectedDeclaration.formCollection.officeName }}
+                  </p>
+                  <p v-if="selectedDeclaration.formCollection.notes" class="text-xs text-muted-foreground mt-1">
+                    Notes: {{ selectedDeclaration.formCollection.notes }}
+                  </p>
                 </div>
               </div>
 

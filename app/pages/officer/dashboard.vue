@@ -5,6 +5,8 @@ definePageMeta({
 });
 
 interface DashboardStats {
+  pendingFormCollections: number;
+  pendingFormReturns: number;
   pendingSubmissions: number;
   pendingReviews: number;
   pendingReceipts: number;
@@ -15,6 +17,8 @@ interface DashboardStats {
 }
 
 const stats = ref<DashboardStats>({
+  pendingFormCollections: 0,
+  pendingFormReturns: 0,
   pendingSubmissions: 0,
   pendingReviews: 0,
   pendingReceipts: 0,
@@ -36,11 +40,15 @@ const loading = ref(true);
 const fetchDashboardData = async () => {
   try {
     const [
+      pendingFormCollectionsRes,
+      pendingFormReturnsRes,
       pendingSubmissionsRes,
       pendingReviewsRes,
       pendingReceiptsRes,
       pendingPickupsRes,
     ] = await Promise.all([
+      authFetch<any>("/api/form-collections/pending?limit=1"),
+      authFetch<any>("/api/form-returns/pending?limit=1"),
       authFetch<any>("/api/submissions/pending?limit=1"),
       authFetch<any>("/api/reviews/pending?limit=1"),
       authFetch<any>("/api/receipts/pending?limit=1"),
@@ -48,6 +56,8 @@ const fetchDashboardData = async () => {
     ]);
 
     stats.value = {
+      pendingFormCollections: pendingFormCollectionsRes.data?.total || 0,
+      pendingFormReturns: pendingFormReturnsRes.data?.total || 0,
       pendingSubmissions: pendingSubmissionsRes.data?.total || 0,
       pendingReviews: pendingReviewsRes.data?.total || 0,
       pendingReceipts: pendingReceiptsRes.data?.total || 0,
@@ -66,6 +76,20 @@ const fetchDashboardData = async () => {
 await fetchDashboardData();
 
 const quickActions = [
+  {
+    title: "Record Form Collection",
+    description: "Record a physical form collected by an applicant",
+    icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+    href: "/officer/form-collections",
+    color: "bg-cyan-500",
+  },
+  {
+    title: "Record Form Return",
+    description: "Record a completed form returned by an applicant",
+    icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+    href: "/officer/form-returns",
+    color: "bg-teal-500",
+  },
   {
     title: "Record Submission",
     description: "Record a new declaration submission",
@@ -103,8 +127,8 @@ const quickActions = [
     <PageHeader title="Officer Dashboard" description="Manage asset declarations, reviews, and receipts" />
 
     <!-- Loading -->
-    <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <Card v-for="i in 4" :key="i">
+    <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <Card v-for="i in 6" :key="i">
         <CardContent class="p-6">
           <Skeleton class="h-20 w-full" />
         </CardContent>
@@ -113,7 +137,53 @@ const quickActions = [
 
     <template v-else>
       <!-- Stats Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <NuxtLink to="/officer/form-collections">
+          <Card class="hover:border-primary transition-colors">
+            <CardContent class="p-6">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-muted-foreground">Pending Form Collections</p>
+                  <p class="text-3xl font-bold text-foreground mt-1">
+                    {{ stats.pendingFormCollections }}
+                  </p>
+                </div>
+                <div class="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
+                  <svg class="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+              </div>
+              <p class="text-xs text-muted-foreground mt-2">
+                Forms awaiting collection recording
+              </p>
+            </CardContent>
+          </Card>
+        </NuxtLink>
+
+        <NuxtLink to="/officer/form-returns">
+          <Card class="hover:border-primary transition-colors">
+            <CardContent class="p-6">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-muted-foreground">Pending Form Returns</p>
+                  <p class="text-3xl font-bold text-foreground mt-1">
+                    {{ stats.pendingFormReturns }}
+                  </p>
+                </div>
+                <div class="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
+                  <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+              </div>
+              <p class="text-xs text-muted-foreground mt-2">
+                Completed forms awaiting return recording
+              </p>
+            </CardContent>
+          </Card>
+        </NuxtLink>
+
         <NuxtLink to="/officer/submissions">
           <Card class="hover:border-primary transition-colors">
             <CardContent class="p-6">
@@ -213,7 +283,7 @@ const quickActions = [
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <NuxtLink
               v-for="action in quickActions"
               :key="action.title"
@@ -243,36 +313,50 @@ const quickActions = [
           <div class="flex items-center justify-between overflow-x-auto pb-2">
             <div class="flex items-center gap-2 min-w-max">
               <div class="flex flex-col items-center">
+                <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                  <span class="text-amber-600 font-bold">1</span>
+                </div>
+                <span class="text-xs text-muted-foreground mt-1">Code Generated</span>
+              </div>
+              <div class="w-8 h-0.5 bg-gray-300" />
+              <div class="flex flex-col items-center">
+                <div class="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center">
+                  <span class="text-cyan-600 font-bold">2</span>
+                </div>
+                <span class="text-xs text-muted-foreground mt-1">Form Collected</span>
+              </div>
+              <div class="w-8 h-0.5 bg-gray-300" />
+              <div class="flex flex-col items-center">
                 <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                  <span class="text-blue-600 font-bold">1</span>
+                  <span class="text-blue-600 font-bold">3</span>
                 </div>
                 <span class="text-xs text-muted-foreground mt-1">Submitted</span>
               </div>
               <div class="w-8 h-0.5 bg-gray-300" />
               <div class="flex flex-col items-center">
                 <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
-                  <span class="text-yellow-600 font-bold">2</span>
+                  <span class="text-yellow-600 font-bold">4</span>
                 </div>
                 <span class="text-xs text-muted-foreground mt-1">Record</span>
               </div>
               <div class="w-8 h-0.5 bg-gray-300" />
               <div class="flex flex-col items-center">
                 <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                  <span class="text-orange-600 font-bold">3</span>
+                  <span class="text-orange-600 font-bold">5</span>
                 </div>
                 <span class="text-xs text-muted-foreground mt-1">Review</span>
               </div>
               <div class="w-8 h-0.5 bg-gray-300" />
               <div class="flex flex-col items-center">
                 <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                  <span class="text-purple-600 font-bold">4</span>
+                  <span class="text-purple-600 font-bold">6</span>
                 </div>
                 <span class="text-xs text-muted-foreground mt-1">Receipt</span>
               </div>
               <div class="w-8 h-0.5 bg-gray-300" />
               <div class="flex flex-col items-center">
                 <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                  <span class="text-green-600 font-bold">5</span>
+                  <span class="text-green-600 font-bold">7</span>
                 </div>
                 <span class="text-xs text-muted-foreground mt-1">Pickup</span>
               </div>

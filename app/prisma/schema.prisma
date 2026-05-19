@@ -26,6 +26,7 @@ model User {
   roles                    UserRole[]
   applicantProfile         ApplicantProfile?
   refreshTokens            RefreshToken[]
+  formCollections          FormCollection[]             @relation("FormCollectedBy")
   submissions              Submission[]                 @relation("RecordedBy")
   reviews                  Review[]                     @relation("ReviewedBy")
   receipts                 Receipt[]                    @relation("GeneratedBy")
@@ -201,7 +202,8 @@ model Institution {
 // ============================================
 
 enum DeclarationStatus {
-  PENDING
+  CODE_GENERATED
+  FORM_COLLECTED
   SUBMITTED
   UNDER_REVIEW
   APPROVED
@@ -210,6 +212,13 @@ enum DeclarationStatus {
   COMPLETED
 
   @@map("declaration_status")
+}
+
+enum CollectionOfficeType {
+  HEADQUARTERS
+  REGIONAL
+
+  @@map("collection_office_type")
 }
 
 enum VerificationStatus {
@@ -226,7 +235,7 @@ model Declaration {
   id                    String            @id @default(uuid()) @db.Uuid
   applicantId           String            @map("applicant_id") @db.Uuid
   uniqueCode            String            @unique @map("unique_code") @db.VarChar(20)
-  status                DeclarationStatus @default(PENDING)
+  status                DeclarationStatus @default(CODE_GENERATED)
   submittedAt           DateTime?         @map("submitted_at")
   previousDeclarationId String?           @unique @map("previous_declaration_id") @db.Uuid
   createdAt             DateTime          @default(now()) @map("created_at")
@@ -234,6 +243,7 @@ model Declaration {
 
   // Relations
   applicant           ApplicantProfile           @relation(fields: [applicantId], references: [id])
+  formCollections     FormCollection[]
   submissions         Submission[]
   reviews             Review[]
   receipts            Receipt[]
@@ -262,6 +272,38 @@ model DeclarationStatusHistory {
   @@index([declarationId])
   @@index([createdAt])
   @@map("declaration_status_history")
+}
+
+model CollectionOffice {
+  id        String               @id @default(uuid()) @db.Uuid
+  name      String               @db.VarChar(255)
+  type      CollectionOfficeType
+  region    String?              @db.VarChar(255)
+  isActive  Boolean              @default(true) @map("is_active")
+  createdAt DateTime             @default(now()) @map("created_at")
+
+  // Relations
+  formCollections FormCollection[]
+
+  @@map("collection_offices")
+}
+
+model FormCollection {
+  id                 String   @id @default(uuid()) @db.Uuid
+  declarationId      String   @map("declaration_id") @db.Uuid
+  recordedBy         String   @map("recorded_by") @db.Uuid
+  collectionOfficeId String   @map("collection_office_id") @db.Uuid
+  collectedAt        DateTime @map("collected_at")
+  notes              String?  @db.Text
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  // Relations
+  declaration      Declaration      @relation(fields: [declarationId], references: [id])
+  recorder         User             @relation("FormCollectedBy", fields: [recordedBy], references: [id])
+  collectionOffice CollectionOffice @relation(fields: [collectionOfficeId], references: [id])
+
+  @@index([declarationId])
+  @@map("form_collections")
 }
 
 model Submission {
@@ -369,6 +411,8 @@ model AuditLog {
 
 enum NotificationType {
   UNIQUE_CODE_GENERATED
+  FORM_COLLECTED
+  FORM_RETURNED
   SUBMISSION_RECORDED
   REVIEW_APPROVED
   REVIEW_REJECTED

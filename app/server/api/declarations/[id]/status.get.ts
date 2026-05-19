@@ -29,6 +29,13 @@ export default defineEventHandler(async (event) => {
           fullName: true,
         },
       },
+      formCollections: {
+        include: {
+          collectionOffice: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
       submissions: {
         orderBy: { createdAt: "desc" },
         take: 1,
@@ -71,16 +78,26 @@ export default defineEventHandler(async (event) => {
   timeline.push({
     status: "CREATED",
     date: declaration.createdAt,
-    title: "Declaration Created",
+    title: "Declaration Initiated",
     description: `Unique code ${declaration.uniqueCode} generated`,
   });
+
+  const formCollection = declaration.formCollections[0];
+  if (formCollection) {
+    timeline.push({
+      status: "FORM_COLLECTED",
+      date: formCollection.collectedAt,
+      title: "Form Collected",
+      description: `Physical form collected from ${formCollection.collectionOffice.name}`,
+    });
+  }
 
   if (declaration.submittedAt) {
     timeline.push({
       status: "SUBMITTED",
       date: declaration.submittedAt,
       title: "Declaration Submitted",
-      description: "Submitted for review",
+      description: "Form returned and submitted for review",
     });
   }
 

@@ -79,6 +79,13 @@ export default defineEventHandler(async (event) => {
             },
           },
         },
+        formCollections: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          include: {
+            collectionOffice: true,
+          },
+        },
         submissions: {
           orderBy: { createdAt: "desc" },
           take: 1,
@@ -124,6 +131,13 @@ export default defineEventHandler(async (event) => {
           offices: d.applicant.offices,
           user: d.applicant.user,
         },
+        formCollection: d.formCollections[0]
+          ? {
+              collectedAt: d.formCollections[0].collectedAt.toISOString(),
+              officeName: d.formCollections[0].collectionOffice.name,
+              notes: d.formCollections[0].notes,
+            }
+          : null,
         submission: d.submissions[0]
           ? {
               submissionDate: d.submissions[0].submissionDate.toISOString(),
