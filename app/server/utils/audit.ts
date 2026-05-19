@@ -104,6 +104,11 @@ export const AuditActions = {
   APPLICANT_VERIFICATION_MORE_INFO: "applicant_verification_more_info",
   APPLICANT_VERIFICATION_REJECTED: "applicant_verification_rejected",
   APPLICANT_VERIFICATION_RESUBMITTED: "applicant_verification_resubmitted",
+
+  // Lost form reissue
+  FORM_REISSUE_REQUESTED: "form_reissue_requested",
+  FORM_REISSUE_APPROVED: "form_reissue_approved",
+  FORM_REISSUE_DECLINED: "form_reissue_declined",
 } as const;
 
 export type AuditAction = typeof AuditActions[keyof typeof AuditActions];

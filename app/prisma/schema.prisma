@@ -38,6 +38,8 @@ model User {
   emailVerificationTokens  EmailVerificationToken[]
   declarationStatusChanges     DeclarationStatusHistory[]   @relation("StatusChangedBy")
   verificationReviews          ApplicantVerificationReview[] @relation("VerificationReviewedBy")
+  formReissuesRequested        FormReissueRequest[]          @relation("ReissueRequestedBy")
+  formReissuesReviewed         FormReissueRequest[]          @relation("ReissueReviewedBy")
 
   @@map("users")
 }
@@ -231,6 +233,21 @@ enum VerificationStatus {
   @@map("verification_status")
 }
 
+enum FormReissueStatus {
+  PENDING
+  APPROVED
+  DECLINED
+
+  @@map("form_reissue_status")
+}
+
+enum ReissueApproverType {
+  AUDITOR_GENERAL
+  REGIONAL_AUDITOR
+
+  @@map("reissue_approver_type")
+}
+
 model Declaration {
   id                    String            @id @default(uuid()) @db.Uuid
   applicantId           String            @map("applicant_id") @db.Uuid
@@ -242,9 +259,10 @@ model Declaration {
   updatedAt             DateTime          @updatedAt @map("updated_at")
 
   // Relations
-  applicant           ApplicantProfile           @relation(fields: [applicantId], references: [id])
-  formCollections     FormCollection[]
-  submissions         Submission[]
+  applicant            ApplicantProfile           @relation(fields: [applicantId], references: [id])
+  formCollections      FormCollection[]
+  formReissueRequests  FormReissueRequest[]
+  submissions          Submission[]
   reviews             Review[]
   receipts            Receipt[]
   pickupAuthorization PickupAuthorization?
@@ -304,6 +322,30 @@ model FormCollection {
 
   @@index([declarationId])
   @@map("form_collections")
+}
+
+model FormReissueRequest {
+  id             String               @id @default(uuid()) @db.Uuid
+  declarationId  String               @map("declaration_id") @db.Uuid
+  requestedById  String               @map("requested_by_id") @db.Uuid
+  status         FormReissueStatus    @default(PENDING)
+  applicantNote  String?              @map("applicant_note") @db.Text
+  reviewedById   String?              @map("reviewed_by_id") @db.Uuid
+  approverType   ReissueApproverType? @map("approver_type")
+  approverDetail String?              @map("approver_detail") @db.VarChar(255)
+  letterScanUrl  String?              @map("letter_scan_url") @db.Text
+  decisionReason String?              @map("decision_reason") @db.Text
+  reviewedAt     DateTime?            @map("reviewed_at")
+  createdAt      DateTime             @default(now()) @map("created_at")
+
+  // Relations
+  declaration Declaration @relation(fields: [declarationId], references: [id], onDelete: Cascade)
+  requestedBy User        @relation("ReissueRequestedBy", fields: [requestedById], references: [id])
+  reviewedBy  User?       @relation("ReissueReviewedBy", fields: [reviewedById], references: [id])
+
+  @@index([declarationId])
+  @@index([status])
+  @@map("form_reissue_requests")
 }
 
 model Submission {
@@ -413,6 +455,9 @@ enum NotificationType {
   UNIQUE_CODE_GENERATED
   FORM_COLLECTED
   FORM_RETURNED
+  FORM_REISSUE_REQUESTED
+  FORM_REISSUE_APPROVED
+  FORM_REISSUE_DECLINED
   SUBMISSION_RECORDED
   REVIEW_APPROVED
   REVIEW_REJECTED

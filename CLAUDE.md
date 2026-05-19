@@ -45,10 +45,12 @@ Asset Declaration Portal (ADLA) for Ghana's Article 286(5) compliance. Three act
 
 - **Applicant** registers, uploads Ghana Card images, completes profile, then creates a `Declaration` (gets a unique code). Everything after that is officer-driven.
 - **Schedule Officer** records form collection (`FormCollection`, capturing the `CollectionOffice` the physical form was collected from), records the returned form, records physical submission (`Submission`), reviews, and generates `Receipt`.
-- **Legal Unit** verifies authenticity using the unique code.
+- **Legal Unit** verifies authenticity using the unique code, and processes lost-form reissue requests (records the offline Auditor General / Regional Auditor approval and reissues the form).
 - **Admin** has access to everything plus audit logs, reports, user/institution management.
 
 `Declaration.status` drives the workflow: `CODE_GENERATED → FORM_COLLECTED → SUBMITTED → UNDER_REVIEW → APPROVED|REJECTED → SEALED → COMPLETED`. The applicant only initiates the declaration (`CODE_GENERATED`); a Schedule Officer/Admin drives `FORM_COLLECTED` (form collected from a `CollectionOffice`), `SUBMITTED` (filled form returned), and every later transition. A rejection issues a new unique code and a fresh `CODE_GENERATED` declaration (the applicant cannot have another active declaration while one is `CODE_GENERATED`/`FORM_COLLECTED`/`SUBMITTED`/`UNDER_REVIEW` — see `app/server/api/declarations/index.post.ts`).
+
+**Lost form reissue:** while a declaration is `FORM_COLLECTED`, if the applicant loses the physical form they can submit a tracked reissue request (`FormReissueRequest`, status `PENDING→APPROVED|DECLINED`) from the declaration detail page. The applicant takes an offline letter to the Auditor General or a Regional Auditor; once approved, a Legal Unit officer records the decision in one combined action (uploads the scanned approved letter, picks the approver, optional reasons) which reissues the form. The declaration **stays `FORM_COLLECTED`** throughout (no status change) — the applicant then returns the reissued form via the normal Form Return step. All requests/decisions are recorded and surface on the declaration timeline via `DeclarationStatusHistory`.
 
 ## Architecture: how the layers wire together
 

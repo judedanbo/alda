@@ -185,3 +185,30 @@ export function validateImageFile(
 
   return { valid: true };
 }
+
+/**
+ * Validate document file (scanned letters: PDF or image)
+ */
+export function validateDocumentFile(
+  contentType: string,
+  size: number
+): { valid: boolean; error?: string } {
+  const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+  const maxSize = 10 * 1024 * 1024; // 10MB
+
+  if (!allowedTypes.includes(contentType)) {
+    return {
+      valid: false,
+      error: "Invalid file type. Only PDF, JPEG, PNG, and WebP files are allowed.",
+    };
+  }
+
+  if (size > maxSize) {
+    return {
+      valid: false,
+      error: "File too large. Maximum size is 10MB.",
+    };
+  }
+
+  return { valid: true };
+}

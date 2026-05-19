@@ -122,6 +122,38 @@ export const reviewSchema = z.object({
 );
 
 /**
+ * Lost-form reissue request schema (applicant)
+ */
+export const reissueRequestSchema = z.object({
+  applicantNote: z.string().max(2000).optional(),
+});
+
+/**
+ * Lost-form reissue decision schema (legal officer combined action)
+ */
+export const reissueDecisionSchema = z.object({
+  status: z.enum(["APPROVED", "DECLINED"]),
+  letterScanUrl: z.string().url("Invalid letter scan URL").optional(),
+  approverType: z.enum(["AUDITOR_GENERAL", "REGIONAL_AUDITOR"]).optional(),
+  approverDetail: z.string().max(255).optional(),
+  decisionReason: z.string().optional(),
+}).refine(
+  (data) =>
+    data.status !== "APPROVED" ||
+    (!!data.letterScanUrl && data.letterScanUrl.length > 0 && !!data.approverType),
+  {
+    message: "An uploaded approval letter and the approver are required to approve a reissue",
+    path: ["letterScanUrl"],
+  }
+).refine(
+  (data) => data.status !== "DECLINED" || (!!data.decisionReason && data.decisionReason.length > 0),
+  {
+    message: "A reason is required when declining a reissue request",
+    path: ["decisionReason"],
+  }
+);
+
+/**
  * Verification review schema (legal officer decision)
  */
 export const verificationReviewSchema = z.object({

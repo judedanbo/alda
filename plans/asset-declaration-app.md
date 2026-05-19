@@ -35,6 +35,12 @@ A web application for Ghana's Asset Declaration system under Article 286(5) of t
    (headquarters or any regional office). GAS Schedule Officer records the form
    collection against the code, capturing which collection office (status FORM_COLLECTED)
 
+3a. Lost form reissue (optional, while FORM_COLLECTED): if the applicant loses the
+   collected form, they submit a tracked reissue request from the declaration page
+   and write an offline letter to the Auditor General or nearest Regional Auditor.
+   On approval, a Legal Unit officer uploads the scanned approved letter and records
+   the reissue in one action. Status stays FORM_COLLECTED; all reissues are recorded
+
 4. Applicant fills and returns the form. GAS Schedule Officer records the
    returned form (status SUBMITTED)
 

@@ -36,6 +36,9 @@ export default defineEventHandler(async (event) => {
         orderBy: { createdAt: "desc" },
         take: 1,
       },
+      formReissueRequests: {
+        orderBy: { createdAt: "desc" },
+      },
       submissions: {
         orderBy: { createdAt: "desc" },
         take: 1,
@@ -90,6 +93,29 @@ export default defineEventHandler(async (event) => {
       title: "Form Collected",
       description: `Physical form collected from ${formCollection.collectionOffice.name}`,
     });
+  }
+
+  for (const reissue of declaration.formReissueRequests) {
+    timeline.push({
+      status: "FORM_REISSUE",
+      date: reissue.createdAt,
+      title: "Form Reissue Requested",
+      description: "Applicant reported the collected form lost and requested a reissue",
+    });
+    if (reissue.reviewedAt && reissue.status !== "PENDING") {
+      timeline.push({
+        status: "FORM_REISSUE",
+        date: reissue.reviewedAt,
+        title:
+          reissue.status === "APPROVED"
+            ? "Form Reissue Approved"
+            : "Form Reissue Declined",
+        description:
+          reissue.status === "APPROVED"
+            ? "Approved by the Auditor General / Regional Auditor; form reissued"
+            : `Declined: ${reissue.decisionReason ?? "no reason provided"}`,
+      });
+    }
   }
 
   if (declaration.submittedAt) {
@@ -153,6 +179,9 @@ export default defineEventHandler(async (event) => {
       ),
       latestReview: declaration.reviews[0] || null,
       receipt: declaration.receipts[0] || null,
+      hasPendingReissue: declaration.formReissueRequests.some(
+        (r) => r.status === "PENDING"
+      ),
     },
   };
 });

@@ -86,6 +86,9 @@ export default defineEventHandler(async (event) => {
             collectionOffice: true,
           },
         },
+        formReissueRequests: {
+          orderBy: { createdAt: "desc" },
+        },
         submissions: {
           orderBy: { createdAt: "desc" },
           take: 1,
@@ -138,6 +141,15 @@ export default defineEventHandler(async (event) => {
               notes: d.formCollections[0].notes,
             }
           : null,
+        formReissues: d.formReissueRequests.map((r) => ({
+          id: r.id,
+          status: r.status,
+          createdAt: r.createdAt.toISOString(),
+          reviewedAt: r.reviewedAt?.toISOString() || null,
+          approverType: r.approverType,
+          approverDetail: r.approverDetail,
+          decisionReason: r.decisionReason,
+        })),
         submission: d.submissions[0]
           ? {
               submissionDate: d.submissions[0].submissionDate.toISOString(),
