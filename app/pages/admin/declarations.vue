@@ -26,6 +26,20 @@ interface Declaration {
       phone: string | null;
     };
   };
+  formCollection: {
+    collectedAt: string;
+    officeName: string;
+    notes: string | null;
+  } | null;
+  formReissues: Array<{
+    id: string;
+    status: string;
+    createdAt: string;
+    reviewedAt: string | null;
+    approverType: string | null;
+    approverDetail: string | null;
+    decisionReason: string | null;
+  }>;
   submission: {
     submissionDate: string;
     notes: string | null;
@@ -187,7 +201,8 @@ const canReview = (declaration: Declaration) => {
 
 const statuses = [
   { value: "", label: "All Statuses" },
-  { value: "PENDING", label: "Pending" },
+  { value: "CODE_GENERATED", label: "Code Generated" },
+  { value: "FORM_COLLECTED", label: "Form Collected" },
   { value: "SUBMITTED", label: "Submitted" },
   { value: "UNDER_REVIEW", label: "Under Review" },
   { value: "APPROVED", label: "Approved" },
@@ -396,12 +411,54 @@ const statuses = [
             <h3 class="text-sm font-medium text-muted-foreground mb-3">Timeline</h3>
             <div class="space-y-3">
               <div class="flex items-start gap-3">
-                <div class="w-2 h-2 mt-2 rounded-full bg-blue-500" />
+                <div class="w-2 h-2 mt-2 rounded-full bg-amber-500" />
                 <div>
-                  <p class="text-sm font-medium text-foreground">Created</p>
+                  <p class="text-sm font-medium text-foreground">Initiated</p>
                   <p class="text-xs text-muted-foreground">{{ formatDate(selectedDeclaration.createdAt) }}</p>
                 </div>
               </div>
+
+              <div v-if="selectedDeclaration.formCollection" class="flex items-start gap-3">
+                <div class="w-2 h-2 mt-2 rounded-full bg-cyan-500" />
+                <div>
+                  <p class="text-sm font-medium text-foreground">Form Collected</p>
+                  <p class="text-xs text-muted-foreground">
+                    {{ formatDate(selectedDeclaration.formCollection.collectedAt) }}
+                    from {{ selectedDeclaration.formCollection.officeName }}
+                  </p>
+                  <p v-if="selectedDeclaration.formCollection.notes" class="text-xs text-muted-foreground mt-1">
+                    Notes: {{ selectedDeclaration.formCollection.notes }}
+                  </p>
+                </div>
+              </div>
+
+              <template v-for="reissue in selectedDeclaration.formReissues" :key="reissue.id">
+                <div class="flex items-start gap-3">
+                  <div class="w-2 h-2 mt-2 rounded-full bg-amber-500" />
+                  <div>
+                    <p class="text-sm font-medium text-foreground">Form Reissue Requested</p>
+                    <p class="text-xs text-muted-foreground">{{ formatDate(reissue.createdAt) }}</p>
+                  </div>
+                </div>
+                <div v-if="reissue.reviewedAt && reissue.status !== 'PENDING'" class="flex items-start gap-3">
+                  <div
+                    class="w-2 h-2 mt-2 rounded-full"
+                    :class="reissue.status === 'APPROVED' ? 'bg-green-500' : 'bg-red-500'"
+                  />
+                  <div>
+                    <p class="text-sm font-medium text-foreground">
+                      {{ reissue.status === 'APPROVED' ? 'Form Reissue Approved' : 'Form Reissue Declined' }}
+                    </p>
+                    <p class="text-xs text-muted-foreground">{{ formatDate(reissue.reviewedAt) }}</p>
+                    <p v-if="reissue.status === 'APPROVED'" class="text-xs text-muted-foreground mt-1">
+                      Approved by {{ reissue.approverType }}<span v-if="reissue.approverDetail"> ({{ reissue.approverDetail }})</span>
+                    </p>
+                    <p v-else-if="reissue.decisionReason" class="text-xs text-muted-foreground mt-1">
+                      Reason: {{ reissue.decisionReason }}
+                    </p>
+                  </div>
+                </div>
+              </template>
 
               <div v-if="selectedDeclaration.submittedAt" class="flex items-start gap-3">
                 <div class="w-2 h-2 mt-2 rounded-full bg-blue-500" />

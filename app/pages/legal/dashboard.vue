@@ -42,6 +42,18 @@ const verificationStats = computed<VerificationStats>(() => verificationStatsRes
 
 const { data: codeActivity, loading: codeLoading } = useDashboardStats<CodeActivityData>("/api/legal/code-activity");
 
+const { data: reissueStatsData } = await useAsyncData(
+  "form-reissue-stats",
+  () => authFetch<{ data: Record<string, number> }>("/api/legal/form-reissues/stats"),
+);
+
+const reissueStats = computed(() => reissueStatsData.value?.data || {
+  PENDING: 0,
+  APPROVED: 0,
+  DECLINED: 0,
+  total: 0,
+});
+
 const quickCode = ref("");
 function lookupQuickCode() {
   const trimmed = quickCode.value.trim();
@@ -217,6 +229,51 @@ function formatTimestamp(iso: string) {
           <CardContent class="p-6">
             <p class="text-sm text-muted-foreground">Verified</p>
             <p class="text-3xl font-bold text-green-600 mt-2">{{ verificationStats.VERIFIED }}</p>
+          </CardContent>
+        </Card>
+      </NuxtLink>
+    </div>
+
+    <!-- Form Reissue Summary -->
+    <h2 class="text-lg font-semibold text-foreground">Form Reissue Requests</h2>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <NuxtLink to="/legal/form-reissues?status=PENDING">
+        <Card class="hover:border-primary/50 transition-colors">
+          <CardContent class="p-6">
+            <p class="text-sm text-muted-foreground">Pending Reissues</p>
+            <p class="text-3xl font-bold text-amber-600 mt-2">
+              {{ reissueStats.PENDING }}
+            </p>
+          </CardContent>
+        </Card>
+      </NuxtLink>
+      <NuxtLink to="/legal/form-reissues?status=APPROVED">
+        <Card class="hover:border-primary/50 transition-colors">
+          <CardContent class="p-6">
+            <p class="text-sm text-muted-foreground">Approved</p>
+            <p class="text-3xl font-bold text-green-600 mt-2">
+              {{ reissueStats.APPROVED }}
+            </p>
+          </CardContent>
+        </Card>
+      </NuxtLink>
+      <NuxtLink to="/legal/form-reissues?status=DECLINED">
+        <Card class="hover:border-primary/50 transition-colors">
+          <CardContent class="p-6">
+            <p class="text-sm text-muted-foreground">Declined</p>
+            <p class="text-3xl font-bold text-red-600 mt-2">
+              {{ reissueStats.DECLINED }}
+            </p>
+          </CardContent>
+        </Card>
+      </NuxtLink>
+      <NuxtLink to="/legal/form-reissues?status=ALL">
+        <Card class="hover:border-primary/50 transition-colors">
+          <CardContent class="p-6">
+            <p class="text-sm text-muted-foreground">Total</p>
+            <p class="text-3xl font-bold text-foreground mt-2">
+              {{ reissueStats.total }}
+            </p>
           </CardContent>
         </Card>
       </NuxtLink>

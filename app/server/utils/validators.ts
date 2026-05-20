@@ -88,6 +88,25 @@ export const submissionRecordSchema = z.object({
 });
 
 /**
+ * Form collection recording schema (GAS Officer records that the applicant
+ * collected the physical declaration form from a collection office).
+ */
+export const formCollectionRecordSchema = z.object({
+  declarationId: z.string().uuid("Invalid declaration ID"),
+  collectionOfficeId: z.string().uuid("Invalid collection office ID"),
+  notes: z.string().optional(),
+});
+
+/**
+ * Form return recording schema (GAS Officer records that the applicant filled
+ * and returned the physical declaration form).
+ */
+export const formReturnRecordSchema = z.object({
+  declarationId: z.string().uuid("Invalid declaration ID"),
+  notes: z.string().optional(),
+});
+
+/**
  * Review schema
  */
 export const reviewSchema = z.object({
@@ -99,6 +118,38 @@ export const reviewSchema = z.object({
   {
     message: "Rejection reason is required when rejecting a declaration",
     path: ["rejectionReason"],
+  }
+);
+
+/**
+ * Lost-form reissue request schema (applicant)
+ */
+export const reissueRequestSchema = z.object({
+  applicantNote: z.string().max(2000).optional(),
+});
+
+/**
+ * Lost-form reissue decision schema (legal officer combined action)
+ */
+export const reissueDecisionSchema = z.object({
+  status: z.enum(["APPROVED", "DECLINED"]),
+  letterScanUrl: z.string().url("Invalid letter scan URL").optional(),
+  approverType: z.enum(["AUDITOR_GENERAL", "REGIONAL_AUDITOR"]).optional(),
+  approverDetail: z.string().max(255).optional(),
+  decisionReason: z.string().optional(),
+}).refine(
+  (data) =>
+    data.status !== "APPROVED" ||
+    (!!data.letterScanUrl && data.letterScanUrl.length > 0 && !!data.approverType),
+  {
+    message: "An uploaded approval letter and the approver are required to approve a reissue",
+    path: ["letterScanUrl"],
+  }
+).refine(
+  (data) => data.status !== "DECLINED" || (!!data.decisionReason && data.decisionReason.length > 0),
+  {
+    message: "A reason is required when declining a reissue request",
+    path: ["decisionReason"],
   }
 );
 

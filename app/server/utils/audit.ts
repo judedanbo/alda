@@ -68,6 +68,8 @@ export const AuditActions = {
 
   // Declarations
   DECLARATION_CREATED: "declaration_created",
+  FORM_COLLECTION_RECORDED: "form_collection_recorded",
+  FORM_RETURNED: "form_returned",
   DECLARATION_SUBMITTED: "declaration_submitted",
   DECLARATION_REVIEWED: "declaration_reviewed",
   DECLARATION_APPROVED: "declaration_approved",
@@ -106,6 +108,11 @@ export const AuditActions = {
   APPLICANT_VERIFICATION_MORE_INFO: "applicant_verification_more_info",
   APPLICANT_VERIFICATION_REJECTED: "applicant_verification_rejected",
   APPLICANT_VERIFICATION_RESUBMITTED: "applicant_verification_resubmitted",
+
+  // Lost form reissue
+  FORM_REISSUE_REQUESTED: "form_reissue_requested",
+  FORM_REISSUE_APPROVED: "form_reissue_approved",
+  FORM_REISSUE_DECLINED: "form_reissue_declined",
 } as const;
 
 export type AuditAction = typeof AuditActions[keyof typeof AuditActions];

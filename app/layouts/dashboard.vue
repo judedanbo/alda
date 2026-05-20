@@ -46,6 +46,7 @@ const navigation = computed<NavItem[]>(() => {
     return [
       { name: "Dashboard", href: "/legal/dashboard", icon: "home" },
       { name: "Applicant Verifications", href: "/legal/verifications", icon: "user-check" },
+      { name: "Form Reissues", href: "/legal/form-reissues", icon: "file-text" },
       { name: "Verify Code", href: "/legal/verify", icon: "search" },
     ];
   }

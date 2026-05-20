@@ -77,7 +77,9 @@ export default defineEventHandler(async (event) => {
     prisma.declaration.count(),
 
     prisma.declaration.count({
-      where: { status: { in: ["SUBMITTED", "UNDER_REVIEW"] } },
+      where: {
+        status: { in: ["CODE_GENERATED", "FORM_COLLECTED", "SUBMITTED", "UNDER_REVIEW"] },
+      },
     }),
 
     prisma.declaration.count({

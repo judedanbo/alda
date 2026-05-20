@@ -6,6 +6,8 @@ definePageMeta({
 
 interface OfficerDashboardData {
   queues: {
+    pendingFormCollections: number;
+    pendingFormReturns: number;
     pendingSubmissions: number;
     pendingReviews: number;
     pendingReceipts: number;
@@ -31,7 +33,7 @@ const funnelOptions = computed(() => ({
     bar: { horizontal: true, borderRadius: 4, barHeight: "70%", distributed: true },
   },
   legend: { show: false },
-  colors: ["#94A3B8", "#3B82F6", "#F59E0B", "#10B981", "#8B5CF6", "#EF4444"],
+  colors: ["#94A3B8", "#06B6D4", "#3B82F6", "#F59E0B", "#10B981", "#8B5CF6", "#EF4444"],
   xaxis: {
     categories: dashboard.value?.funnel.map((f) => f.status.replace("_", " ")) ?? [],
   },
@@ -56,6 +58,20 @@ const throughputSeries = computed(() => [
 ]);
 
 const quickActions = [
+  {
+    title: "Record Form Collection",
+    description: "Record a physical form collected by an applicant",
+    icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+    href: "/officer/form-collections",
+    color: "bg-cyan-500",
+  },
+  {
+    title: "Record Form Return",
+    description: "Record a completed form returned by an applicant",
+    icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+    href: "/officer/form-returns",
+    color: "bg-teal-500",
+  },
   {
     title: "Record Submission",
     description: "Record a new declaration submission",
@@ -111,7 +127,27 @@ const quickActions = [
     </Card>
 
     <!-- Pending Queues -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <StatCard
+        label="Pending Form Collections"
+        :value="dashboard?.queues.pendingFormCollections ?? 0"
+        :loading="loading"
+        footnote="Forms awaiting collection recording"
+        href="/officer/form-collections"
+        icon-bg="bg-cyan-100"
+        icon-color="text-cyan-600"
+        icon-path="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+      />
+      <StatCard
+        label="Pending Form Returns"
+        :value="dashboard?.queues.pendingFormReturns ?? 0"
+        :loading="loading"
+        footnote="Completed forms awaiting return"
+        href="/officer/form-returns"
+        icon-bg="bg-teal-100"
+        icon-color="text-teal-600"
+        icon-path="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+      />
       <StatCard
         label="Pending Submissions"
         :value="dashboard?.queues.pendingSubmissions ?? 0"
@@ -206,7 +242,7 @@ const quickActions = [
         <CardTitle class="text-base">Quick Actions</CardTitle>
       </CardHeader>
       <CardContent>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <NuxtLink
             v-for="action in quickActions"
             :key="action.title"

@@ -119,7 +119,7 @@ export default defineEventHandler(async (event) => {
     success: true,
     data: {
       total: Object.values(counts).reduce((a, b) => a + b, 0),
-      pending: (counts["PENDING"] ?? 0) + (counts["SUBMITTED"] ?? 0) + (counts["UNDER_REVIEW"] ?? 0),
+      pending: (counts["CODE_GENERATED"] ?? 0) + (counts["FORM_COLLECTED"] ?? 0) + (counts["SUBMITTED"] ?? 0) + (counts["UNDER_REVIEW"] ?? 0),
       approved: counts["APPROVED"] ?? 0,
       rejected: counts["REJECTED"] ?? 0,
       activeDeclaration: activeDeclaration
