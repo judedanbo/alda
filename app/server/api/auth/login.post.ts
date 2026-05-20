@@ -102,8 +102,12 @@ export default defineEventHandler(async (event) => {
   });
 
   // Check if user has applicant profile
-  const hasProfile = await prisma.applicantProfile.findUnique({
+  const profile = await prisma.applicantProfile.findUnique({
     where: { userId: user.id },
+    select: {
+      fullName: true,
+      verificationStatus: true,
+    },
   });
 
   return {
@@ -116,7 +120,9 @@ export default defineEventHandler(async (event) => {
         phone: user.phone,
         emailVerified: user.emailVerified,
         roles,
-        hasProfile: !!hasProfile,
+        hasProfile: !!profile,
+        fullName: profile?.fullName,
+        verificationStatus: profile?.verificationStatus,
       },
       tokens,
     },

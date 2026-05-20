@@ -162,7 +162,7 @@ export default defineEventHandler(async (event) => {
       status: "SEALED",
       date: declaration.updatedAt,
       title: "Declaration Sealed",
-      description: "Ready for pickup",
+      description: "",
     });
   }
 
