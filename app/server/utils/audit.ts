@@ -94,6 +94,10 @@ export const AuditActions = {
   CATEGORY_UPDATED: "category_updated",
   CATEGORY_DEACTIVATED: "category_deactivated",
 
+  // Code Verification (Legal Unit lookups)
+  CODE_VERIFIED: "CODE_VERIFIED",
+  CODE_VERIFICATION_FAILED: "CODE_VERIFICATION_FAILED",
+
   // Applicant Verification
   APPLICANT_VERIFICATION_REQUESTED: "applicant_verification_requested",
   APPLICANT_VERIFICATION_REVIEWED: "applicant_verification_reviewed",
