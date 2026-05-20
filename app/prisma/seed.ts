@@ -160,6 +160,29 @@ async function main() {
   }
   console.log(`✅ Created ${institutions.length} institutions`);
 
+  // Seed Collection Offices (GAS offices where physical declaration forms are
+  // collected and returned). Idempotent so re-running the seed is safe.
+  console.log("Creating collection offices...");
+  const collectionOffices = [
+    { name: "GAS Headquarters, Accra", type: "HEADQUARTERS" as const, region: "Greater Accra" },
+    { name: "Kumasi Regional Office", type: "REGIONAL" as const, region: "Ashanti" },
+    { name: "Takoradi Regional Office", type: "REGIONAL" as const, region: "Western" },
+    { name: "Tamale Regional Office", type: "REGIONAL" as const, region: "Northern" },
+    { name: "Cape Coast Regional Office", type: "REGIONAL" as const, region: "Central" },
+  ];
+
+  let collectionOfficesCreated = 0;
+  for (const office of collectionOffices) {
+    const existing = await prisma.collectionOffice.findFirst({
+      where: { name: office.name },
+    });
+    if (!existing) {
+      await prisma.collectionOffice.create({ data: office });
+      collectionOfficesCreated++;
+    }
+  }
+  console.log(`✅ Created ${collectionOfficesCreated} collection offices`);
+
   // Seed Data Retention Policies
   console.log("Creating data retention policies...");
   const retentionPolicies = [

@@ -62,10 +62,10 @@ export default defineEventHandler(async (event) => {
     // Total declarations
     prisma.declaration.count(),
 
-    // Pending declarations (SUBMITTED or UNDER_REVIEW)
+    // Pending declarations (anything awaiting an officer action before approval)
     prisma.declaration.count({
       where: {
-        status: { in: ["SUBMITTED", "UNDER_REVIEW"] },
+        status: { in: ["CODE_GENERATED", "FORM_COLLECTED", "SUBMITTED", "UNDER_REVIEW"] },
       },
     }),
 

@@ -30,6 +30,8 @@ const formatDate = (date: string) => {
 const getTimelineIcon = (status: string) => {
   const icons: Record<string, string> = {
     CREATED: "M12 4v16m8-8H4",
+    FORM_COLLECTED: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+    FORM_REISSUE: "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15",
     SUBMITTED: "M12 19l9 2-9-18-9 18 9-2zm0 0v-8",
     RECORDED: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
     APPROVED: "M5 13l4 4L19 7",
@@ -38,6 +40,37 @@ const getTimelineIcon = (status: string) => {
     SEALED: "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z",
   };
   return icons[status] || icons.CREATED;
+};
+
+// Lost-form reissue request
+const showReissueModal = ref(false);
+const reissueNote = ref("");
+const submittingReissue = ref(false);
+const reissueError = ref("");
+
+const canRequestReissue = computed(
+  () =>
+    declaration.value?.status === "FORM_COLLECTED" &&
+    !declaration.value?.hasPendingReissue
+);
+
+const submitReissueRequest = async () => {
+  submittingReissue.value = true;
+  reissueError.value = "";
+  try {
+    await authFetch(`/api/declarations/${id}/reissue-request`, {
+      method: "POST",
+      body: { applicantNote: reissueNote.value || undefined },
+    });
+    showReissueModal.value = false;
+    reissueNote.value = "";
+    await refresh();
+  } catch (err: any) {
+    reissueError.value =
+      err.data?.message || err.data?.statusMessage || "Failed to submit reissue request";
+  } finally {
+    submittingReissue.value = false;
+  }
 };
 </script>
 
@@ -106,8 +139,29 @@ const getTimelineIcon = (status: string) => {
             </div>
             <StatusBadge :status="declaration.status" />
           </div>
+          <div v-if="canRequestReissue" class="mt-4 border-t pt-3">
+            <Button
+              variant="link"
+              class="h-auto p-0 text-sm text-muted-foreground"
+              @click="showReissueModal = true"
+            >
+              Lost your form? Request a reissue
+            </Button>
+          </div>
         </CardContent>
       </Card>
+
+      <!-- Reissue Pending -->
+      <Alert
+        v-if="declaration.hasPendingReissue"
+        class="mb-6 border-amber-300 bg-amber-50"
+      >
+        <AlertTitle class="text-amber-700">Reissue Request Pending</AlertTitle>
+        <AlertDescription>
+          Your lost-form reissue request is awaiting review by the Legal Unit
+          once the Auditor General's approval letter is received.
+        </AlertDescription>
+      </Alert>
 
       <!-- Rejection Reason -->
       <Alert
@@ -184,20 +238,65 @@ const getTimelineIcon = (status: string) => {
         </CardContent>
       </Card>
 
-      <!-- Actions -->
-      <div
-        v-if="declaration.status === 'PENDING'"
-        class="mt-6 p-4 bg-muted/50 rounded-lg flex items-center justify-between"
-      >
-        <p class="text-muted-foreground">
-          Your declaration is pending submission
-        </p>
-        <Button as-child>
-          <NuxtLink :to="`/applicant/declaration/${id}/submit`">
-            Submit Declaration
-          </NuxtLink>
-        </Button>
-      </div>
+      <!-- Reissue Request Modal -->
+      <Dialog :open="showReissueModal" @update:open="showReissueModal = $event">
+        <DialogContent class="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Request a Form Reissue</DialogTitle>
+            <DialogDescription>
+              Follow this process if you lost your collected declaration form
+            </DialogDescription>
+          </DialogHeader>
+
+          <div class="space-y-4">
+            <ol class="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+              <li>
+                Write a letter stating the conditions under which the form was
+                lost.
+              </li>
+              <li>
+                Submit the letter to the <strong>Auditor General</strong> or your
+                nearest <strong>Regional Auditor</strong>.
+              </li>
+              <li>
+                The Auditor General / Regional Auditor will decide whether to
+                approve a reissue at their discretion.
+              </li>
+              <li>
+                Once approved, take the approved letter to the Legal Unit. They
+                will record the approval and reissue your form.
+              </li>
+            </ol>
+
+            <p class="text-sm text-muted-foreground">
+              Submitting this request notifies the Legal Unit to expect your
+              approved letter. It does not replace the offline letter.
+            </p>
+
+            <div class="space-y-2">
+              <Label>Note (optional)</Label>
+              <Textarea
+                v-model="reissueNote"
+                rows="3"
+                placeholder="Brief context about how the form was lost..."
+              />
+            </div>
+
+            <Alert v-if="reissueError" variant="destructive">
+              <AlertDescription>{{ reissueError }}</AlertDescription>
+            </Alert>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" @click="showReissueModal = false">
+              Cancel
+            </Button>
+            <Button :disabled="submittingReissue" @click="submitReissueRequest">
+              {{ submittingReissue ? 'Submitting...' : 'Submit Request' }}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </template>
   </div>
 </template>

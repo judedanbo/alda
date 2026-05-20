@@ -13,10 +13,6 @@ export function useDeclarations() {
     return authFetch<any>("/api/declarations", { method: "POST" });
   }
 
-  async function submitDeclaration(id: string) {
-    return authFetch<any>(`/api/declarations/${id}/submit`, { method: "POST" });
-  }
-
   async function fetchDeclarationStatus(id: string) {
     return authFetch<any>(`/api/declarations/${id}/status`);
   }
@@ -25,7 +21,6 @@ export function useDeclarations() {
     fetchDeclarations,
     fetchDeclaration,
     createDeclaration,
-    submitDeclaration,
     fetchDeclarationStatus,
   };
 }

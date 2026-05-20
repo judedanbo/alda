@@ -5,7 +5,6 @@ definePageMeta({
 });
 
 const { isEmailVerified } = useAuth();
-const router = useRouter();
 
 const isLoading = ref(false);
 const error = ref("");
@@ -42,27 +41,6 @@ const handleCreate = async () => {
   }
 };
 
-// Submit declaration
-const handleSubmit = async () => {
-  if (!createdDeclaration.value) return;
-
-  error.value = "";
-  isLoading.value = true;
-
-  try {
-    const response = await authFetch<{ success: boolean }>(`/api/declarations/${createdDeclaration.value.id}/submit`, {
-      method: "POST",
-    });
-
-    if (response.success) {
-      router.push(`/applicant/declaration/${createdDeclaration.value.id}`);
-    }
-  } catch (err: any) {
-    error.value = err.data?.message || "Failed to submit declaration";
-  } finally {
-    isLoading.value = false;
-  }
-};
 </script>
 
 <template>
@@ -125,27 +103,15 @@ const handleSubmit = async () => {
           <h3 class="font-medium text-foreground mb-2">Important:</h3>
           <ul class="text-sm text-muted-foreground space-y-1">
             <li>Keep this code safe for tracking your declaration</li>
-            <li>You'll need it when collecting your receipt</li>
-            <li>Reference this code in any correspondence</li>
+            <li>Collect your physical declaration form from any GAS office (headquarters or a regional office)</li>
+            <li>A GAS officer will record the collection of your form against this code</li>
+            <li>You'll need this code when collecting your receipt</li>
           </ul>
         </div>
 
-        <!-- Error Alert -->
-        <Alert v-if="error" variant="destructive" class="mb-6">
-          <AlertDescription>{{ error }}</AlertDescription>
-        </Alert>
-
-        <div class="flex items-center justify-between">
-          <Button variant="ghost" as-child>
-            <NuxtLink to="/applicant/declarations">View All Declarations</NuxtLink>
-          </Button>
-
-          <Button
-            :disabled="isLoading"
-            @click="handleSubmit"
-          >
-            <span v-if="isLoading">Submitting...</span>
-            <span v-else>Submit for Review</span>
+        <div class="flex items-center justify-end">
+          <Button as-child>
+            <NuxtLink to="/applicant/declarations">Done</NuxtLink>
           </Button>
         </div>
       </CardContent>

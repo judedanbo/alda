@@ -156,6 +156,11 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
 function mapNotificationTypeToEmailTemplate(type: NotificationType): EmailTemplate {
   const mapping: Record<NotificationType, EmailTemplate> = {
     UNIQUE_CODE_GENERATED: "unique-code",
+    FORM_COLLECTED: "declaration-submitted",
+    FORM_RETURNED: "declaration-submitted",
+    FORM_REISSUE_REQUESTED: "declaration-submitted",
+    FORM_REISSUE_APPROVED: "declaration-submitted",
+    FORM_REISSUE_DECLINED: "declaration-rejected",
     SUBMISSION_RECORDED: "declaration-submitted",
     REVIEW_APPROVED: "declaration-approved",
     REVIEW_REJECTED: "declaration-rejected",
@@ -250,6 +255,72 @@ export async function notifyDeclarationRejected(
       name,
       rejectionReason: reason,
     },
+  });
+}
+
+/**
+ * Send lost-form reissue request confirmation (to the applicant)
+ */
+export async function notifyFormReissueRequested(
+  userId: string,
+  uniqueCode: string,
+  name: string
+): Promise<void> {
+  await sendNotification({
+    userId,
+    type: "FORM_REISSUE_REQUESTED",
+    title: "Reissue Request Received",
+    message: `We received your request to reissue the lost form for declaration (${uniqueCode}). The Legal Unit will process it once the Auditor General's approval letter is received.`,
+    metadata: {
+      uniqueCode,
+      name,
+      requestedAt: new Date().toISOString(),
+    },
+    channels: ["IN_APP"],
+  });
+}
+
+/**
+ * Send lost-form reissue approved notification (to the applicant)
+ */
+export async function notifyFormReissueApproved(
+  userId: string,
+  uniqueCode: string,
+  name: string
+): Promise<void> {
+  await sendNotification({
+    userId,
+    type: "FORM_REISSUE_APPROVED",
+    title: "Form Reissue Approved",
+    message: `Your request to reissue the lost form for declaration (${uniqueCode}) has been approved. Collect the reissued form and return it through the normal process.`,
+    metadata: {
+      uniqueCode,
+      name,
+      approvedAt: new Date().toISOString(),
+    },
+  });
+}
+
+/**
+ * Send lost-form reissue declined notification (to the applicant)
+ */
+export async function notifyFormReissueDeclined(
+  userId: string,
+  uniqueCode: string,
+  name: string,
+  reason: string
+): Promise<void> {
+  await sendNotification({
+    userId,
+    type: "FORM_REISSUE_DECLINED",
+    title: "Form Reissue Declined",
+    message: `Your request to reissue the lost form for declaration (${uniqueCode}) was declined. Reason: ${reason}`,
+    metadata: {
+      uniqueCode,
+      name,
+      decisionReason: reason,
+    },
+    channels: ["EMAIL", "IN_APP"],
   });
 }
 

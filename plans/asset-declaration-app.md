@@ -12,8 +12,8 @@ A web application for Ghana's Asset Declaration system under Article 286(5) of t
 
 | Role                     | Responsibilities                                    |
 | ------------------------ | --------------------------------------------------- |
-| **Applicant**            | Register, submit declaration, receive notifications |
-| **GAS Schedule Officer** | Record submissions, review, generate receipts       |
+| **Applicant**            | Register, initiate declaration (generate code), receive notifications |
+| **GAS Schedule Officer** | Record form collection, record returned form, record submissions, review, generate receipts |
 | **Legal Unit**           | Verify authenticity, recall applicant info          |
 
 ### Process Flow
@@ -29,17 +29,30 @@ A web application for Ghana's Asset Declaration system under Article 286(5) of t
    - Institution name
    - Designation
 
-2. System generates Unique Code → sent via Email
+2. System generates Unique Code → sent via Email (declaration is initiated; status CODE_GENERATED)
 
-3. Legal Unit verifies code and recalls applicant info
+3. Applicant collects the physical declaration form from a GAS collection office
+   (headquarters or any regional office). GAS Schedule Officer records the form
+   collection against the code, capturing which collection office (status FORM_COLLECTED)
 
-4. GAS Schedule Officer records submission date/time
+3a. Lost form reissue (optional, while FORM_COLLECTED): if the applicant loses the
+   collected form, they submit a tracked reissue request from the declaration page
+   and write an offline letter to the Auditor General or nearest Regional Auditor.
+   On approval, a Legal Unit officer uploads the scanned approved letter and records
+   the reissue in one action. Status stays FORM_COLLECTED; all reissues are recorded
 
-5. Review process:
+4. Applicant fills and returns the form. GAS Schedule Officer records the
+   returned form (status SUBMITTED)
+
+5. Legal Unit verifies code and recalls applicant info
+
+6. GAS Schedule Officer records submission date/time (status UNDER_REVIEW)
+
+7. Review process:
    - SUCCESS → Move to Seal → Generate Receipt → Email to applicant
-   - FAILURE → Reject with reason → Issue new unique code
+   - FAILURE → Reject with reason → Issue new unique code (new CODE_GENERATED declaration)
 
-6. Pick-up notification sent to applicant (supports third-party pickup)
+8. Pick-up notification sent to applicant (supports third-party pickup)
 ```
 
 ---
@@ -159,7 +172,7 @@ CREATE TABLE declarations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   applicant_id UUID REFERENCES applicant_profiles(id),
   unique_code VARCHAR(20) UNIQUE NOT NULL,
-  status VARCHAR(50) DEFAULT 'pending', -- pending, submitted, under_review, approved, rejected, sealed
+  status VARCHAR(50) DEFAULT 'code_generated', -- code_generated, form_collected, submitted, under_review, approved, rejected, sealed, completed
   submitted_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW()
 );

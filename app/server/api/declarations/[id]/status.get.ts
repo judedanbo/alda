@@ -29,6 +29,16 @@ export default defineEventHandler(async (event) => {
           fullName: true,
         },
       },
+      formCollections: {
+        include: {
+          collectionOffice: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
+      formReissueRequests: {
+        orderBy: { createdAt: "desc" },
+      },
       submissions: {
         orderBy: { createdAt: "desc" },
         take: 1,
@@ -71,16 +81,49 @@ export default defineEventHandler(async (event) => {
   timeline.push({
     status: "CREATED",
     date: declaration.createdAt,
-    title: "Declaration Created",
+    title: "Declaration Initiated",
     description: `Unique code ${declaration.uniqueCode} generated`,
   });
+
+  const formCollection = declaration.formCollections[0];
+  if (formCollection) {
+    timeline.push({
+      status: "FORM_COLLECTED",
+      date: formCollection.collectedAt,
+      title: "Form Collected",
+      description: `Physical form collected from ${formCollection.collectionOffice.name}`,
+    });
+  }
+
+  for (const reissue of declaration.formReissueRequests) {
+    timeline.push({
+      status: "FORM_REISSUE",
+      date: reissue.createdAt,
+      title: "Form Reissue Requested",
+      description: "Applicant reported the collected form lost and requested a reissue",
+    });
+    if (reissue.reviewedAt && reissue.status !== "PENDING") {
+      timeline.push({
+        status: "FORM_REISSUE",
+        date: reissue.reviewedAt,
+        title:
+          reissue.status === "APPROVED"
+            ? "Form Reissue Approved"
+            : "Form Reissue Declined",
+        description:
+          reissue.status === "APPROVED"
+            ? "Approved by the Auditor General / Regional Auditor; form reissued"
+            : `Declined: ${reissue.decisionReason ?? "no reason provided"}`,
+      });
+    }
+  }
 
   if (declaration.submittedAt) {
     timeline.push({
       status: "SUBMITTED",
       date: declaration.submittedAt,
       title: "Declaration Submitted",
-      description: "Submitted for review",
+      description: "Form returned and submitted for review",
     });
   }
 
@@ -136,6 +179,9 @@ export default defineEventHandler(async (event) => {
       ),
       latestReview: declaration.reviews[0] || null,
       receipt: declaration.receipts[0] || null,
+      hasPendingReissue: declaration.formReissueRequests.some(
+        (r) => r.status === "PENDING"
+      ),
     },
   };
 });
