@@ -180,7 +180,28 @@ const submitReissueRequest = async () => {
       >
         <AlertTitle class="text-success">Receipt Ready</AlertTitle>
         <AlertDescription>
-          Receipt Number: <span class="font-mono font-bold">{{ declaration.receipt.receiptNumber }}</span>
+          <p>
+            Receipt Number: <span class="font-mono font-bold">{{ declaration.receipt.receiptNumber }}</span>
+          </p>
+          <div v-if="declaration.receipt.pdfUrl" class="mt-3 flex flex-wrap gap-2">
+            <Button as-child size="sm">
+              <a :href="declaration.receipt.pdfUrl" target="_blank" rel="noopener" class="inline-flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                View Receipt
+              </a>
+            </Button>
+            <Button as-child size="sm" variant="outline">
+              <a :href="declaration.receipt.pdfUrl" :download="`${declaration.receipt.receiptNumber}.pdf`" class="inline-flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download PDF
+              </a>
+            </Button>
+          </div>
         </AlertDescription>
       </Alert>
 
@@ -225,7 +246,7 @@ const submitReissueRequest = async () => {
                   <div class="flex items-start justify-between">
                     <div>
                       <h3 class="font-medium text-foreground">{{ event.title }}</h3>
-                      <p class="text-sm text-muted-foreground mt-1">{{ event.description }}</p>
+                      <p v-if="event.description" class="text-sm text-muted-foreground mt-1">{{ event.description }}</p>
                     </div>
                     <time class="text-sm text-muted-foreground whitespace-nowrap ml-4">
                       {{ formatDate(event.date) }}
