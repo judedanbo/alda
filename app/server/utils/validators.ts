@@ -1,5 +1,6 @@
 import type { H3Event } from "h3";
 import { z } from "zod";
+import { NotificationType } from "@prisma/client";
 
 // Common validation patterns
 const ghanaPhoneRegex = /^(\+233|0)[2-9]\d{8}$/;
@@ -193,10 +194,19 @@ export const verificationReviewSchema = z.object({
 /**
  * Notification preferences schema
  */
-export const notificationPreferencesSchema = z.object({
+const channelFlagsSchema = z.object({
   emailEnabled: z.boolean(),
   smsEnabled: z.boolean(),
   inAppEnabled: z.boolean(),
+});
+
+export const notificationPreferencesSchema = z.object({
+  channels: channelFlagsSchema,
+  typePreferences: z.array(
+    channelFlagsSchema.extend({
+      type: z.nativeEnum(NotificationType),
+    }),
+  ),
 });
 
 /**

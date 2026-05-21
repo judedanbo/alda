@@ -23,44 +23,27 @@ const {
 <template>
   <div class="space-y-6">
     <AppPageHeader
-      title="Sealed Declarations Analytics"
-      description="Comprehensive view of all completed and sealed declarations"
+      title="My Sealed Declarations"
+      description="Declarations you have processed and sealed"
     />
 
-    <!-- Zone 1: Filters -->
     <AnalyticsFilterBar
       :filters="filters"
-      :show-officer-filter="true"
+      :show-officer-filter="false"
       :show-export="true"
       @apply="applyFilters"
       @reset="resetFilters"
       @export="exportData"
     />
 
-    <!-- Zone 2: KPIs -->
     <AnalyticsKpiCards :data="summary" :loading="loadingSummary" />
 
-    <!-- Zone 3: Charts -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <AnalyticsSealedTimelineChart
-        :data="charts?.timeline"
-        :loading="loadingCharts"
-      />
-      <AnalyticsInstitutionChart
-        :data="charts?.byInstitution"
-        :loading="loadingCharts"
-      />
-      <AnalyticsCollectionOfficeChart
-        :data="charts?.byCollectionOffice"
-        :loading="loadingCharts"
-      />
-      <AnalyticsOfficerPerformanceChart
-        :data="charts?.officerPerformance"
-        :loading="loadingCharts"
-      />
+      <AnalyticsSealedTimelineChart :data="charts?.timeline" :loading="loadingCharts" />
+      <AnalyticsInstitutionChart :data="charts?.byInstitution" :loading="loadingCharts" />
+      <AnalyticsCollectionOfficeChart :data="charts?.byCollectionOffice" :loading="loadingCharts" />
     </div>
 
-    <!-- Zone 4: Detail Table -->
     <AnalyticsDeclarationsTable
       :data="list"
       :loading="loadingList"

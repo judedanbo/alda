@@ -1,5 +1,9 @@
 import prisma from "~/server/utils/prisma";
 import { validateBody, notificationPreferencesSchema } from "~/server/utils/validators";
+import {
+  buildPreferencesPayload,
+  getControllableTypesForRole,
+} from "~/server/utils/notifications-catalog";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -11,20 +15,53 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const data = await validateBody(event, notificationPreferencesSchema);
+  const body = await validateBody(event, notificationPreferencesSchema);
 
-  const preferences = await prisma.notificationPreference.upsert({
+  const allowedTypes = new Set(getControllableTypesForRole(auth.roles));
+  for (const pref of body.typePreferences) {
+    if (!allowedTypes.has(pref.type)) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: `Notification type "${pref.type}" cannot be configured`,
+      });
+    }
+  }
+
+  await prisma.$transaction([
+    prisma.notificationPreference.upsert({
+      where: { userId: auth.userId },
+      update: body.channels,
+      create: { userId: auth.userId, ...body.channels },
+    }),
+    ...body.typePreferences.map((pref) =>
+      prisma.notificationTypePreference.upsert({
+        where: { userId_type: { userId: auth.userId, type: pref.type } },
+        update: {
+          emailEnabled: pref.emailEnabled,
+          smsEnabled: pref.smsEnabled,
+          inAppEnabled: pref.inAppEnabled,
+        },
+        create: {
+          userId: auth.userId,
+          type: pref.type,
+          emailEnabled: pref.emailEnabled,
+          smsEnabled: pref.smsEnabled,
+          inAppEnabled: pref.inAppEnabled,
+        },
+      }),
+    ),
+  ]);
+
+  const channels = await prisma.notificationPreference.findUniqueOrThrow({
     where: { userId: auth.userId },
-    update: data,
-    create: {
-      userId: auth.userId,
-      ...data,
-    },
+  });
+  const typeRows = await prisma.notificationTypePreference.findMany({
+    where: { userId: auth.userId },
   });
 
   return {
     success: true,
     message: "Preferences updated successfully",
-    data: preferences,
+    data: buildPreferencesPayload(auth.roles, channels, typeRows),
   };
 });

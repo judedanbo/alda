@@ -30,7 +30,6 @@ interface ApplicantDashboardData {
   activeDeclaration: ActiveDeclaration | null;
   codeHistory: CodeHistoryEntry[];
   verificationCount: number;
-  timeline: { month: string; count: number }[];
 }
 
 const verificationInfo = ref<{ reason?: string; messageToApplicant?: string } | null>(null);
@@ -53,20 +52,6 @@ const { data: dashboard, loading } = useDashboardStats<ApplicantDashboardData>("
 onMounted(() => {
   fetchVerificationInfo();
 });
-
-const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const timelineSeries = computed(() => [
-  { name: "Declarations", data: dashboard.value?.timeline.map((t) => t.count) ?? [] },
-]);
-const timelineOptions = computed(() => ({
-  xaxis: {
-    categories:
-      dashboard.value?.timeline.map((t) => {
-        const [y, m] = t.month.split("-");
-        return `${monthLabels[Number(m) - 1]} ${y!.slice(2)}`;
-      }) ?? [],
-  },
-}));
 
 const showCodeHistory = ref(false);
 const codeCopied = ref(false);
@@ -105,6 +90,8 @@ async function resendVerification() {
       :title="'Welcome' + (user?.fullName ? ', ' + user.fullName : '')"
       description="Manage your asset declarations and track their status"
     />
+
+    <AnalyticsSealedSummaryWidget role="applicant" />
 
     <!-- Email Verification Banner -->
     <div
@@ -229,7 +216,7 @@ async function resendVerification() {
                 </svg>
               </button>
             </div>
-            <CodeBadge :code="dashboard.activeDeclaration.uniqueCode" size="lg" show-qr />
+            <AppCodeBadge :code="dashboard.activeDeclaration.uniqueCode" size="lg" show-qr />
             <p class="text-xs text-muted-foreground">
               Status: <StatusBadge :status="dashboard.activeDeclaration.status" />
               <span class="ml-2">
@@ -281,47 +268,9 @@ async function resendVerification() {
       </CardContent>
     </Card>
 
-    <!-- Stats Grid -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <StatCard
-        label="Total Declarations"
-        :value="dashboard?.total ?? 0"
-        :loading="loading"
-        icon-bg="bg-blue-100"
-        icon-color="text-blue-600"
-        icon-path="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-      />
-      <StatCard
-        label="Pending Review"
-        :value="dashboard?.pending ?? 0"
-        :loading="loading"
-        icon-bg="bg-yellow-100"
-        icon-color="text-yellow-600"
-        icon-path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-      <StatCard
-        label="Approved"
-        :value="dashboard?.approved ?? 0"
-        :loading="loading"
-        value-color="text-emerald-600"
-        icon-bg="bg-emerald-100"
-        icon-color="text-emerald-600"
-        icon-path="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-      <StatCard
-        label="Rejected"
-        :value="dashboard?.rejected ?? 0"
-        :loading="loading"
-        value-color="text-red-600"
-        icon-bg="bg-red-100"
-        icon-color="text-red-600"
-        icon-path="M6 18L18 6M6 6l12 12"
-      />
-    </div>
-
     <!-- Verification activity + Quick actions -->
     <div class="grid md:grid-cols-3 gap-4">
-      <StatCard
+      <AppStatCard
         label="Verification Lookups"
         :value="dashboard?.verificationCount ?? 0"
         :loading="loading"
@@ -390,18 +339,41 @@ async function resendVerification() {
       </Card>
     </div>
 
-    <!-- Timeline chart + Code history -->
+    <!-- Summary + Code history -->
     <div class="grid lg:grid-cols-3 gap-4">
       <div class="lg:col-span-2">
-        <ChartCard
-          title="Declarations Over Time"
-          description="Your declaration activity over the last 12 months"
-          type="area"
-          :series="timelineSeries"
-          :options="timelineOptions"
-          :loading="loading"
-          :height="280"
-        />
+        <Card>
+          <CardHeader class="flex flex-row items-center justify-between pb-2">
+            <div>
+              <CardTitle class="text-base">Declarations Overview</CardTitle>
+              <CardDescription>Your declaration activity at a glance</CardDescription>
+            </div>
+            <NuxtLink to="/applicant/analytics" class="text-xs text-primary hover:underline">
+              View Full Analytics →
+            </NuxtLink>
+          </CardHeader>
+          <CardContent>
+            <Skeleton v-if="loading" class="h-24 w-full" />
+            <div v-else class="grid grid-cols-4 gap-4">
+              <div class="text-center p-3 bg-blue-500/5 rounded-lg">
+                <p class="text-2xl font-extrabold text-blue-600">{{ dashboard?.total ?? 0 }}</p>
+                <p class="text-[10px] text-muted-foreground mt-1">Total</p>
+              </div>
+              <div class="text-center p-3 bg-yellow-500/5 rounded-lg">
+                <p class="text-2xl font-extrabold text-yellow-600">{{ dashboard?.pending ?? 0 }}</p>
+                <p class="text-[10px] text-muted-foreground mt-1">Pending</p>
+              </div>
+              <div class="text-center p-3 bg-emerald-500/5 rounded-lg">
+                <p class="text-2xl font-extrabold text-emerald-600">{{ dashboard?.approved ?? 0 }}</p>
+                <p class="text-[10px] text-muted-foreground mt-1">Approved</p>
+              </div>
+              <div class="text-center p-3 bg-red-500/5 rounded-lg">
+                <p class="text-2xl font-extrabold text-red-600">{{ dashboard?.rejected ?? 0 }}</p>
+                <p class="text-[10px] text-muted-foreground mt-1">Rejected</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
       <Card>
         <CardHeader>
