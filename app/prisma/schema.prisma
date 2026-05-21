@@ -623,3 +623,226 @@ model ContactSubmission {
   @@index([createdAt])
   @@map("contact_submissions")
 }
+
+// ============================================
+// Web Analytics, Abuse Detection & Rate Limiting
+// ============================================
+
+enum VisitorClass {
+  HUMAN
+  SEARCH_BOT
+  AI_AGENT
+  OTHER_BOT
+
+  @@map("visitor_class")
+}
+
+enum AiCategory {
+  TRAINING_CRAWLER
+  SEARCH_INDEXER
+  LIVE_RETRIEVAL
+  UNKNOWN_SCRAPER
+
+  @@map("ai_category")
+}
+
+enum AbuseSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+
+  @@map("abuse_severity")
+}
+
+enum EnforcementType {
+  LOG_ONLY
+  THROTTLE
+  BLOCK
+
+  @@map("enforcement_type")
+}
+
+enum AccessRuleType {
+  ALLOW
+  BLOCK
+
+  @@map("access_rule_type")
+}
+
+enum AccessActorType {
+  IP
+  SESSION
+  USER
+
+  @@map("access_actor_type")
+}
+
+/// Raw, high-write-volume traffic log. Pruned past the retention window by a
+/// scheduled task. Dashboard queries read the rollup tables, not this one.
+model TrafficEvent {
+  id            String       @id @default(uuid()) @db.Uuid
+  occurredAt    DateTime     @default(now()) @map("occurred_at")
+  method        String       @db.VarChar(10)
+  path          String       @db.Text
+  routePattern  String       @map("route_pattern") @db.VarChar(255)
+  statusCode    Int          @map("status_code")
+  durationMs    Int          @default(0) @map("duration_ms")
+  responseBytes Int          @default(0) @map("response_bytes")
+  referrer      String?      @db.Text
+  userAgent     String?      @map("user_agent") @db.Text
+  browser       String?      @db.VarChar(60)
+  os            String?      @db.VarChar(60)
+  deviceType    String?      @map("device_type") @db.VarChar(20)
+  isBot         Boolean      @default(false) @map("is_bot")
+  visitorClass  VisitorClass @default(HUMAN) @map("visitor_class")
+  aiProvider    String?      @map("ai_provider") @db.VarChar(60)
+  aiCategory    AiCategory?  @map("ai_category")
+  aiVerified    String?      @map("ai_verified") @db.VarChar(20)
+  ipHash        String       @map("ip_hash") @db.VarChar(64)
+  ipTruncated   String?      @map("ip_truncated") @db.VarChar(45)
+  country       String?      @db.VarChar(2)
+  userId        String?      @map("user_id") @db.Uuid
+  userRole      String?      @map("user_role") @db.VarChar(30)
+  sessionId     String?      @map("session_id") @db.VarChar(64)
+  visitorId     String?      @map("visitor_id") @db.VarChar(64)
+  isNewVisitor  Boolean      @default(false) @map("is_new_visitor")
+  isNewSession  Boolean      @default(false) @map("is_new_session")
+  requestId     String?      @map("request_id") @db.VarChar(64)
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  @@index([occurredAt])
+  @@index([visitorClass, occurredAt])
+  @@index([aiProvider, occurredAt])
+  @@index([ipHash, occurredAt])
+  @@index([routePattern, occurredAt])
+  @@index([statusCode, occurredAt])
+  @@map("traffic_events")
+}
+
+/// Hourly pre-aggregated traffic. Additive metrics only, so dashboard ranges
+/// can be summed cheaply. `ai_provider`/`ai_category`/`country` use a "-"
+/// sentinel instead of NULL so the dimension unique key stays valid.
+model TrafficRollupHourly {
+  id             String       @id @default(uuid()) @db.Uuid
+  bucket         DateTime     @map("bucket")
+  visitorClass   VisitorClass @map("visitor_class")
+  aiProvider     String       @default("-") @map("ai_provider") @db.VarChar(60)
+  aiCategory     String       @default("-") @map("ai_category") @db.VarChar(40)
+  country        String       @default("-") @db.VarChar(8)
+  routePattern   String       @map("route_pattern") @db.VarChar(255)
+  requests       Int          @default(0)
+  clientErrors   Int          @default(0) @map("client_errors")
+  serverErrors   Int          @default(0) @map("server_errors")
+  sumDurationMs  BigInt       @default(0) @map("sum_duration_ms")
+  maxDurationMs  Int          @default(0) @map("max_duration_ms")
+  p95DurationMs  Int          @default(0) @map("p95_duration_ms")
+  sumBytes       BigInt       @default(0) @map("sum_bytes")
+  uniqueVisitors Int          @default(0) @map("unique_visitors")
+  uniqueSessions Int          @default(0) @map("unique_sessions")
+  newVisitors    Int          @default(0) @map("new_visitors")
+  newSessions    Int          @default(0) @map("new_sessions")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  @@unique([bucket, visitorClass, aiProvider, aiCategory, country, routePattern], name: "rollup_hourly_dims")
+  @@index([bucket])
+  @@index([visitorClass, bucket])
+  @@map("traffic_rollup_hourly")
+}
+
+/// Daily pre-aggregated traffic. Same shape as the hourly rollup.
+model TrafficRollupDaily {
+  id             String       @id @default(uuid()) @db.Uuid
+  bucket         DateTime     @map("bucket") @db.Date
+  visitorClass   VisitorClass @map("visitor_class")
+  aiProvider     String       @default("-") @map("ai_provider") @db.VarChar(60)
+  aiCategory     String       @default("-") @map("ai_category") @db.VarChar(40)
+  country        String       @default("-") @db.VarChar(8)
+  routePattern   String       @map("route_pattern") @db.VarChar(255)
+  requests       Int          @default(0)
+  clientErrors   Int          @default(0) @map("client_errors")
+  serverErrors   Int          @default(0) @map("server_errors")
+  sumDurationMs  BigInt       @default(0) @map("sum_duration_ms")
+  maxDurationMs  Int          @default(0) @map("max_duration_ms")
+  p95DurationMs  Int          @default(0) @map("p95_duration_ms")
+  sumBytes       BigInt       @default(0) @map("sum_bytes")
+  uniqueVisitors Int          @default(0) @map("unique_visitors")
+  uniqueSessions Int          @default(0) @map("unique_sessions")
+  newVisitors    Int          @default(0) @map("new_visitors")
+  newSessions    Int          @default(0) @map("new_sessions")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  @@unique([bucket, visitorClass, aiProvider, aiCategory, country, routePattern], name: "rollup_daily_dims")
+  @@index([bucket])
+  @@index([visitorClass, bucket])
+  @@map("traffic_rollup_daily")
+}
+
+/// One row per detected abuse signal (flooding, scanning, AI spoofing, etc.).
+model AbuseEvent {
+  id          String          @id @default(uuid()) @db.Uuid
+  detectedAt  DateTime        @default(now()) @map("detected_at")
+  actorType   AccessActorType @map("actor_type")
+  actorKey    String          @map("actor_key") @db.VarChar(120)
+  ipHash      String?         @map("ip_hash") @db.VarChar(64)
+  ipTruncated String?         @map("ip_truncated") @db.VarChar(45)
+  userId      String?         @map("user_id") @db.Uuid
+  category    String          @db.VarChar(60)
+  severity    AbuseSeverity
+  score       Int             @default(0)
+  signals     Json?
+  userAgent   String?         @map("user_agent") @db.Text
+  path        String?         @db.Text
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  enforcementActions EnforcementAction[]
+
+  @@index([detectedAt])
+  @@index([actorType, actorKey])
+  @@index([category, detectedAt])
+  @@index([severity, detectedAt])
+  @@map("abuse_events")
+}
+
+/// A tiered response applied to an actor (log-only / throttle / temporary
+/// block). `appliedById` is null for automatic, system-driven actions.
+model EnforcementAction {
+  id           String          @id @default(uuid()) @db.Uuid
+  abuseEventId String?         @map("abuse_event_id") @db.Uuid
+  actorType    AccessActorType @map("actor_type")
+  actorKey     String          @map("actor_key") @db.VarChar(120)
+  type         EnforcementType
+  reason       String          @db.Text
+  appliedById  String?         @map("applied_by_id") @db.Uuid
+  expiresAt    DateTime?       @map("expires_at")
+  active       Boolean         @default(true)
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  abuseEvent AbuseEvent? @relation(fields: [abuseEventId], references: [id], onDelete: SetNull)
+
+  @@index([actorType, actorKey])
+  @@index([active, expiresAt])
+  @@index([createdAt])
+  @@map("enforcement_actions")
+}
+
+/// Operator-curated allow / block list. `actorValue` keeps the raw IP/CIDR,
+/// session, or user id because matching needs the plain value.
+model ActorAccessRule {
+  id          String          @id @default(uuid()) @db.Uuid
+  actorType   AccessActorType @map("actor_type")
+  actorValue  String          @map("actor_value") @db.VarChar(120)
+  ruleType    AccessRuleType  @map("rule_type")
+  reason      String?         @db.Text
+  createdById String?         @map("created_by_id") @db.Uuid
+  expiresAt   DateTime?       @map("expires_at")
+  active      Boolean         @default(true)
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  @@unique([actorType, actorValue, ruleType])
+  @@index([active])
+  @@map("actor_access_rules")
+}
