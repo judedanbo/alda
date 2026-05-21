@@ -305,7 +305,10 @@ const handlePageChange = (page: number) => {
     <Dialog :open="showEditModal" @update:open="(v: boolean) => { if (!v) closeEditModal() }">
       <DialogContent class="max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit User Roles</DialogTitle>
+          <DialogTitle class="flex items-center gap-1.5">
+            Edit User Roles
+            <HelpTip field-id="user.roles" />
+          </DialogTitle>
           <DialogDescription>{{ editingUser?.email }}</DialogDescription>
         </DialogHeader>
 

@@ -1,0 +1,129 @@
+import type { GlossaryTerm } from "./types";
+
+export const glossaryTerms: GlossaryTerm[] = [
+  {
+    id: "gl-article-286",
+    term: "Article 286(5)",
+    definition:
+      "The provision of Ghana's Constitution requiring specified public officers to declare their assets and liabilities. The portal exists to support this compliance process.",
+    aliases: ["asset declaration law"],
+  },
+  {
+    id: "gl-declaration",
+    term: "Declaration",
+    definition:
+      "A single asset-declaration case. It is created by an applicant, identified by a unique code, and moves through the declaration workflow until it is sealed.",
+  },
+  {
+    id: "gl-unique-code",
+    term: "Unique code",
+    definition:
+      "The identifier generated when a declaration is created. Applicants use it to collect their form; officers and the Legal Unit use it to look up a declaration.",
+    aliases: ["code", "declaration code"],
+  },
+  {
+    id: "gl-code-generated",
+    term: "Code Generated",
+    definition:
+      "The first declaration status. The applicant has created the declaration and received a unique code, but the physical form has not yet been collected.",
+  },
+  {
+    id: "gl-form-collected",
+    term: "Form Collected",
+    definition:
+      "The status after a Schedule Officer records that the applicant collected the physical form. Lost-form reissue requests are only possible at this stage.",
+  },
+  {
+    id: "gl-submitted",
+    term: "Submitted",
+    definition:
+      "The status after the completed physical form has been returned and recorded by a Schedule Officer. The declaration is now ready for review.",
+  },
+  {
+    id: "gl-under-review",
+    term: "Under Review",
+    definition:
+      "The status while a Schedule Officer reviews the declaration section by section. It stays here until all flagged issues are resolved.",
+  },
+  {
+    id: "gl-approved",
+    term: "Approved",
+    definition:
+      "The status after a Schedule Officer approves a reviewed declaration. The next and final step is generating the receipt.",
+  },
+  {
+    id: "gl-sealed",
+    term: "Sealed",
+    definition:
+      "The final status of a successful declaration, reached when its receipt is generated.",
+  },
+  {
+    id: "gl-rejected",
+    term: "Rejected",
+    definition:
+      "The status when a Schedule Officer rejects a declaration during review. A fresh unique code is issued automatically so the applicant can start again.",
+  },
+  {
+    id: "gl-collection-office",
+    term: "Collection Office",
+    definition:
+      "The Audit Service office a physical declaration form is collected from. The Schedule Officer records it when logging a form collection.",
+    roles: ["schedule_officer", "admin"],
+  },
+  {
+    id: "gl-receipt",
+    term: "Receipt",
+    definition:
+      "The sealed PDF document generated for an approved declaration, carrying a receipt number and seal number.",
+  },
+  {
+    id: "gl-section-review",
+    term: "Section review",
+    definition:
+      "The review of one of the declaration form's eight sections. Each section is marked acceptable or flagged with a comment.",
+    roles: ["schedule_officer", "admin"],
+  },
+  {
+    id: "gl-registration-verification",
+    term: "Registration verification",
+    definition:
+      "The Legal Unit's review of an applicant's profile, deciding whether the applicant may create declarations.",
+  },
+  {
+    id: "gl-verified",
+    term: "Verified",
+    definition:
+      "A registration outcome meaning the applicant's profile has been confirmed and they may now create declarations.",
+  },
+  {
+    id: "gl-on-hold",
+    term: "On Hold",
+    definition:
+      "A registration outcome that pauses a registration. The applicant sees the reason but is not asked for anything specific.",
+  },
+  {
+    id: "gl-more-info",
+    term: "More Information Required",
+    definition:
+      "A registration outcome asking the applicant to update specific details before the registration can proceed.",
+  },
+  {
+    id: "gl-form-reissue",
+    term: "Form reissue",
+    definition:
+      "The process for replacing a physical form that an applicant lost after collection. It requires an offline approval from the Auditor General or a Regional Auditor.",
+  },
+  {
+    id: "gl-auditor-general",
+    term: "Auditor General",
+    definition:
+      "A senior approver whose offline signed letter can authorise a lost-form reissue. A Regional Auditor can also provide this approval.",
+  },
+  {
+    id: "gl-audit-log",
+    term: "Audit log",
+    definition:
+      "An immutable record of every state-changing action in the portal. Audit logs cannot be edited or deleted and are a compliance requirement.",
+    roles: ["admin"],
+  },
+];

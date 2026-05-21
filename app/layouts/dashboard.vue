@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { CircleHelpIcon } from "lucide-vue-next";
 import { useAuthStore } from "~/stores/auth";
+import { useHelpStore } from "~/stores/help";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +12,7 @@ import {
 } from "~/components/ui/dropdown-menu";
 
 const authStore = useAuthStore();
+const helpStore = useHelpStore();
 const route = useRoute();
 const { hasActiveDeclaration, check: checkActiveDeclaration } = useActiveDeclaration();
 
@@ -19,62 +22,76 @@ onMounted(() => {
   }
 });
 
+const isDashboardRoute = computed(() => route.path.endsWith("/dashboard"));
+
 interface NavItem {
   name: string;
   href: string;
   icon: string;
+  tour?: string;
   disabled?: boolean;
 }
 
+const helpNavItem: NavItem = {
+  name: "Help",
+  href: "/help",
+  icon: "circle-help",
+  tour: "nav-help",
+};
+
 const navigation = computed<NavItem[]>(() => {
   const baseNav: NavItem[] = [
-    { name: "Dashboard", href: "/applicant/dashboard", icon: "home" },
+    { name: "Dashboard", href: "/applicant/dashboard", icon: "home", tour: "nav-dashboard" },
   ];
 
   if (authStore.isApplicant) {
     return [
       ...baseNav,
-      { name: "My Declarations", href: "/applicant/declarations", icon: "file-text" },
-      { name: "New Declaration", href: "/applicant/declaration/new", icon: "plus-circle", disabled: !authStore.isVerified || hasActiveDeclaration.value },
-      { name: "Analytics", href: "/applicant/analytics", icon: "bar-chart" },
+      { name: "My Declarations", href: "/applicant/declarations", icon: "file-text", tour: "nav-declarations" },
+      { name: "New Declaration", href: "/applicant/declaration/new", icon: "plus-circle", tour: "nav-new-declaration", disabled: !authStore.isVerified || hasActiveDeclaration.value },
+      { name: "Analytics", href: "/applicant/analytics", icon: "bar-chart", tour: "nav-analytics" },
+      helpNavItem,
     ];
   }
 
   if (authStore.isOfficer) {
     return [
-      { name: "Dashboard", href: "/officer/dashboard", icon: "home" },
-      { name: "Form Returns", href: "/officer/form-returns", icon: "inbox" },
-      { name: "Reviews", href: "/officer/reviews", icon: "check-circle" },
-      { name: "Receipts", href: "/officer/receipts", icon: "receipt" },
-      { name: "Analytics", href: "/officer/analytics", icon: "bar-chart" },
+      { name: "Dashboard", href: "/officer/dashboard", icon: "home", tour: "nav-dashboard" },
+      { name: "Form Returns", href: "/officer/form-returns", icon: "inbox", tour: "nav-form-returns" },
+      { name: "Reviews", href: "/officer/reviews", icon: "check-circle", tour: "nav-reviews" },
+      { name: "Receipts", href: "/officer/receipts", icon: "receipt", tour: "nav-receipts" },
+      { name: "Analytics", href: "/officer/analytics", icon: "bar-chart", tour: "nav-analytics" },
+      helpNavItem,
     ];
   }
 
   if (authStore.isLegalUnit) {
     return [
-      { name: "Dashboard", href: "/legal/dashboard", icon: "home" },
-      { name: "Applicant Verifications", href: "/legal/verifications", icon: "user-check" },
-      { name: "Form Reissues", href: "/legal/form-reissues", icon: "file-text" },
-      { name: "Verify Code", href: "/legal/verify", icon: "search" },
-      { name: "Analytics", href: "/legal/analytics", icon: "bar-chart" },
+      { name: "Dashboard", href: "/legal/dashboard", icon: "home", tour: "nav-dashboard" },
+      { name: "Applicant Verifications", href: "/legal/verifications", icon: "user-check", tour: "nav-verifications" },
+      { name: "Form Reissues", href: "/legal/form-reissues", icon: "file-text", tour: "nav-form-reissues" },
+      { name: "Verify Code", href: "/legal/verify", icon: "search", tour: "nav-verify-code" },
+      { name: "Analytics", href: "/legal/analytics", icon: "bar-chart", tour: "nav-analytics" },
+      helpNavItem,
     ];
   }
 
   if (authStore.isAdmin) {
     return [
-      { name: "Dashboard", href: "/admin/dashboard", icon: "home" },
-      { name: "Declarations", href: "/admin/declarations", icon: "file-text" },
-      { name: "Users", href: "/admin/users", icon: "users" },
-      { name: "Institutions", href: "/admin/institutions", icon: "building" },
-      { name: "Categories", href: "/admin/categories", icon: "tag" },
-      { name: "Audit Logs", href: "/admin/audit-logs", icon: "shield" },
-      { name: "Analytics", href: "/admin/analytics", icon: "bar-chart" },
-      { name: "Web Analytics", href: "/admin/web-analytics", icon: "activity" },
-      { name: "Reports", href: "/admin/reports", icon: "bar-chart" },
+      { name: "Dashboard", href: "/admin/dashboard", icon: "home", tour: "nav-dashboard" },
+      { name: "Declarations", href: "/admin/declarations", icon: "file-text", tour: "nav-declarations" },
+      { name: "Users", href: "/admin/users", icon: "users", tour: "nav-users" },
+      { name: "Institutions", href: "/admin/institutions", icon: "building", tour: "nav-institutions" },
+      { name: "Categories", href: "/admin/categories", icon: "tag", tour: "nav-categories" },
+      { name: "Audit Logs", href: "/admin/audit-logs", icon: "shield", tour: "nav-audit-logs" },
+      { name: "Analytics", href: "/admin/analytics", icon: "bar-chart", tour: "nav-analytics" },
+      { name: "Web Analytics", href: "/admin/web-analytics", icon: "activity", tour: "nav-web-analytics" },
+      { name: "Reports", href: "/admin/reports", icon: "bar-chart", tour: "nav-reports" },
+      helpNavItem,
     ];
   }
 
-  return baseNav;
+  return [...baseNav, helpNavItem];
 });
 
 const handleLogout = async () => {
@@ -105,6 +122,7 @@ const handleLogout = async () => {
               <NuxtLink
                 v-if="!item.disabled"
                 :to="item.href"
+                :data-tour="item.tour"
                 class="px-3 py-2 text-sm font-medium rounded-md transition-colors"
                 :class="[
                   route.path === item.href || route.path.startsWith(item.href + '/')
@@ -116,6 +134,7 @@ const handleLogout = async () => {
               </NuxtLink>
               <span
                 v-else
+                :data-tour="item.tour"
                 class="px-3 py-2 text-sm font-medium rounded-md text-muted-foreground/50 cursor-not-allowed"
                 :title="hasActiveDeclaration && item.href === '/applicant/declaration/new'
                   ? 'You have an active declaration in progress'
@@ -128,6 +147,17 @@ const handleLogout = async () => {
 
           <!-- User Menu -->
           <div class="flex items-center gap-4">
+            <!-- Contextual help -->
+            <button
+              type="button"
+              data-tour="help-button"
+              aria-label="Help for this page"
+              class="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              @click="helpStore.openContextual()"
+            >
+              <CircleHelpIcon class="w-5 h-5" />
+            </button>
+
             <ClientOnly>
               <!-- Notifications -->
               <AppNotificationBell />
@@ -145,6 +175,9 @@ const handleLogout = async () => {
                 <DropdownMenuContent align="end" class="w-56">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem as-child>
+                    <NuxtLink to="/help">Help Centre</NuxtLink>
+                  </DropdownMenuItem>
                   <DropdownMenuItem as-child>
                     <NuxtLink to="/settings/preferences">Settings</NuxtLink>
                   </DropdownMenuItem>
@@ -197,7 +230,13 @@ const handleLogout = async () => {
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <ClientOnly>
+        <HelpOnboarding v-if="isDashboardRoute" />
+      </ClientOnly>
       <slot />
     </main>
+
+    <!-- Contextual help panel -->
+    <HelpSheet />
   </div>
 </template>

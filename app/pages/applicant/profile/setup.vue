@@ -375,8 +375,9 @@ const handleSubmit = async () => {
             </div>
 
             <div class="space-y-2">
-              <Label for="ghanaCardNumber">
+              <Label for="ghanaCardNumber" class="inline-flex items-center gap-1.5">
                 Ghana Card Number <span class="text-destructive">*</span>
+                <HelpTip field-id="profile.ghanaCardNumber" />
               </Label>
               <Input
                 id="ghanaCardNumber"
@@ -406,8 +407,9 @@ const handleSubmit = async () => {
 
             <!-- Front -->
             <div class="space-y-2">
-              <Label>
+              <Label class="inline-flex items-center gap-1.5">
                 Ghana Card Front <span class="text-destructive">*</span>
+                <HelpTip field-id="profile.ghanaCardFront" />
               </Label>
               <div
                 class="border-2 border-dashed rounded-lg p-6 text-center transition-colors"
@@ -458,8 +460,9 @@ const handleSubmit = async () => {
 
             <!-- Back (Optional) -->
             <div class="space-y-2">
-              <Label>
+              <Label class="inline-flex items-center gap-1.5">
                 Ghana Card Back (Optional)
+                <HelpTip field-id="profile.ghanaCardBack" />
               </Label>
               <div
                 class="border-2 border-dashed rounded-lg p-6 text-center transition-colors"
@@ -546,8 +549,9 @@ const handleSubmit = async () => {
               <h4 class="text-sm font-medium text-foreground">Add Office</h4>
 
               <div class="space-y-2">
-                <Label for="officeCategoryId">
+                <Label for="officeCategoryId" class="inline-flex items-center gap-1.5">
                   Public Office Category <span class="text-destructive">*</span>
+                  <HelpTip field-id="profile.category" />
                 </Label>
                 <select
                   id="officeCategoryId"
@@ -571,7 +575,10 @@ const handleSubmit = async () => {
               </div>
 
               <div class="space-y-2">
-                <Label for="institutionId">Institution</Label>
+                <Label for="institutionId" class="inline-flex items-center gap-1.5">
+                  Institution
+                  <HelpTip field-id="profile.institution" />
+                </Label>
                 <select
                   id="institutionId"
                   v-model="officeForm.institutionId"
@@ -589,8 +596,9 @@ const handleSubmit = async () => {
               </div>
 
               <div class="space-y-2">
-                <Label for="designation">
+                <Label for="designation" class="inline-flex items-center gap-1.5">
                   Designation / Position <span class="text-destructive">*</span>
+                  <HelpTip field-id="profile.designation" />
                 </Label>
                 <Input
                   id="designation"

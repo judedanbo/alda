@@ -210,7 +210,10 @@ const formatDate = (date: string) =>
             <CardContent>
               <div class="space-y-4">
                 <div>
-                  <label class="text-sm font-medium mb-2 block">Decision</label>
+                  <label class="text-sm font-medium mb-2 flex items-center gap-1.5">
+                    Decision
+                    <HelpTip field-id="verification.decision" />
+                  </label>
                   <Select v-model="reviewForm.status">
                     <SelectTrigger>
                       <SelectValue placeholder="Select decision..." />
@@ -225,8 +228,9 @@ const formatDate = (date: string) =>
                 </div>
 
                 <div>
-                  <label class="text-sm font-medium mb-2 block">
+                  <label class="text-sm font-medium mb-2 flex items-center gap-1.5">
                     Reason <span class="text-destructive">*</span>
+                    <HelpTip field-id="verification.reason" />
                   </label>
                   <textarea
                     v-model="reviewForm.reason"

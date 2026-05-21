@@ -256,7 +256,10 @@ const toggleStatus = async (category: Category) => {
           </div>
 
           <div>
-            <Label for="cat-article">Article Reference</Label>
+            <Label for="cat-article" class="inline-flex items-center gap-1.5">
+              Article Reference
+              <HelpTip field-id="category.articleReference" />
+            </Label>
             <Input
               id="cat-article"
               v-model="formData.articleReference"
