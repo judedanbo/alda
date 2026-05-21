@@ -195,7 +195,7 @@ export default defineEventHandler(async (event) => {
     `;
 
     const officerPerformance: OfficerEntry[] = officerRows.map((r) => ({
-      name: r.email.split("@")[0],
+      name: r.email.split("@")[0] ?? r.email,
       count: Number(r.count),
       avgDays: Math.round(r.avg_days * 10) / 10,
     }));

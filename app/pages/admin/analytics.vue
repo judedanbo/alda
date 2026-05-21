@@ -24,7 +24,7 @@ const {
 
 function handleExport(format: "csv" | "pdf") {
   const url = getExportUrl(format);
-  const token = authStore.accessToken;
+  const token = authStore.tokens?.accessToken;
   window.open(`${url}&_token=${token}`, "_blank");
 }
 </script>
