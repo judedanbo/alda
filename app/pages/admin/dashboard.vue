@@ -166,8 +166,8 @@ const quickActions = [
         :value="stats.totalUsers"
         :loading="loading"
         :footnote="`${stats.totalApplicants} applicants · ${stats.totalOfficers} officers`"
-        icon-bg="bg-blue-100"
-        icon-color="text-blue-600"
+        icon-bg="bg-blue-100 dark:bg-blue-950/50"
+        icon-color="text-blue-600 dark:text-blue-400"
         icon-path="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
       />
       <AppStatCard
@@ -175,8 +175,8 @@ const quickActions = [
         :value="stats.totalDeclarations"
         :loading="loading"
         :footnote="`${stats.todayDeclarations} submitted today`"
-        icon-bg="bg-green-100"
-        icon-color="text-green-600"
+        icon-bg="bg-green-100 dark:bg-green-950/50"
+        icon-color="text-green-600 dark:text-green-400"
         icon-path="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
       />
       <AppStatCard
@@ -184,8 +184,8 @@ const quickActions = [
         :value="stats.pendingDeclarations"
         :loading="loading"
         footnote="Awaiting officer action"
-        icon-bg="bg-yellow-100"
-        icon-color="text-yellow-600"
+        icon-bg="bg-yellow-100 dark:bg-yellow-950/50"
+        icon-color="text-yellow-600 dark:text-yellow-400"
         icon-path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
       />
       <AppStatCard
@@ -193,9 +193,9 @@ const quickActions = [
         :value="stats.approvedDeclarations"
         :loading="loading"
         :footnote="`${stats.rejectedDeclarations} rejected`"
-        value-color="text-emerald-600"
-        icon-bg="bg-emerald-100"
-        icon-color="text-emerald-600"
+        value-color="text-emerald-600 dark:text-emerald-400"
+        icon-bg="bg-emerald-100 dark:bg-emerald-950/50"
+        icon-color="text-emerald-600 dark:text-emerald-400"
         icon-path="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
       />
     </div>
@@ -214,17 +214,17 @@ const quickActions = [
           </div>
           <div>
             <p class="text-xs text-muted-foreground uppercase tracking-wide">Active</p>
-            <p class="text-2xl font-bold text-blue-600 mt-1">{{ dashboard?.codeLifecycle.active ?? 0 }}</p>
+            <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{{ dashboard?.codeLifecycle.active ?? 0 }}</p>
             <p class="text-xs text-muted-foreground">In workflow</p>
           </div>
           <div>
             <p class="text-xs text-muted-foreground uppercase tracking-wide">Sealed</p>
-            <p class="text-2xl font-bold text-emerald-600 mt-1">{{ dashboard?.codeLifecycle.sealed ?? 0 }}</p>
+            <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{{ dashboard?.codeLifecycle.sealed ?? 0 }}</p>
             <p class="text-xs text-muted-foreground">Completed</p>
           </div>
           <div>
             <p class="text-xs text-muted-foreground uppercase tracking-wide">Regenerated</p>
-            <p class="text-2xl font-bold text-amber-600 mt-1">{{ dashboard?.codeLifecycle.regenerated ?? 0 }}</p>
+            <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{{ dashboard?.codeLifecycle.regenerated ?? 0 }}</p>
             <p class="text-xs text-muted-foreground">After rejection</p>
           </div>
         </div>
@@ -321,7 +321,9 @@ const quickActions = [
                     <TableCell><StatusBadge :status="code.status" /></TableCell>
                     <TableCell class="text-sm">{{ code.verificationCount }}</TableCell>
                     <TableCell>
-                      <Badge :class="code.isRegenerated ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'">
+                      <Badge :class="code.isRegenerated
+                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
+                        : 'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300'">
                         {{ code.isRegenerated ? 'Reissued' : 'Initial' }}
                       </Badge>
                     </TableCell>
@@ -359,7 +361,9 @@ const quickActions = [
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge :class="user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+                      <Badge :class="user.isActive
+                        ? 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300'
+                        : 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300'">
                         {{ user.isActive ? 'Active' : 'Inactive' }}
                       </Badge>
                     </TableCell>

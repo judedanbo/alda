@@ -26,9 +26,9 @@ const requests = computed(() => data.value?.data?.requests || []);
 const pagination = computed(() => data.value?.data?.pagination);
 
 const statusColors: Record<string, string> = {
-  PENDING: "bg-amber-100 text-amber-800",
-  APPROVED: "bg-green-100 text-green-800",
-  DECLINED: "bg-red-100 text-red-800",
+  PENDING: TONE_BADGE.amber,
+  APPROVED: TONE_BADGE.green,
+  DECLINED: TONE_BADGE.red,
 };
 
 const statusLabels: Record<string, string> = {

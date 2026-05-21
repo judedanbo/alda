@@ -283,7 +283,7 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
 
           <!-- Return Office -->
           <div class="space-y-2">
-            <Label>Returned To Office <span class="text-red-500">*</span></Label>
+            <Label>Returned To Office <span class="text-destructive">*</span></Label>
             <Select v-model="returnOfficeId">
               <SelectTrigger>
                 <SelectValue placeholder="Select office..." />

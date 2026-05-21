@@ -5,6 +5,7 @@ import { Switch } from "~/components/ui/switch";
 import { Button } from "~/components/ui/button";
 import { Alert, AlertDescription } from "~/components/ui/alert";
 import { Separator } from "~/components/ui/separator";
+import { Skeleton } from "~/components/ui/skeleton";
 
 definePageMeta({
   layout: "dashboard",
@@ -193,7 +194,10 @@ onUnmounted(() => {
 
     <template v-else>
       <!-- Success alert -->
-      <Alert v-if="successMessage" class="mb-4 border-green-200 bg-green-50 text-green-800">
+      <Alert
+        v-if="successMessage"
+        class="mb-4 border-green-200 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950/50 dark:text-green-300"
+      >
         <AlertDescription>{{ successMessage }}</AlertDescription>
       </Alert>
 
@@ -202,8 +206,28 @@ onUnmounted(() => {
         <AlertDescription>{{ errorMessage }}</AlertDescription>
       </Alert>
 
-      <!-- Notification channels -->
+      <!-- Appearance -->
       <Card>
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
+          <CardDescription>
+            Choose a color theme for the portal. Your choice is saved on this device.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ClientOnly>
+            <AppThemeSwitcherCards />
+            <template #fallback>
+              <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <Skeleton v-for="n in 6" :key="n" class="h-32 w-full rounded-lg" />
+              </div>
+            </template>
+          </ClientOnly>
+        </CardContent>
+      </Card>
+
+      <!-- Notification channels -->
+      <Card class="mt-6">
         <CardHeader>
           <CardTitle>Notification Channels</CardTitle>
           <CardDescription>

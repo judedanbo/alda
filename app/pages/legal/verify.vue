@@ -156,16 +156,16 @@ const formatDate = (date: string) => {
     <!-- Verification Result -->
     <div v-if="verificationResult" class="space-y-6">
       <!-- Verification Badge -->
-      <Alert class="border-green-200 bg-green-50 text-green-700">
-        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <Alert class="border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300">
+        <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
         </svg>
-        <AlertTitle class="text-green-700">Code Verified</AlertTitle>
-        <AlertDescription class="text-green-600">
+        <AlertTitle class="text-green-700 dark:text-green-300">Code Verified</AlertTitle>
+        <AlertDescription class="text-green-600 dark:text-green-400">
           Verified at {{ formatDate(verificationResult.verification.verifiedAt) }}
         </AlertDescription>
         <AlertAction>
-          <Button variant="link" class="text-green-700" @click="clearResults">New Search</Button>
+          <Button variant="link" class="text-green-700 dark:text-green-300" @click="clearResults">New Search</Button>
         </AlertAction>
       </Alert>
 
@@ -242,8 +242,8 @@ const formatDate = (date: string) => {
           <div class="space-y-4">
             <div v-for="(event, index) in verificationResult.declaration.statusHistory" :key="index" class="flex gap-4">
               <div class="flex flex-col items-center">
-                <div :class="['w-3 h-3 rounded-full', index === 0 ? 'bg-primary' : 'bg-gray-300']" />
-                <div v-if="index < verificationResult.declaration.statusHistory.length - 1" class="w-0.5 h-full bg-gray-200 my-1" />
+                <div :class="['w-3 h-3 rounded-full', index === 0 ? 'bg-primary' : 'bg-muted-foreground/30']" />
+                <div v-if="index < verificationResult.declaration.statusHistory.length - 1" class="w-0.5 h-full bg-border my-1" />
               </div>
               <div class="flex-1 pb-4">
                 <div class="flex items-center gap-2">

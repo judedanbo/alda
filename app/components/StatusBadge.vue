@@ -1,22 +1,25 @@
 <script setup lang="ts">
 import { Badge } from "~/components/ui/badge";
+import { DECLARATION_STATUS_BADGE } from "~/utils/statusStyles";
 
 const props = defineProps<{
   status: string;
 }>();
 
-const config = computed(() => {
-  const map: Record<string, { label: string; class: string }> = {
-    CODE_GENERATED: { label: "Code Generated", class: "border-amber-300 text-amber-700 bg-amber-50" },
-    FORM_COLLECTED: { label: "Form Collected", class: "bg-cyan-100 text-cyan-700" },
-    SUBMITTED: { label: "Submitted", class: "bg-blue-100 text-blue-700" },
-    UNDER_REVIEW: { label: "Under Review", class: "bg-purple-100 text-purple-700" },
-    APPROVED: { label: "Approved", class: "bg-green-100 text-green-700" },
-    REJECTED: { label: "Rejected", class: "bg-red-100 text-red-700" },
-    SEALED: { label: "Sealed", class: "bg-emerald-100 text-emerald-700" },
-  };
-  return map[props.status] || { label: props.status, class: "" };
-});
+const LABELS: Record<string, string> = {
+  CODE_GENERATED: "Code Generated",
+  FORM_COLLECTED: "Form Collected",
+  SUBMITTED: "Submitted",
+  UNDER_REVIEW: "Under Review",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  SEALED: "Sealed",
+};
+
+const config = computed(() => ({
+  label: LABELS[props.status] || props.status,
+  class: DECLARATION_STATUS_BADGE[props.status] || "",
+}));
 </script>
 
 <template>

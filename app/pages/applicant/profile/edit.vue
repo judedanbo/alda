@@ -226,7 +226,10 @@ function formatDate(dateStr: string | null): string {
     </Card>
 
     <!-- Success / Error alerts -->
-    <Alert v-if="success" class="mb-6 border-green-200 bg-green-50 text-green-800">
+    <Alert
+      v-if="success"
+      class="mb-6 border-green-200 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950/50 dark:text-green-300"
+    >
       <AlertDescription>{{ success }}</AlertDescription>
     </Alert>
     <Alert v-if="error" variant="destructive" class="mb-6">

@@ -156,9 +156,9 @@ const submitReissueRequest = async () => {
       <!-- Reissue Pending -->
       <Alert
         v-if="declaration.hasPendingReissue"
-        class="mb-6 border-amber-300 bg-amber-50"
+        class="mb-6 border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30"
       >
-        <AlertTitle class="text-amber-700">Reissue Request Pending</AlertTitle>
+        <AlertTitle class="text-amber-700 dark:text-amber-300">Reissue Request Pending</AlertTitle>
         <AlertDescription>
           Your lost-form reissue request is awaiting review by the Legal Unit
           once the Auditor General's approval letter is received.
@@ -191,7 +191,9 @@ const submitReissueRequest = async () => {
             v-for="review in declaration.sectionReviews.filter((r: any) => !r.isAcceptable)"
             :key="review.id"
             class="rounded-lg border p-4"
-            :class="review.resolvedAt ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'"
+            :class="review.resolvedAt
+              ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-900'
+              : 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900'"
           >
             <div class="flex items-center gap-2 mb-1">
               <h4 class="font-medium text-sm">
@@ -199,8 +201,8 @@ const submitReissueRequest = async () => {
               </h4>
               <Badge
                 :class="review.resolvedAt
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-amber-100 text-amber-700'"
+                  ? 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300'
+                  : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'"
               >
                 {{ review.resolvedAt ? 'Resolved' : 'Pending' }}
               </Badge>

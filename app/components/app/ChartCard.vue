@@ -18,7 +18,7 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false,
 });
 
-const ghanaPalette = ["#006B3F", "#FCD116", "#CE1126", "#0EA5E9", "#A855F7"];
+const { palette, gridColor, foreColor, tooltipTheme } = useChartTheme();
 
 const baseOptions = computed<ApexOptions>(() => ({
   chart: {
@@ -26,10 +26,11 @@ const baseOptions = computed<ApexOptions>(() => ({
     toolbar: { show: false },
     zoom: { enabled: false },
     background: "transparent",
+    foreColor: foreColor.value,
   },
-  colors: ghanaPalette,
+  colors: palette.value,
   grid: {
-    borderColor: "rgba(148, 163, 184, 0.2)",
+    borderColor: gridColor.value,
     strokeDashArray: 4,
   },
   dataLabels: { enabled: false },
@@ -54,7 +55,7 @@ const baseOptions = computed<ApexOptions>(() => ({
       }
       : { opacity: 1 },
   tooltip: {
-    theme: "light",
+    theme: tooltipTheme.value,
     style: { fontSize: "12px" },
   },
   xaxis: {

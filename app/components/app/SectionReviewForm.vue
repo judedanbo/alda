@@ -259,7 +259,9 @@ const formatDate = (date: string) =>
             v-for="review in existingIssues"
             :key="review.id"
             class="flex items-start justify-between rounded-lg border p-4"
-            :class="review.resolvedAt ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'"
+            :class="review.resolvedAt
+              ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-900'
+              : 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900'"
           >
             <div class="flex-1">
               <div class="flex items-center gap-2">
@@ -268,8 +270,8 @@ const formatDate = (date: string) =>
                 </h4>
                 <Badge
                   :class="review.resolvedAt
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-amber-100 text-amber-700'"
+                    ? 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300'
+                    : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'"
                 >
                   {{ review.resolvedAt ? 'Resolved' : 'Pending' }}
                 </Badge>
@@ -326,9 +328,9 @@ const formatDate = (date: string) =>
             :key="item.section"
             class="rounded-lg border-2 p-4 space-y-3 transition-colors"
             :class="[
-              item.isAcceptable === true && 'border-green-300 bg-green-50/30',
-              item.isAcceptable === false && 'border-red-300 bg-red-50/50',
-              item.isAcceptable === null && 'border-dashed border-amber-300 bg-amber-50/20',
+              item.isAcceptable === true && 'border-green-300 bg-green-50/30 dark:border-green-800 dark:bg-green-950/20',
+              item.isAcceptable === false && 'border-red-300 bg-red-50/50 dark:border-red-800 dark:bg-red-950/30',
+              item.isAcceptable === null && 'border-dashed border-amber-300 bg-amber-50/20 dark:border-amber-800 dark:bg-amber-950/20',
             ]"
           >
             <div class="flex items-center justify-between gap-4">
@@ -338,7 +340,7 @@ const formatDate = (date: string) =>
                 </h4>
                 <span
                   v-if="item.isAcceptable === null"
-                  class="text-[10px] font-medium text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded"
+                  class="text-[10px] font-medium text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded dark:text-amber-300 dark:bg-amber-950/40"
                 >
                   Pending
                 </span>
@@ -349,7 +351,7 @@ const formatDate = (date: string) =>
                   class="px-3 py-1.5 text-xs font-medium rounded-l-md border transition-colors"
                   :class="item.isAcceptable === true
                     ? 'bg-green-600 text-white border-green-600'
-                    : 'bg-white text-muted-foreground border-border hover:bg-green-50 hover:text-green-700 hover:border-green-300'"
+                    : 'bg-card text-muted-foreground border-border hover:bg-green-50 hover:text-green-700 hover:border-green-300 dark:hover:bg-green-950/30 dark:hover:text-green-300 dark:hover:border-green-800'"
                   @click="item.isAcceptable = true"
                 >
                   Acceptable
@@ -359,7 +361,7 @@ const formatDate = (date: string) =>
                   class="px-3 py-1.5 text-xs font-medium rounded-r-md border border-l-0 transition-colors"
                   :class="item.isAcceptable === false
                     ? 'bg-red-600 text-white border-red-600'
-                    : 'bg-white text-muted-foreground border-border hover:bg-red-50 hover:text-red-700 hover:border-red-300'"
+                    : 'bg-card text-muted-foreground border-border hover:bg-red-50 hover:text-red-700 hover:border-red-300 dark:hover:bg-red-950/30 dark:hover:text-red-300 dark:hover:border-red-800'"
                   @click="item.isAcceptable = false"
                 >
                   Needs Attention
@@ -368,7 +370,7 @@ const formatDate = (date: string) =>
             </div>
             <div v-if="item.isAcceptable === false" class="space-y-1">
               <Label class="text-sm">
-                Comments <span class="text-red-500">*</span>
+                Comments <span class="text-destructive">*</span>
               </Label>
               <Textarea
                 v-model="item.comments"
@@ -381,7 +383,7 @@ const formatDate = (date: string) =>
       </Card>
 
       <div class="space-y-2">
-        <div v-if="!allSectionsDecided" class="text-sm text-amber-600">
+        <div v-if="!allSectionsDecided" class="text-sm text-amber-600 dark:text-amber-400">
           {{ sections.filter(s => s.isAcceptable === null).length }} of {{ sections.length }} sections still need a decision.
         </div>
         <div class="flex gap-3">
@@ -419,7 +421,7 @@ const formatDate = (date: string) =>
         <div class="space-y-4">
           <div class="space-y-2">
             <Label>
-              Rejection Reason <span class="text-red-500">*</span>
+              Rejection Reason <span class="text-destructive">*</span>
             </Label>
             <Textarea
               v-model="rejectionReason"
@@ -463,7 +465,7 @@ const formatDate = (date: string) =>
             <!-- Office selector (shown when stage is FORM_COLLECTED) -->
             <div v-if="reissueStage === 'FORM_COLLECTED'" class="space-y-2">
               <Label>
-                Collection Office <span class="text-red-500">*</span>
+                Collection Office <span class="text-destructive">*</span>
               </Label>
               <Select v-model="collectionOfficeId">
                 <SelectTrigger>

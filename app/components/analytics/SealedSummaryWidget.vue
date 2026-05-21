@@ -84,11 +84,11 @@ const labels = computed(() => {
           <p class="text-[10px] text-muted-foreground">{{ labels.total }}</p>
         </div>
         <div class="text-center p-2 bg-sky-500/5 rounded-lg">
-          <p class="text-xl font-extrabold text-sky-600">{{ data.avgProcessingDays }}d</p>
+          <p class="text-xl font-extrabold text-sky-600 dark:text-sky-400">{{ data.avgProcessingDays }}d</p>
           <p class="text-[10px] text-muted-foreground">{{ labels.avg }}</p>
         </div>
         <div class="text-center p-2 bg-yellow-500/5 rounded-lg">
-          <p class="text-xl font-extrabold text-yellow-700">{{ data.thisWeek }}</p>
+          <p class="text-xl font-extrabold text-yellow-700 dark:text-yellow-400">{{ data.thisWeek }}</p>
           <p class="text-[10px] text-muted-foreground">{{ labels.week }}</p>
         </div>
       </div>

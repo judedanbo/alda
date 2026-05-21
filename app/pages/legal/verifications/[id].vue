@@ -49,11 +49,11 @@ async function submitReview() {
 }
 
 const statusColors: Record<string, string> = {
-  PENDING_VERIFICATION: "bg-amber-100 text-amber-800",
-  VERIFIED: "bg-green-100 text-green-800",
-  ON_HOLD: "bg-orange-100 text-orange-800",
-  MORE_INFO_REQUIRED: "bg-blue-100 text-blue-800",
-  REJECTED: "bg-red-100 text-red-800",
+  PENDING_VERIFICATION: TONE_BADGE.amber,
+  VERIFIED: TONE_BADGE.green,
+  ON_HOLD: TONE_BADGE.orange,
+  MORE_INFO_REQUIRED: TONE_BADGE.blue,
+  REJECTED: TONE_BADGE.red,
 };
 
 const statusLabels: Record<string, string> = {
@@ -127,8 +127,8 @@ const formatDate = (date: string) =>
                   <dt class="text-muted-foreground">Email</dt>
                   <dd class="font-medium">
                     {{ profile.user?.email }}
-                    <span v-if="profile.user?.emailVerified" class="ml-2 text-xs text-green-600">(Verified)</span>
-                    <span v-else class="ml-2 text-xs text-amber-600">(Not Verified)</span>
+                    <span v-if="profile.user?.emailVerified" class="ml-2 text-xs text-green-600 dark:text-green-400">(Verified)</span>
+                    <span v-else class="ml-2 text-xs text-amber-600 dark:text-amber-400">(Not Verified)</span>
                   </dd>
                 </div>
                 <div>

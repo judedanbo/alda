@@ -122,8 +122,8 @@ const quickActions = [
         :loading="loading"
         footnote="Forms awaiting collection recording"
         href="/officer/form-collections"
-        icon-bg="bg-cyan-100"
-        icon-color="text-cyan-600"
+        icon-bg="bg-cyan-100 dark:bg-cyan-950/50"
+        icon-color="text-cyan-600 dark:text-cyan-400"
         icon-path="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
       />
       <AppStatCard
@@ -132,8 +132,8 @@ const quickActions = [
         :loading="loading"
         footnote="Completed forms awaiting return"
         href="/officer/form-returns"
-        icon-bg="bg-teal-100"
-        icon-color="text-teal-600"
+        icon-bg="bg-teal-100 dark:bg-teal-950/50"
+        icon-color="text-teal-600 dark:text-teal-400"
         icon-path="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
       />
       <AppStatCard
@@ -142,8 +142,8 @@ const quickActions = [
         :loading="loading"
         footnote="Awaiting section review"
         href="/officer/reviews"
-        icon-bg="bg-yellow-100"
-        icon-color="text-yellow-600"
+        icon-bg="bg-yellow-100 dark:bg-yellow-950/50"
+        icon-color="text-yellow-600 dark:text-yellow-400"
         icon-path="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
       />
       <AppStatCard
@@ -152,8 +152,8 @@ const quickActions = [
         :loading="loading"
         footnote="Currently being reviewed"
         href="/officer/reviews"
-        icon-bg="bg-purple-100"
-        icon-color="text-purple-600"
+        icon-bg="bg-purple-100 dark:bg-purple-950/50"
+        icon-color="text-purple-600 dark:text-purple-400"
         icon-path="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
       />
       <AppStatCard
@@ -162,8 +162,8 @@ const quickActions = [
         :loading="loading"
         footnote="Have unresolved section issues"
         href="/officer/reviews"
-        icon-bg="bg-amber-100"
-        icon-color="text-amber-600"
+        icon-bg="bg-amber-100 dark:bg-amber-950/50"
+        icon-color="text-amber-600 dark:text-amber-400"
         icon-path="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
       />
       <AppStatCard
@@ -172,8 +172,8 @@ const quickActions = [
         :loading="loading"
         footnote="Ready for generation"
         href="/officer/receipts"
-        icon-bg="bg-purple-100"
-        icon-color="text-purple-600"
+        icon-bg="bg-purple-100 dark:bg-purple-950/50"
+        icon-color="text-purple-600 dark:text-purple-400"
         icon-path="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
       />
     </div>

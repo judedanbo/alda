@@ -128,16 +128,16 @@ function formatTimestamp(iso: string) {
         label="This Week"
         :value="codeActivity?.windows.week ?? 0"
         :loading="codeLoading"
-        icon-bg="bg-blue-100"
-        icon-color="text-blue-600"
+        icon-bg="bg-blue-100 dark:bg-blue-950/50"
+        icon-color="text-blue-600 dark:text-blue-400"
         icon-path="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
       />
       <AppStatCard
         label="This Month"
         :value="codeActivity?.windows.month ?? 0"
         :loading="codeLoading"
-        icon-bg="bg-blue-100"
-        icon-color="text-blue-600"
+        icon-bg="bg-blue-100 dark:bg-blue-950/50"
+        icon-color="text-blue-600 dark:text-blue-400"
         icon-path="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
       />
       <AppStatCard
@@ -145,9 +145,9 @@ function formatTimestamp(iso: string) {
         :value="codeActivity?.windows.failedThisMonth ?? 0"
         :loading="codeLoading"
         footnote="This month — invalid codes"
-        value-color="text-red-600"
-        icon-bg="bg-red-100"
-        icon-color="text-red-600"
+        value-color="text-red-600 dark:text-red-400"
+        icon-bg="bg-red-100 dark:bg-red-950/50"
+        icon-color="text-red-600 dark:text-red-400"
         icon-path="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
       />
     </div>
@@ -190,7 +190,9 @@ function formatTimestamp(iso: string) {
                   <span v-if="row.verifierEmail"> · {{ row.verifierEmail }}</span>
                 </p>
               </div>
-              <Badge :class="row.found ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+              <Badge :class="row.found
+                ? 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300'
+                : 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300'">
                 {{ row.found ? 'Found' : 'Invalid' }}
               </Badge>
             </div>
@@ -206,7 +208,7 @@ function formatTimestamp(iso: string) {
         <Card class="hover:border-primary/50 transition-colors h-full">
           <CardContent class="p-6">
             <p class="text-sm text-muted-foreground">Pending Review</p>
-            <p class="text-3xl font-bold text-amber-600 mt-2">{{ verificationStats.PENDING_VERIFICATION }}</p>
+            <p class="text-3xl font-bold text-amber-600 dark:text-amber-400 mt-2">{{ verificationStats.PENDING_VERIFICATION }}</p>
           </CardContent>
         </Card>
       </NuxtLink>
@@ -214,7 +216,7 @@ function formatTimestamp(iso: string) {
         <Card class="hover:border-primary/50 transition-colors h-full">
           <CardContent class="p-6">
             <p class="text-sm text-muted-foreground">On Hold</p>
-            <p class="text-3xl font-bold text-orange-600 mt-2">{{ verificationStats.ON_HOLD }}</p>
+            <p class="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-2">{{ verificationStats.ON_HOLD }}</p>
           </CardContent>
         </Card>
       </NuxtLink>
@@ -222,7 +224,7 @@ function formatTimestamp(iso: string) {
         <Card class="hover:border-primary/50 transition-colors h-full">
           <CardContent class="p-6">
             <p class="text-sm text-muted-foreground">More Info Required</p>
-            <p class="text-3xl font-bold text-blue-600 mt-2">{{ verificationStats.MORE_INFO_REQUIRED }}</p>
+            <p class="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">{{ verificationStats.MORE_INFO_REQUIRED }}</p>
           </CardContent>
         </Card>
       </NuxtLink>
@@ -230,7 +232,7 @@ function formatTimestamp(iso: string) {
         <Card class="hover:border-primary/50 transition-colors h-full">
           <CardContent class="p-6">
             <p class="text-sm text-muted-foreground">Verified</p>
-            <p class="text-3xl font-bold text-green-600 mt-2">{{ verificationStats.VERIFIED }}</p>
+            <p class="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{{ verificationStats.VERIFIED }}</p>
           </CardContent>
         </Card>
       </NuxtLink>
@@ -243,7 +245,7 @@ function formatTimestamp(iso: string) {
         <Card class="hover:border-primary/50 transition-colors">
           <CardContent class="p-6">
             <p class="text-sm text-muted-foreground">Pending Reissues</p>
-            <p class="text-3xl font-bold text-amber-600 mt-2">
+            <p class="text-3xl font-bold text-amber-600 dark:text-amber-400 mt-2">
               {{ reissueStats.PENDING }}
             </p>
           </CardContent>
@@ -253,7 +255,7 @@ function formatTimestamp(iso: string) {
         <Card class="hover:border-primary/50 transition-colors">
           <CardContent class="p-6">
             <p class="text-sm text-muted-foreground">Approved</p>
-            <p class="text-3xl font-bold text-green-600 mt-2">
+            <p class="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
               {{ reissueStats.APPROVED }}
             </p>
           </CardContent>
@@ -263,7 +265,7 @@ function formatTimestamp(iso: string) {
         <Card class="hover:border-primary/50 transition-colors">
           <CardContent class="p-6">
             <p class="text-sm text-muted-foreground">Declined</p>
-            <p class="text-3xl font-bold text-red-600 mt-2">
+            <p class="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">
               {{ reissueStats.DECLINED }}
             </p>
           </CardContent>

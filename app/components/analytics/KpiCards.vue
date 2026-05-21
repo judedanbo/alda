@@ -9,7 +9,11 @@ function formatChange(val: number | null): string {
 function changeClass(val: number | null, invertGood = false): string {
   if (val === null) return "text-muted-foreground";
   const isGood = invertGood ? val < 0 : val > 0;
-  return isGood ? "text-green-600" : val === 0 ? "text-muted-foreground" : "text-red-600";
+  return isGood
+    ? "text-green-600 dark:text-green-400"
+    : val === 0
+      ? "text-muted-foreground"
+      : "text-red-600 dark:text-red-400";
 }
 
 const props = defineProps<{

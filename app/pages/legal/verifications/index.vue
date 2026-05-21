@@ -28,11 +28,11 @@ const profiles = computed(() => data.value?.data?.profiles || []);
 const pagination = computed(() => data.value?.data?.pagination);
 
 const statusColors: Record<string, string> = {
-  PENDING_VERIFICATION: "bg-amber-100 text-amber-800",
-  VERIFIED: "bg-green-100 text-green-800",
-  ON_HOLD: "bg-orange-100 text-orange-800",
-  MORE_INFO_REQUIRED: "bg-blue-100 text-blue-800",
-  REJECTED: "bg-red-100 text-red-800",
+  PENDING_VERIFICATION: TONE_BADGE.amber,
+  VERIFIED: TONE_BADGE.green,
+  ON_HOLD: TONE_BADGE.orange,
+  MORE_INFO_REQUIRED: TONE_BADGE.blue,
+  REJECTED: TONE_BADGE.red,
 };
 
 const statusLabels: Record<string, string> = {

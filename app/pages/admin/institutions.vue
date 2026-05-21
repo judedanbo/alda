@@ -236,7 +236,9 @@ const institutionTypes = [
               {{ institution._count.applicantProfiles }}
             </TableCell>
             <TableCell>
-              <Badge :class="institution.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+              <Badge :class="institution.isActive
+                ? 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300'
+                : 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300'">
                 {{ institution.isActive ? 'Active' : 'Inactive' }}
               </Badge>
             </TableCell>
@@ -248,7 +250,9 @@ const institutionTypes = [
                 <Button
                   variant="outline"
                   size="sm"
-                  :class="institution.isActive ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'"
+                  :class="institution.isActive
+                    ? 'text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300'
+                    : 'text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300'"
                   @click="toggleStatus(institution)"
                 >
                   {{ institution.isActive ? 'Deactivate' : 'Activate' }}
@@ -295,7 +299,7 @@ const institutionTypes = [
         <div class="space-y-4">
           <div class="space-y-2">
             <Label for="inst-name">
-              Name <span class="text-red-500">*</span>
+              Name <span class="text-destructive">*</span>
             </Label>
             <Input
               id="inst-name"
