@@ -161,7 +161,7 @@ const quickActions = [
 
     <!-- System Stats -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <StatCard
+      <AppStatCard
         label="Total Users"
         :value="stats.totalUsers"
         :loading="loading"
@@ -170,7 +170,7 @@ const quickActions = [
         icon-color="text-blue-600"
         icon-path="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
       />
-      <StatCard
+      <AppStatCard
         label="Total Declarations"
         :value="stats.totalDeclarations"
         :loading="loading"
@@ -179,7 +179,7 @@ const quickActions = [
         icon-color="text-green-600"
         icon-path="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
       />
-      <StatCard
+      <AppStatCard
         label="Pending Review"
         :value="stats.pendingDeclarations"
         :loading="loading"
@@ -188,7 +188,7 @@ const quickActions = [
         icon-color="text-yellow-600"
         icon-path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
       />
-      <StatCard
+      <AppStatCard
         label="Approved"
         :value="stats.approvedDeclarations"
         :loading="loading"
@@ -233,7 +233,7 @@ const quickActions = [
 
     <!-- Charts -->
     <div class="grid lg:grid-cols-2 gap-4">
-      <ChartCard
+      <AppChartCard
         title="Pipeline by Month"
         description="Declarations by status, last 6 months"
         type="bar"
@@ -242,7 +242,7 @@ const quickActions = [
         :loading="loading"
         :height="320"
       />
-      <ChartCard
+      <AppChartCard
         title="Code Issuance vs Receipts"
         description="Daily volume, last 90 days"
         type="area"
@@ -252,6 +252,8 @@ const quickActions = [
         :height="320"
       />
     </div>
+
+    <AnalyticsSealedSummaryWidget role="admin" />
 
     <!-- Quick Actions -->
     <Card>

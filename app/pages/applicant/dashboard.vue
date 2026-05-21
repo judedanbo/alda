@@ -106,6 +106,8 @@ async function resendVerification() {
       description="Manage your asset declarations and track their status"
     />
 
+    <AnalyticsSealedSummaryWidget role="applicant" />
+
     <!-- Email Verification Banner -->
     <div
       v-if="user && !isEmailVerified"
@@ -229,7 +231,7 @@ async function resendVerification() {
                 </svg>
               </button>
             </div>
-            <CodeBadge :code="dashboard.activeDeclaration.uniqueCode" size="lg" show-qr />
+            <AppCodeBadge :code="dashboard.activeDeclaration.uniqueCode" size="lg" show-qr />
             <p class="text-xs text-muted-foreground">
               Status: <StatusBadge :status="dashboard.activeDeclaration.status" />
               <span class="ml-2">
@@ -283,7 +285,7 @@ async function resendVerification() {
 
     <!-- Stats Grid -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <StatCard
+      <AppStatCard
         label="Total Declarations"
         :value="dashboard?.total ?? 0"
         :loading="loading"
@@ -291,7 +293,7 @@ async function resendVerification() {
         icon-color="text-blue-600"
         icon-path="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
       />
-      <StatCard
+      <AppStatCard
         label="Pending Review"
         :value="dashboard?.pending ?? 0"
         :loading="loading"
@@ -299,7 +301,7 @@ async function resendVerification() {
         icon-color="text-yellow-600"
         icon-path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
       />
-      <StatCard
+      <AppStatCard
         label="Approved"
         :value="dashboard?.approved ?? 0"
         :loading="loading"
@@ -308,7 +310,7 @@ async function resendVerification() {
         icon-color="text-emerald-600"
         icon-path="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
       />
-      <StatCard
+      <AppStatCard
         label="Rejected"
         :value="dashboard?.rejected ?? 0"
         :loading="loading"
@@ -321,7 +323,7 @@ async function resendVerification() {
 
     <!-- Verification activity + Quick actions -->
     <div class="grid md:grid-cols-3 gap-4">
-      <StatCard
+      <AppStatCard
         label="Verification Lookups"
         :value="dashboard?.verificationCount ?? 0"
         :loading="loading"
@@ -393,7 +395,7 @@ async function resendVerification() {
     <!-- Timeline chart + Code history -->
     <div class="grid lg:grid-cols-3 gap-4">
       <div class="lg:col-span-2">
-        <ChartCard
+        <AppChartCard
           title="Declarations Over Time"
           description="Your declaration activity over the last 12 months"
           type="area"

@@ -89,6 +89,8 @@ function formatTimestamp(iso: string) {
   <div class="space-y-6">
     <PageHeader title="Legal Unit Dashboard" description="Verify declaration codes and recall applicant information" />
 
+    <AnalyticsSealedSummaryWidget role="legal" />
+
     <!-- Quick Code Verification -->
     <Card class="border-primary/30 bg-primary/5">
       <CardContent class="p-6">
@@ -113,7 +115,7 @@ function formatTimestamp(iso: string) {
 
     <!-- Code Verification Activity -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <StatCard
+      <AppStatCard
         label="Verified Today"
         :value="codeActivity?.windows.today ?? 0"
         :loading="codeLoading"
@@ -122,7 +124,7 @@ function formatTimestamp(iso: string) {
         icon-color="text-primary"
         icon-path="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
       />
-      <StatCard
+      <AppStatCard
         label="This Week"
         :value="codeActivity?.windows.week ?? 0"
         :loading="codeLoading"
@@ -130,7 +132,7 @@ function formatTimestamp(iso: string) {
         icon-color="text-blue-600"
         icon-path="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
       />
-      <StatCard
+      <AppStatCard
         label="This Month"
         :value="codeActivity?.windows.month ?? 0"
         :loading="codeLoading"
@@ -138,7 +140,7 @@ function formatTimestamp(iso: string) {
         icon-color="text-blue-600"
         icon-path="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
       />
-      <StatCard
+      <AppStatCard
         label="Failed Lookups"
         :value="codeActivity?.windows.failedThisMonth ?? 0"
         :loading="codeLoading"
@@ -153,7 +155,7 @@ function formatTimestamp(iso: string) {
     <!-- Activity chart + Recent verifications -->
     <div class="grid lg:grid-cols-3 gap-4">
       <div class="lg:col-span-2">
-        <ChartCard
+        <AppChartCard
           title="Verification Activity"
           description="Code lookups per day, last 30 days"
           type="area"
