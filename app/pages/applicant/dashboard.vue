@@ -96,15 +96,15 @@ async function resendVerification() {
     <!-- Email Verification Banner -->
     <div
       v-if="user && !isEmailVerified"
-      class="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center justify-between"
+      class="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center justify-between dark:bg-amber-950/30 dark:border-amber-900"
     >
       <div class="flex items-center gap-3">
-        <svg class="w-5 h-5 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 text-amber-600 flex-shrink-0 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
         <div>
-          <p class="font-medium text-amber-800">Please verify your email</p>
-          <p class="text-sm text-amber-600">
+          <p class="font-medium text-amber-800 dark:text-amber-200">Please verify your email</p>
+          <p class="text-sm text-amber-600 dark:text-amber-400">
             Check your inbox for the verification link, or request a new one.
           </p>
         </div>
@@ -132,19 +132,19 @@ async function resendVerification() {
     <Alert
       v-if="user?.hasProfile && user?.verificationStatus && user.verificationStatus !== 'VERIFIED'"
       :class="{
-        'border-amber-200 bg-amber-50': user.verificationStatus === 'PENDING_VERIFICATION',
-        'border-orange-200 bg-orange-50': user.verificationStatus === 'ON_HOLD',
-        'border-blue-200 bg-blue-50': user.verificationStatus === 'MORE_INFO_REQUIRED',
-        'border-red-200 bg-red-50': user.verificationStatus === 'REJECTED',
+        'border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30': user.verificationStatus === 'PENDING_VERIFICATION',
+        'border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950/30': user.verificationStatus === 'ON_HOLD',
+        'border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/30': user.verificationStatus === 'MORE_INFO_REQUIRED',
+        'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30': user.verificationStatus === 'REJECTED',
       }"
     >
       <svg
         class="w-5 h-5"
         :class="{
-          'text-amber-600': user.verificationStatus === 'PENDING_VERIFICATION',
-          'text-orange-600': user.verificationStatus === 'ON_HOLD',
-          'text-blue-600': user.verificationStatus === 'MORE_INFO_REQUIRED',
-          'text-red-600': user.verificationStatus === 'REJECTED',
+          'text-amber-600 dark:text-amber-400': user.verificationStatus === 'PENDING_VERIFICATION',
+          'text-orange-600 dark:text-orange-400': user.verificationStatus === 'ON_HOLD',
+          'text-blue-600 dark:text-blue-400': user.verificationStatus === 'MORE_INFO_REQUIRED',
+          'text-red-600 dark:text-red-400': user.verificationStatus === 'REJECTED',
         }"
         fill="none"
         stroke="currentColor"
@@ -164,13 +164,13 @@ async function resendVerification() {
         </p>
         <div v-else-if="user.verificationStatus === 'ON_HOLD'">
           <p>Your registration is under review. Please wait for further updates.</p>
-          <p v-if="verificationInfo?.messageToApplicant" class="mt-2 p-3 bg-orange-100 rounded text-sm">
+          <p v-if="verificationInfo?.messageToApplicant" class="mt-2 p-3 bg-orange-100 rounded text-sm dark:bg-orange-950/40">
             {{ verificationInfo.messageToApplicant }}
           </p>
         </div>
         <div v-else-if="user.verificationStatus === 'MORE_INFO_REQUIRED'">
           <p>The legal office has requested additional information.</p>
-          <p v-if="verificationInfo?.messageToApplicant" class="mt-2 p-3 bg-blue-100 rounded text-sm">
+          <p v-if="verificationInfo?.messageToApplicant" class="mt-2 p-3 bg-blue-100 rounded text-sm dark:bg-blue-950/40">
             {{ verificationInfo.messageToApplicant }}
           </p>
           <Button as-child size="sm" class="mt-3">
@@ -179,7 +179,7 @@ async function resendVerification() {
         </div>
         <div v-else-if="user.verificationStatus === 'REJECTED'">
           <p>Your registration was not approved.</p>
-          <p v-if="verificationInfo?.reason" class="mt-2 p-3 bg-red-100 rounded text-sm">
+          <p v-if="verificationInfo?.reason" class="mt-2 p-3 bg-red-100 rounded text-sm dark:bg-red-950/40">
             {{ verificationInfo.reason }}
           </p>
           <Button as-child size="sm" class="mt-3">
@@ -211,7 +211,7 @@ async function resendVerification() {
                 <svg v-if="!codeCopied" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
-                <svg v-else class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg v-else class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
               </button>
@@ -240,21 +240,21 @@ async function resendVerification() {
         <!-- Unresolved Review Comments Banner -->
         <div
           v-if="dashboard.activeDeclaration.unresolvedComments > 0"
-          class="mt-4 flex items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3"
+          class="mt-4 flex items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30"
         >
-          <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5 text-amber-600 shrink-0 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
           <div class="flex-1">
-            <p class="text-sm font-medium text-amber-800">
+            <p class="text-sm font-medium text-amber-800 dark:text-amber-200">
               {{ dashboard.activeDeclaration.unresolvedComments }} unresolved review
               {{ dashboard.activeDeclaration.unresolvedComments === 1 ? 'comment' : 'comments' }}
             </p>
-            <p class="text-xs text-amber-600">
+            <p class="text-xs text-amber-600 dark:text-amber-400">
               A reviewer has flagged sections of your declaration that need attention.
             </p>
           </div>
-          <Button as-child size="sm" variant="outline" class="border-amber-300 text-amber-700 hover:bg-amber-100 shrink-0">
+          <Button as-child size="sm" variant="outline" class="border-amber-300 text-amber-700 hover:bg-amber-100 shrink-0 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/40">
             <NuxtLink :to="`/applicant/declaration/${dashboard.activeDeclaration.id}`">
               View Comments
             </NuxtLink>
@@ -274,34 +274,34 @@ async function resendVerification() {
         label="Total Declarations"
         :value="dashboard?.total ?? 0"
         :loading="loading"
-        icon-bg="bg-blue-100"
-        icon-color="text-blue-600"
+        icon-bg="bg-blue-100 dark:bg-blue-950/50"
+        icon-color="text-blue-600 dark:text-blue-400"
         icon-path="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
       />
       <AppStatCard
         label="Pending Review"
         :value="dashboard?.pending ?? 0"
         :loading="loading"
-        icon-bg="bg-yellow-100"
-        icon-color="text-yellow-600"
+        icon-bg="bg-yellow-100 dark:bg-yellow-950/50"
+        icon-color="text-yellow-600 dark:text-yellow-400"
         icon-path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
       />
       <AppStatCard
         label="Approved"
         :value="dashboard?.approved ?? 0"
         :loading="loading"
-        value-color="text-emerald-600"
-        icon-bg="bg-emerald-100"
-        icon-color="text-emerald-600"
+        value-color="text-emerald-600 dark:text-emerald-400"
+        icon-bg="bg-emerald-100 dark:bg-emerald-950/50"
+        icon-color="text-emerald-600 dark:text-emerald-400"
         icon-path="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
       />
       <AppStatCard
         label="Rejected"
         :value="dashboard?.rejected ?? 0"
         :loading="loading"
-        value-color="text-red-600"
-        icon-bg="bg-red-100"
-        icon-color="text-red-600"
+        value-color="text-red-600 dark:text-red-400"
+        icon-bg="bg-red-100 dark:bg-red-950/50"
+        icon-color="text-red-600 dark:text-red-400"
         icon-path="M6 18L18 6M6 6l12 12"
       />
     </div>
@@ -394,19 +394,19 @@ async function resendVerification() {
             <Skeleton v-if="loading" class="h-24 w-full" />
             <div v-else class="grid grid-cols-4 gap-4">
               <div class="text-center p-3 bg-blue-500/5 rounded-lg">
-                <p class="text-2xl font-extrabold text-blue-600">{{ dashboard?.total ?? 0 }}</p>
+                <p class="text-2xl font-extrabold text-blue-600 dark:text-blue-400">{{ dashboard?.total ?? 0 }}</p>
                 <p class="text-[10px] text-muted-foreground mt-1">Total</p>
               </div>
               <div class="text-center p-3 bg-yellow-500/5 rounded-lg">
-                <p class="text-2xl font-extrabold text-yellow-600">{{ dashboard?.pending ?? 0 }}</p>
+                <p class="text-2xl font-extrabold text-yellow-600 dark:text-yellow-400">{{ dashboard?.pending ?? 0 }}</p>
                 <p class="text-[10px] text-muted-foreground mt-1">Pending</p>
               </div>
               <div class="text-center p-3 bg-emerald-500/5 rounded-lg">
-                <p class="text-2xl font-extrabold text-emerald-600">{{ dashboard?.approved ?? 0 }}</p>
+                <p class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{{ dashboard?.approved ?? 0 }}</p>
                 <p class="text-[10px] text-muted-foreground mt-1">Approved</p>
               </div>
               <div class="text-center p-3 bg-red-500/5 rounded-lg">
-                <p class="text-2xl font-extrabold text-red-600">{{ dashboard?.rejected ?? 0 }}</p>
+                <p class="text-2xl font-extrabold text-red-600 dark:text-red-400">{{ dashboard?.rejected ?? 0 }}</p>
                 <p class="text-[10px] text-muted-foreground mt-1">Rejected</p>
               </div>
             </div>

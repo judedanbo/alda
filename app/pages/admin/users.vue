@@ -242,7 +242,9 @@ const handlePageChange = (page: number) => {
               </div>
             </TableCell>
             <TableCell>
-              <Badge :class="user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+              <Badge :class="user.isActive
+                ? 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300'
+                : 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300'">
                 {{ user.isActive ? 'Active' : 'Inactive' }}
               </Badge>
             </TableCell>
@@ -260,7 +262,9 @@ const handlePageChange = (page: number) => {
                 <Button
                   variant="outline"
                   size="sm"
-                  :class="user.isActive ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'"
+                  :class="user.isActive
+                    ? 'text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300'
+                    : 'text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300'"
                   @click="toggleUserStatus(user)"
                 >
                   {{ user.isActive ? 'Deactivate' : 'Activate' }}

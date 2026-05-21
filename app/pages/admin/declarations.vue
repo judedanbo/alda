@@ -494,7 +494,7 @@ const statuses = [
                     {{ formatDate(selectedDeclaration.review.reviewDate) }}
                     by {{ selectedDeclaration.review.reviewer.email }}
                   </p>
-                  <p v-if="selectedDeclaration.review.rejectionReason" class="text-xs text-red-600 mt-1">
+                  <p v-if="selectedDeclaration.review.rejectionReason" class="text-xs text-red-600 dark:text-red-400 mt-1">
                     Reason: {{ selectedDeclaration.review.rejectionReason }}
                   </p>
                 </div>
@@ -523,11 +523,15 @@ const statuses = [
                 v-for="review in selectedDeclaration.sectionReviews.filter((r: any) => !r.isAcceptable)"
                 :key="review.id"
                 class="rounded-lg border p-3 text-sm"
-                :class="review.resolvedAt ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'"
+                :class="review.resolvedAt
+                  ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-900'
+                  : 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900'"
               >
                 <div class="flex items-center gap-2">
                   <span class="font-medium">{{ FORM_SECTION_LABELS[review.section] || review.section }}</span>
-                  <Badge :class="review.resolvedAt ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'">
+                  <Badge :class="review.resolvedAt
+                    ? 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300'
+                    : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'">
                     {{ review.resolvedAt ? 'Resolved' : 'Pending' }}
                   </Badge>
                 </div>

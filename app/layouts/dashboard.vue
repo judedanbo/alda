@@ -147,6 +147,7 @@ const handleLogout = async () => {
                   <DropdownMenuItem as-child>
                     <NuxtLink to="/settings/preferences">Settings</NuxtLink>
                   </DropdownMenuItem>
+                  <AppThemeSwitcherMenu />
                   <DropdownMenuSeparator />
                   <DropdownMenuItem @click="handleLogout" class="text-destructive">
                     Logout

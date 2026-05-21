@@ -235,7 +235,7 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
                 <TableCell>
                   <Badge
                     v-if="declaration.sectionReviews.length > 0"
-                    class="bg-amber-100 text-amber-700"
+                    class="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
                   >
                     {{ declaration.sectionReviews.length }} issue(s)
                   </Badge>

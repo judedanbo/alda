@@ -5,7 +5,7 @@
 
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is(.theme-dark *));
 
 @theme {
   /* Color tokens for ADLA - Ghana Government colors */
@@ -48,21 +48,121 @@
 }
 
 /* Dark mode support */
-.dark {
+.theme-dark {
   --color-background: #0A0A0A;
   --color-foreground: #FAFAFA;
 
   --color-muted: #262626;
   --color-muted-foreground: #A3A3A3;
 
-  --color-card: #0A0A0A;
+  --color-card: #141414;          /* lifted off the background */
   --color-card-foreground: #FAFAFA;
 
-  --color-popover: #0A0A0A;
+  --color-popover: #141414;
   --color-popover-foreground: #FAFAFA;
 
   --color-border: #262626;
   --color-input: #262626;
+  --color-ring: #0E9B5C;
+
+  --color-primary: #0E9B5C;
+  --color-primary-foreground: #04130B;
+
+  --color-accent: #F0506A;
+  --color-accent-foreground: #1A0508;
+
+  --color-destructive: #F0506A;
+  --color-destructive-foreground: #1A0508;
+
+  --color-success: #22C55E;
+  --color-success-foreground: #04130B;
+
+  --color-warning: #FBBF24;
+  --color-warning-foreground: #1A1305;
+}
+
+/* High Contrast theme (light-based) */
+.theme-high-contrast {
+  --color-background: #FFFFFF;
+  --color-foreground: #000000;
+
+  --color-muted: #F0F0F0;
+  --color-muted-foreground: #1A1A1A;
+
+  --color-card: #FFFFFF;
+  --color-card-foreground: #000000;
+
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #000000;
+
+  --color-border: #000000;
+  --color-input: #000000;
+  --color-ring: #0000FF;
+
+  --color-primary: #005C36;
+  --color-primary-foreground: #FFFFFF;
+
+  --color-secondary: #FFD500;
+  --color-secondary-foreground: #000000;
+
+  --color-accent: #C8102E;
+  --color-accent-foreground: #FFFFFF;
+}
+
+/* Sepia theme (light-based) */
+.theme-sepia {
+  --color-background: #F4ECD8;
+  --color-foreground: #3B2F1E;
+
+  --color-muted: #E8DCC0;
+  --color-muted-foreground: #7A6A4F;
+
+  --color-card: #FBF5E3;
+  --color-card-foreground: #3B2F1E;
+
+  --color-popover: #FBF5E3;
+  --color-popover-foreground: #3B2F1E;
+
+  --color-border: #D8C9A3;
+  --color-input: #D8C9A3;
+  --color-ring: #8A6D3B;
+
+  --color-primary: #6B4F2A;
+  --color-primary-foreground: #FBF5E3;
+
+  --color-secondary: #C9A227;
+  --color-secondary-foreground: #3B2F1E;
+
+  --color-accent: #9C3B23;
+  --color-accent-foreground: #FBF5E3;
+}
+
+/* Solarized theme (light-based, official Solarized Light palette) */
+.theme-solarized {
+  --color-background: #FDF6E3;
+  --color-foreground: #586E75;
+
+  --color-muted: #EEE8D5;
+  --color-muted-foreground: #93A1A1;
+
+  --color-card: #FDF6E3;
+  --color-card-foreground: #586E75;
+
+  --color-popover: #EEE8D5;
+  --color-popover-foreground: #586E75;
+
+  --color-border: #D9D2BC;
+  --color-input: #D9D2BC;
+  --color-ring: #268BD2;
+
+  --color-primary: #268BD2;
+  --color-primary-foreground: #FDF6E3;
+
+  --color-secondary: #B58900;
+  --color-secondary-foreground: #FDF6E3;
+
+  --color-accent: #2AA198;
+  --color-accent-foreground: #FDF6E3;
 }
 
 /* Base styles */

@@ -22,9 +22,18 @@ export default defineNuxtConfig({
   modules: [
     "shadcn-nuxt",
     "@pinia/nuxt",
+    "@nuxtjs/color-mode",
   ],
 
   css: ["~/assets/css/main.css"],
+
+  colorMode: {
+    preference: "system",
+    fallback: "light",
+    classSuffix: "",
+    classPrefix: "theme-",
+    storageKey: "adla-theme",
+  },
 
   vite: {
     plugins: [tailwindcss()],

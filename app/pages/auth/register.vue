@@ -210,7 +210,7 @@ const handleSubmit = async () => {
                 v-model="form.acceptTerms"
                 type="checkbox"
                 required
-                class="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                class="mt-1 h-4 w-4 rounded border-input text-primary focus:ring-primary"
                 @change="clearFieldError('acceptTerms')"
               />
               <label for="terms" class="text-sm text-muted-foreground">

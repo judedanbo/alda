@@ -79,18 +79,18 @@ const formatDate = (dateString: string) => {
 
 const getActionColor = (action: string) => {
   if (action.includes("CREATE") || action.includes("REGISTER")) {
-    return "bg-green-100 text-green-800";
+    return TONE_BADGE.green;
   }
   if (action.includes("DELETE") || action.includes("REMOVE")) {
-    return "bg-red-100 text-red-800";
+    return TONE_BADGE.red;
   }
   if (action.includes("UPDATE") || action.includes("EDIT")) {
-    return "bg-blue-100 text-blue-800";
+    return TONE_BADGE.blue;
   }
   if (action.includes("LOGIN") || action.includes("LOGOUT")) {
-    return "bg-purple-100 text-purple-800";
+    return TONE_BADGE.purple;
   }
-  return "bg-gray-100 text-gray-800";
+  return TONE_BADGE.neutral;
 };
 
 const openDetailModal = (log: AuditLog) => {

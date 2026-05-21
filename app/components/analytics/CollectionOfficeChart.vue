@@ -6,6 +6,8 @@ const props = defineProps<{
   loading: boolean;
 }>();
 
+const { palette, gridColor, foreColor, tooltipTheme } = useChartTheme();
+
 const donutSeries = computed(() =>
   props.data?.byType.map((d) => d.count) ?? [],
 );
@@ -13,6 +15,9 @@ const donutSeries = computed(() =>
 const donutOptions = computed(() => ({
   labels: props.data?.byType.map((d) => d.type) ?? [],
   legend: { position: "bottom" as const },
+  colors: palette.value,
+  chart: { background: "transparent", foreColor: foreColor.value },
+  tooltip: { theme: tooltipTheme.value },
 }));
 
 const barSeries = computed(() => {
@@ -26,6 +31,10 @@ const barOptions = computed(() => ({
     categories: props.data?.byRegion.map((d) => d.region) ?? [],
     labels: { rotate: -45, style: { fontSize: "10px" } },
   },
+  colors: palette.value,
+  chart: { background: "transparent", foreColor: foreColor.value },
+  grid: { borderColor: gridColor.value, strokeDashArray: 4 },
+  tooltip: { theme: tooltipTheme.value },
 }));
 </script>
 
