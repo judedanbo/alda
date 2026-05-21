@@ -304,6 +304,7 @@ model DeclarationStatusHistory {
 
   @@index([declarationId])
   @@index([createdAt])
+  @@index([status, createdAt])
   @@map("declaration_status_history")
 }
 
@@ -337,6 +338,7 @@ model FormCollection {
   collectionOffice CollectionOffice @relation(fields: [collectionOfficeId], references: [id])
 
   @@index([declarationId])
+  @@index([collectionOfficeId])
   @@map("form_collections")
 }
 
