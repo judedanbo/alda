@@ -7,8 +7,10 @@ definePageMeta({
 const {
   filters,
   summary,
+  charts,
   list,
   loadingSummary,
+  loadingCharts,
   loadingList,
   applyFilters,
   resetFilters,
@@ -32,6 +34,11 @@ const {
     />
 
     <AnalyticsKpiCards :data="summary" :loading="loadingSummary" />
+
+    <AnalyticsSealedTimelineChart
+      :data="charts?.timeline"
+      :loading="loadingCharts"
+    />
 
     <AnalyticsDeclarationsTable
       :data="list"
