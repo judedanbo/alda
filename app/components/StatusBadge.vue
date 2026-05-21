@@ -14,7 +14,6 @@ const config = computed(() => {
     APPROVED: { label: "Approved", class: "bg-green-100 text-green-700" },
     REJECTED: { label: "Rejected", class: "bg-red-100 text-red-700" },
     SEALED: { label: "Sealed", class: "bg-emerald-100 text-emerald-700" },
-    COMPLETED: { label: "Completed", class: "bg-gray-100 text-gray-700" },
   };
   return map[props.status] || { label: props.status, class: "" };
 });

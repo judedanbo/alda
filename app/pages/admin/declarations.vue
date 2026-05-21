@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { FORM_SECTION_LABELS } from "~/utils/form-sections";
+
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
@@ -40,11 +42,17 @@ interface Declaration {
     approverDetail: string | null;
     decisionReason: string | null;
   }>;
-  submission: {
-    submissionDate: string;
-    notes: string | null;
-    recorder: { email: string };
-  } | null;
+  sectionReviews: Array<{
+    id: string;
+    section: string;
+    isAcceptable: boolean;
+    comments: string | null;
+    resolvedAt: string | null;
+    resolvedById: string | null;
+    reviewer: { email: string } | null;
+    resolvedBy: { email: string } | null;
+    createdAt: string;
+  }>;
   review: {
     status: string;
     reviewDate: string;
@@ -73,12 +81,10 @@ const dateTo = ref("");
 const selectedDeclaration = ref<Declaration | null>(null);
 const showDetailModal = ref(false);
 
-// Review modal
-const showReviewModal = ref(false);
-const reviewStatus = ref<"APPROVED" | "REJECTED">("APPROVED");
-const rejectionReason = ref("");
-const isReviewing = ref(false);
-const reviewError = ref("");
+// Section review panel
+const showReviewPanel = ref(false);
+const sectionReviewsData = ref<any[]>([]);
+const loadingSections = ref(false);
 
 const fetchDeclarations = async () => {
   loading.value = true;
@@ -150,53 +156,30 @@ const closeDetailModal = () => {
   selectedDeclaration.value = null;
 };
 
-const openReviewModal = (declaration: Declaration, status: "APPROVED" | "REJECTED") => {
+const openReviewPanel = async (declaration: Declaration) => {
   selectedDeclaration.value = declaration;
-  reviewStatus.value = status;
-  rejectionReason.value = "";
-  reviewError.value = "";
-  showReviewModal.value = true;
-};
-
-const closeReviewModal = () => {
-  showReviewModal.value = false;
-  reviewError.value = "";
-};
-
-const submitReview = async () => {
-  if (!selectedDeclaration.value) return;
-
-  if (reviewStatus.value === "REJECTED" && !rejectionReason.value.trim()) {
-    reviewError.value = "Please provide a reason for rejection";
-    return;
-  }
-
-  isReviewing.value = true;
-  reviewError.value = "";
-
+  showDetailModal.value = false;
+  showReviewPanel.value = true;
+  loadingSections.value = true;
   try {
-    await authFetch("/api/reviews", {
-      method: "POST",
-      body: {
-        declarationId: selectedDeclaration.value.id,
-        status: reviewStatus.value,
-        rejectionReason: reviewStatus.value === "REJECTED" ? rejectionReason.value : undefined,
-      },
-    });
-
-    closeReviewModal();
-    closeDetailModal();
-    await fetchDeclarations();
-  } catch (error: unknown) {
-    const err = error as { data?: { statusMessage?: string } };
-    reviewError.value = err.data?.statusMessage || "Failed to submit review";
+    const response = await authFetch<any>(`/api/reviews/${declaration.id}/sections`);
+    sectionReviewsData.value = response.data || [];
+  } catch {
+    sectionReviewsData.value = [];
   } finally {
-    isReviewing.value = false;
+    loadingSections.value = false;
   }
+};
+
+const onReviewed = async () => {
+  showReviewPanel.value = false;
+  selectedDeclaration.value = null;
+  sectionReviewsData.value = [];
+  await fetchDeclarations();
 };
 
 const canReview = (declaration: Declaration) => {
-  return declaration.status === "UNDER_REVIEW";
+  return declaration.status === "SUBMITTED" || declaration.status === "UNDER_REVIEW";
 };
 
 const statuses = [
@@ -213,6 +196,37 @@ const statuses = [
 
 <template>
   <div class="space-y-6">
+    <!-- Section Review Panel -->
+    <template v-if="showReviewPanel && selectedDeclaration">
+      <div class="mb-4">
+        <Button variant="ghost" @click="showReviewPanel = false; selectedDeclaration = null">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Declarations
+        </Button>
+      </div>
+      <div v-if="loadingSections" class="space-y-4">
+        <Card>
+          <CardContent class="p-6">
+            <Skeleton class="h-6 w-48 mb-4" />
+            <div class="space-y-3">
+              <Skeleton class="h-20 w-full" />
+              <Skeleton class="h-20 w-full" />
+              <Skeleton class="h-20 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      <AppSectionReviewForm
+        v-else
+        :declaration="selectedDeclaration"
+        :existing-reviews="sectionReviewsData"
+        @reviewed="onReviewed"
+      />
+    </template>
+
+    <template v-else>
     <PageHeader title="All Declarations" description="View and manage all asset declarations">
       <template #actions>
         <span class="text-sm text-muted-foreground">Total: {{ total }} declarations</span>
@@ -315,14 +329,13 @@ const statuses = [
                 <Button variant="outline" size="sm" @click="openDetailModal(declaration)">
                   View
                 </Button>
-                <template v-if="canReview(declaration)">
-                  <Button size="sm" class="bg-green-600 hover:bg-green-700" @click="openReviewModal(declaration, 'APPROVED')">
-                    Approve
-                  </Button>
-                  <Button variant="destructive" size="sm" @click="openReviewModal(declaration, 'REJECTED')">
-                    Reject
-                  </Button>
-                </template>
+                <Button
+                  v-if="canReview(declaration)"
+                  size="sm"
+                  @click="openReviewPanel(declaration)"
+                >
+                  Review
+                </Button>
               </div>
             </TableCell>
           </TableRow>
@@ -468,20 +481,6 @@ const statuses = [
                 </div>
               </div>
 
-              <div v-if="selectedDeclaration.submission" class="flex items-start gap-3">
-                <div class="w-2 h-2 mt-2 rounded-full bg-orange-500" />
-                <div>
-                  <p class="text-sm font-medium text-foreground">Recorded by Officer</p>
-                  <p class="text-xs text-muted-foreground">
-                    {{ formatDate(selectedDeclaration.submission.submissionDate) }}
-                    by {{ selectedDeclaration.submission.recorder.email }}
-                  </p>
-                  <p v-if="selectedDeclaration.submission.notes" class="text-xs text-muted-foreground mt-1">
-                    Notes: {{ selectedDeclaration.submission.notes }}
-                  </p>
-                </div>
-              </div>
-
               <div v-if="selectedDeclaration.review" class="flex items-start gap-3">
                 <div
                   class="w-2 h-2 mt-2 rounded-full"
@@ -516,17 +515,32 @@ const statuses = [
             </div>
           </div>
 
-          <!-- Actions for UNDER_REVIEW status -->
-          <div v-if="canReview(selectedDeclaration)" class="pt-4 border-t">
-            <h3 class="text-sm font-medium text-muted-foreground mb-3">Review Actions</h3>
-            <div class="flex gap-3">
-              <Button class="flex-1 bg-green-600 hover:bg-green-700" @click="openReviewModal(selectedDeclaration, 'APPROVED')">
-                Approve Declaration
-              </Button>
-              <Button variant="destructive" class="flex-1" @click="openReviewModal(selectedDeclaration, 'REJECTED')">
-                Reject Declaration
-              </Button>
+          <!-- Section Review Comments -->
+          <div v-if="selectedDeclaration.sectionReviews?.some((r: any) => !r.isAcceptable)" class="pt-4 border-t">
+            <h3 class="text-sm font-medium text-muted-foreground mb-3">Section Review Issues</h3>
+            <div class="space-y-2">
+              <div
+                v-for="review in selectedDeclaration.sectionReviews.filter((r: any) => !r.isAcceptable)"
+                :key="review.id"
+                class="rounded-lg border p-3 text-sm"
+                :class="review.resolvedAt ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="font-medium">{{ FORM_SECTION_LABELS[review.section] || review.section }}</span>
+                  <Badge :class="review.resolvedAt ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'">
+                    {{ review.resolvedAt ? 'Resolved' : 'Pending' }}
+                  </Badge>
+                </div>
+                <p class="text-muted-foreground mt-1">{{ review.comments }}</p>
+              </div>
             </div>
+          </div>
+
+          <!-- Review Action -->
+          <div v-if="canReview(selectedDeclaration)" class="pt-4 border-t">
+            <Button class="w-full" @click="openReviewPanel(selectedDeclaration)">
+              Open Section Review
+            </Button>
           </div>
         </div>
 
@@ -536,94 +550,6 @@ const statuses = [
       </DialogScrollContent>
     </Dialog>
 
-    <!-- Review Modal -->
-    <Dialog :open="showReviewModal && !!selectedDeclaration" @update:open="(v: boolean) => { if (!v) closeReviewModal() }">
-      <DialogContent v-if="selectedDeclaration" class="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>
-            {{ reviewStatus === 'APPROVED' ? 'Approve' : 'Reject' }} Declaration
-          </DialogTitle>
-          <DialogDescription>
-            {{ reviewStatus === 'APPROVED' ? 'Confirm approval of this declaration' : 'Provide reason for rejection' }}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div class="space-y-4">
-          <div class="bg-muted/30 rounded-lg p-4 space-y-2">
-            <div class="flex justify-between">
-              <span class="text-sm text-muted-foreground">Code:</span>
-              <span class="font-mono font-medium">{{ selectedDeclaration.uniqueCode }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-sm text-muted-foreground">Applicant:</span>
-              <span class="font-medium">{{ selectedDeclaration.applicant.fullName }}</span>
-            </div>
-          </div>
-
-          <div
-            :class="[
-              'p-4 rounded-lg border-2',
-              reviewStatus === 'APPROVED' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-            ]"
-          >
-            <div class="flex items-center gap-2">
-              <svg
-                v-if="reviewStatus === 'APPROVED'"
-                class="w-5 h-5 text-green-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              <svg
-                v-else
-                class="w-5 h-5 text-red-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              <span :class="reviewStatus === 'APPROVED' ? 'text-green-700' : 'text-red-700'" class="font-medium">
-                {{ reviewStatus === 'APPROVED' ? 'Approving this declaration' : 'Rejecting this declaration' }}
-              </span>
-            </div>
-          </div>
-
-          <div v-if="reviewStatus === 'REJECTED'">
-            <Label for="rejection-reason">
-              Rejection Reason <span class="text-red-500">*</span>
-            </Label>
-            <Textarea
-              id="rejection-reason"
-              v-model="rejectionReason"
-              :rows="3"
-              placeholder="Explain why this declaration is being rejected..."
-              class="mt-1"
-            />
-            <p class="text-xs text-muted-foreground mt-1">
-              A new unique code will be issued for resubmission.
-            </p>
-          </div>
-
-          <Alert v-if="reviewError" variant="destructive">
-            <AlertDescription>{{ reviewError }}</AlertDescription>
-          </Alert>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" @click="closeReviewModal">Cancel</Button>
-          <Button
-            :disabled="isReviewing"
-            :class="reviewStatus === 'APPROVED' ? 'bg-green-600 hover:bg-green-700' : ''"
-            :variant="reviewStatus === 'REJECTED' ? 'destructive' : 'default'"
-            @click="submitReview"
-          >
-            {{ isReviewing ? 'Processing...' : (reviewStatus === 'APPROVED' ? 'Confirm Approval' : 'Confirm Rejection') }}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </template>
   </div>
 </template>

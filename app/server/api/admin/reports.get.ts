@@ -100,17 +100,15 @@ export default defineEventHandler(async (event) => {
 
   const institutionMap = new Map(institutions.map((i) => [i.id, i.name]));
 
-  // Processing times (average hours)
-  const submissionsWithReviews = await prisma.submission.findMany({
-    where: dateFilter,
+  // Processing times (average hours from submission to review, review to receipt)
+  const declarationsWithTimeline = await prisma.declaration.findMany({
+    where: {
+      submittedAt: { not: null },
+      ...dateFilter,
+    },
     include: {
-      declaration: {
-        include: {
-          reviews: { orderBy: { createdAt: "asc" }, take: 1 },
-          receipts: { orderBy: { createdAt: "asc" }, take: 1 },
-          pickupAuthorization: true,
-        },
-      },
+      reviews: { orderBy: { createdAt: "asc" }, take: 1 },
+      receipts: { orderBy: { createdAt: "asc" }, take: 1 },
     },
   });
 
@@ -118,17 +116,14 @@ export default defineEventHandler(async (event) => {
   let countSubmissionToReview = 0;
   let totalReviewToReceipt = 0;
   let countReviewToReceipt = 0;
-  let totalReceiptToPickup = 0;
-  let countReceiptToPickup = 0;
 
-  submissionsWithReviews.forEach((submission) => {
-    const review = submission.declaration.reviews[0];
-    const receipt = submission.declaration.receipts[0];
-    const pickup = submission.declaration.pickupAuthorization;
+  declarationsWithTimeline.forEach((decl) => {
+    const review = decl.reviews[0];
+    const receipt = decl.receipts[0];
 
-    if (review) {
+    if (review && decl.submittedAt) {
       const hours =
-        (review.createdAt.getTime() - submission.createdAt.getTime()) / (1000 * 60 * 60);
+        (review.createdAt.getTime() - decl.submittedAt.getTime()) / (1000 * 60 * 60);
       totalSubmissionToReview += hours;
       countSubmissionToReview++;
 
@@ -137,13 +132,6 @@ export default defineEventHandler(async (event) => {
           (receipt.createdAt.getTime() - review.createdAt.getTime()) / (1000 * 60 * 60);
         totalReviewToReceipt += hours2;
         countReviewToReceipt++;
-
-        if (pickup?.pickupDate) {
-          const hours3 =
-            (pickup.pickupDate.getTime() - receipt.createdAt.getTime()) / (1000 * 60 * 60);
-          totalReceiptToPickup += hours3;
-          countReceiptToPickup++;
-        }
       }
     }
   });
@@ -172,10 +160,6 @@ export default defineEventHandler(async (event) => {
         avgReviewToReceipt:
           countReviewToReceipt > 0
             ? Math.round(totalReviewToReceipt / countReviewToReceipt)
-            : 0,
-        avgReceiptToPickup:
-          countReceiptToPickup > 0
-            ? Math.round(totalReceiptToPickup / countReceiptToPickup)
             : 0,
       },
     },

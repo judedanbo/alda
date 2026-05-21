@@ -115,7 +115,7 @@
               </div>
               <CardTitle class="text-lg mb-2">Receive</CardTitle>
               <p class="text-sm text-muted-foreground">
-                Get your receipt and notification for document pickup
+                Get your receipt once your declaration is approved and sealed
               </p>
             </CardContent>
           </Card>

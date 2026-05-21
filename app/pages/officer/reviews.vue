@@ -4,6 +4,18 @@ definePageMeta({
   middleware: "auth",
 });
 
+interface SectionReview {
+  id: string;
+  section: string;
+  isAcceptable: boolean;
+  comments: string | null;
+  resolvedAt: string | null;
+  resolvedById: string | null;
+  reviewer: { email: string } | null;
+  resolvedBy: { email: string } | null;
+  createdAt: string;
+}
+
 interface Declaration {
   id: string;
   uniqueCode: string;
@@ -25,13 +37,7 @@ interface Declaration {
       phone: string | null;
     };
   };
-  submissions: {
-    submissionDate: string;
-    notes: string | null;
-    recorder: {
-      email: string;
-    };
-  }[];
+  sectionReviews: Array<{ id: string; section: string }>;
 }
 
 const pendingDeclarations = ref<Declaration[]>([]);
@@ -42,11 +48,9 @@ const currentPage = ref(1);
 const limit = 10;
 
 const selectedDeclaration = ref<Declaration | null>(null);
-const showReviewModal = ref(false);
-const reviewStatus = ref<"APPROVED" | "REJECTED">("APPROVED");
-const rejectionReason = ref("");
-const isReviewing = ref(false);
-const reviewError = ref("");
+const showReviewPanel = ref(false);
+const sectionReviews = ref<SectionReview[]>([]);
+const loadingSections = ref(false);
 
 const fetchPendingReviews = async () => {
   loading.value = true;
@@ -76,43 +80,26 @@ await fetchPendingReviews();
 
 watch([search, currentPage], fetchPendingReviews);
 
-const openReviewModal = (declaration: Declaration, status: "APPROVED" | "REJECTED") => {
+const openReview = async (declaration: Declaration) => {
   selectedDeclaration.value = declaration;
-  reviewStatus.value = status;
-  rejectionReason.value = "";
-  reviewError.value = "";
-  showReviewModal.value = true;
-};
-
-const submitReview = async () => {
-  if (!selectedDeclaration.value) return;
-
-  if (reviewStatus.value === "REJECTED" && !rejectionReason.value.trim()) {
-    reviewError.value = "Please provide a reason for rejection";
-    return;
-  }
-
-  isReviewing.value = true;
-  reviewError.value = "";
+  showReviewPanel.value = true;
+  loadingSections.value = true;
 
   try {
-    await authFetch("/api/reviews", {
-      method: "POST",
-      body: {
-        declarationId: selectedDeclaration.value.id,
-        status: reviewStatus.value,
-        rejectionReason: reviewStatus.value === "REJECTED" ? rejectionReason.value : undefined,
-      },
-    });
-
-    showReviewModal.value = false;
-    selectedDeclaration.value = null;
-    await fetchPendingReviews();
-  } catch (error: any) {
-    reviewError.value = error.data?.statusMessage || "Failed to submit review";
+    const response = await authFetch<any>(`/api/reviews/${declaration.id}/sections`);
+    sectionReviews.value = response.data || [];
+  } catch {
+    sectionReviews.value = [];
   } finally {
-    isReviewing.value = false;
+    loadingSections.value = false;
   }
+};
+
+const onReviewed = async () => {
+  showReviewPanel.value = false;
+  selectedDeclaration.value = null;
+  sectionReviews.value = [];
+  await fetchPendingReviews();
 };
 
 const formatDate = (date: string) => {
@@ -131,7 +118,7 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <PageHeader title="Review Declarations" description="Approve or reject submitted declarations">
+    <PageHeader title="Review Declarations" description="Review submitted declarations section by section">
       <template #actions>
         <Button variant="ghost" as-child>
           <NuxtLink to="/officer/dashboard">Back to Dashboard</NuxtLink>
@@ -139,224 +126,162 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
       </template>
     </PageHeader>
 
-    <!-- Search -->
-    <Card>
-      <CardContent class="p-4">
-        <Input
-          v-model="search"
-          type="text"
-          placeholder="Search by code or applicant name..."
-        />
-      </CardContent>
-    </Card>
+    <!-- Review Panel -->
+    <template v-if="showReviewPanel && selectedDeclaration">
+      <div class="mb-4">
+        <Button variant="ghost" @click="showReviewPanel = false; selectedDeclaration = null">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to List
+        </Button>
+      </div>
 
-    <!-- Loading -->
-    <Card v-if="loading">
-      <CardContent class="p-6">
-        <div class="space-y-4">
-          <Skeleton class="h-8 w-full" />
-          <Skeleton class="h-8 w-full" />
-          <Skeleton class="h-8 w-full" />
-        </div>
-      </CardContent>
-    </Card>
+      <div v-if="loadingSections" class="space-y-4">
+        <Card>
+          <CardContent class="p-6">
+            <Skeleton class="h-6 w-48 mb-4" />
+            <div class="space-y-3">
+              <Skeleton class="h-20 w-full" />
+              <Skeleton class="h-20 w-full" />
+              <Skeleton class="h-20 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-    <!-- Empty State -->
-    <Card v-else-if="pendingDeclarations.length === 0">
-      <CardContent class="text-center py-12">
-        <svg class="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-        </svg>
-        <h3 class="text-lg font-medium text-foreground mb-2">No pending reviews</h3>
-        <p class="text-muted-foreground">
-          All declarations under review have been processed.
-        </p>
-      </CardContent>
-    </Card>
+      <AppSectionReviewForm
+        v-else
+        :declaration="selectedDeclaration"
+        :existing-reviews="sectionReviews"
+        @reviewed="onReviewed"
+      />
+    </template>
 
-    <!-- Reviews Table -->
-    <Card v-else>
-      <CardContent class="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Code</TableHead>
-              <TableHead>Applicant</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Recorded</TableHead>
-              <TableHead class="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow
-              v-for="declaration in pendingDeclarations"
-              :key="declaration.id"
-              class="hover:bg-muted/30"
-            >
-              <TableCell>
-                <span class="font-mono text-sm font-medium text-primary">
-                  {{ declaration.uniqueCode }}
-                </span>
-              </TableCell>
-              <TableCell>
-                <div>
-                  <p class="font-medium text-foreground">{{ declaration.applicant.fullName }}</p>
-                  <p class="text-sm text-muted-foreground">{{ declaration.applicant.ghanaCardNumber }}</p>
-                </div>
-              </TableCell>
-              <TableCell class="text-sm text-muted-foreground">
-                {{ declaration.applicant.offices?.[0]?.officeCategory?.name || 'N/A' }}
-              </TableCell>
-              <TableCell class="text-sm text-muted-foreground">
-                {{ declaration.submissions[0] ? formatDate(declaration.submissions[0].submissionDate) : 'N/A' }}
-              </TableCell>
-              <TableCell class="text-right">
-                <div class="flex justify-end gap-2">
-                  <Button
-                    size="sm"
-                    variant="default"
-                    @click="openReviewModal(declaration, 'APPROVED')"
-                  >
-                    Approve
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    @click="openReviewModal(declaration, 'REJECTED')"
-                  >
-                    Reject
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+    <!-- List View -->
+    <template v-else>
+      <!-- Search -->
+      <Card>
+        <CardContent class="p-4">
+          <Input
+            v-model="search"
+            type="text"
+            placeholder="Search by code or applicant name..."
+          />
+        </CardContent>
+      </Card>
 
-        <!-- Pagination -->
-        <div
-          v-if="totalPages > 1"
-          class="flex items-center justify-between px-4 py-3 border-t"
-        >
-          <p class="text-sm text-muted-foreground">
-            Showing {{ (currentPage - 1) * limit + 1 }} to {{ Math.min(currentPage * limit, total) }} of {{ total }}
+      <!-- Loading -->
+      <Card v-if="loading">
+        <CardContent class="p-6">
+          <div class="space-y-4">
+            <Skeleton class="h-8 w-full" />
+            <Skeleton class="h-8 w-full" />
+            <Skeleton class="h-8 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Empty State -->
+      <Card v-else-if="pendingDeclarations.length === 0">
+        <CardContent class="text-center py-12">
+          <svg class="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          </svg>
+          <h3 class="text-lg font-medium text-foreground mb-2">No pending reviews</h3>
+          <p class="text-muted-foreground">
+            All submitted declarations have been reviewed.
           </p>
-          <div class="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              :disabled="currentPage <= 1"
-              @click="currentPage--"
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              :disabled="currentPage >= totalPages"
-              @click="currentPage++"
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
 
-    <!-- Review Modal -->
-    <Dialog :open="showReviewModal" @update:open="showReviewModal = $event">
-      <DialogContent class="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>
-            {{ reviewStatus === 'APPROVED' ? 'Approve' : 'Reject' }} Declaration
-          </DialogTitle>
-          <DialogDescription>
-            {{ reviewStatus === 'APPROVED' ? 'Confirm approval of this declaration' : 'Provide reason for rejection' }}
-          </DialogDescription>
-        </DialogHeader>
+      <!-- Reviews Table -->
+      <Card v-else>
+        <CardContent class="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Code</TableHead>
+                <TableHead>Applicant</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Submitted</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead class="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow
+                v-for="declaration in pendingDeclarations"
+                :key="declaration.id"
+                class="hover:bg-muted/30"
+              >
+                <TableCell>
+                  <span class="font-mono text-sm font-medium text-primary">
+                    {{ declaration.uniqueCode }}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <div>
+                    <p class="font-medium text-foreground">{{ declaration.applicant.fullName }}</p>
+                    <p class="text-sm text-muted-foreground">{{ declaration.applicant.ghanaCardNumber }}</p>
+                  </div>
+                </TableCell>
+                <TableCell class="text-sm text-muted-foreground">
+                  {{ declaration.applicant.offices?.[0]?.officeCategory?.name || 'N/A' }}
+                </TableCell>
+                <TableCell class="text-sm text-muted-foreground">
+                  {{ declaration.submittedAt ? formatDate(declaration.submittedAt) : 'N/A' }}
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    v-if="declaration.sectionReviews.length > 0"
+                    class="bg-amber-100 text-amber-700"
+                  >
+                    {{ declaration.sectionReviews.length }} issue(s)
+                  </Badge>
+                  <span v-else class="text-sm text-muted-foreground">New</span>
+                </TableCell>
+                <TableCell class="text-right">
+                  <Button
+                    size="sm"
+                    @click="openReview(declaration)"
+                  >
+                    Review
+                  </Button>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
 
-        <div v-if="selectedDeclaration" class="space-y-4">
-          <!-- Declaration Details -->
-          <div class="bg-muted/30 rounded-lg p-4 space-y-2">
-            <div class="flex justify-between">
-              <span class="text-sm text-muted-foreground">Code:</span>
-              <span class="font-mono font-medium">{{ selectedDeclaration.uniqueCode }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-sm text-muted-foreground">Applicant:</span>
-              <span class="font-medium">{{ selectedDeclaration.applicant.fullName }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-sm text-muted-foreground">Institution:</span>
-              <span>{{ selectedDeclaration.applicant.offices?.[0]?.institution?.name || 'N/A' }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-sm text-muted-foreground">Category:</span>
-              <span>{{ selectedDeclaration.applicant.offices?.[0]?.officeCategory?.name || 'N/A' }}</span>
-            </div>
-          </div>
-
-          <!-- Status indicator -->
-          <Alert :variant="reviewStatus === 'APPROVED' ? 'default' : 'destructive'">
-            <AlertDescription>
-              <div class="flex items-center gap-2">
-                <svg
-                  v-if="reviewStatus === 'APPROVED'"
-                  class="w-5 h-5 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <svg
-                  v-else
-                  class="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                <span class="font-medium">
-                  {{ reviewStatus === 'APPROVED' ? 'Approving this declaration' : 'Rejecting this declaration' }}
-                </span>
-              </div>
-            </AlertDescription>
-          </Alert>
-
-          <!-- Rejection Reason -->
-          <div v-if="reviewStatus === 'REJECTED'" class="space-y-2">
-            <Label>
-              Rejection Reason <span class="text-red-500">*</span>
-            </Label>
-            <Textarea
-              v-model="rejectionReason"
-              rows="3"
-              placeholder="Explain why this declaration is being rejected..."
-              required
-            />
-            <p class="text-xs text-muted-foreground">
-              A new unique code will be issued for resubmission.
-            </p>
-          </div>
-
-          <!-- Error -->
-          <Alert v-if="reviewError" variant="destructive">
-            <AlertDescription>{{ reviewError }}</AlertDescription>
-          </Alert>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" @click="showReviewModal = false">Cancel</Button>
-          <Button
-            :disabled="isReviewing"
-            :variant="reviewStatus === 'APPROVED' ? 'default' : 'destructive'"
-            @click="submitReview"
+          <!-- Pagination -->
+          <div
+            v-if="totalPages > 1"
+            class="flex items-center justify-between px-4 py-3 border-t"
           >
-            {{ isReviewing ? 'Processing...' : (reviewStatus === 'APPROVED' ? 'Confirm Approval' : 'Confirm Rejection') }}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            <p class="text-sm text-muted-foreground">
+              Showing {{ (currentPage - 1) * limit + 1 }} to {{ Math.min(currentPage * limit, total) }} of {{ total }}
+            </p>
+            <div class="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                :disabled="currentPage <= 1"
+                @click="currentPage--"
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                :disabled="currentPage >= totalPages"
+                @click="currentPage++"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </template>
   </div>
 </template>

@@ -62,7 +62,6 @@ export default defineEventHandler(async (event) => {
                 },
               },
             },
-            pickupAuthorization: true,
           },
         },
         generator: {

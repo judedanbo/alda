@@ -89,14 +89,12 @@ export default defineEventHandler(async (event) => {
         formReissueRequests: {
           orderBy: { createdAt: "desc" },
         },
-        submissions: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
+        sectionReviews: {
           include: {
-            recorder: {
-              select: { email: true },
-            },
+            reviewer: { select: { email: true } },
+            resolvedBy: { select: { email: true } },
           },
+          orderBy: { createdAt: "desc" },
         },
         reviews: {
           orderBy: { createdAt: "desc" },
@@ -150,13 +148,7 @@ export default defineEventHandler(async (event) => {
           approverDetail: r.approverDetail,
           decisionReason: r.decisionReason,
         })),
-        submission: d.submissions[0]
-          ? {
-              submissionDate: d.submissions[0].submissionDate.toISOString(),
-              notes: d.submissions[0].notes,
-              recorder: d.submissions[0].recorder,
-            }
-          : null,
+        sectionReviews: d.sectionReviews,
         review: d.reviews[0]
           ? {
               status: d.reviews[0].status,

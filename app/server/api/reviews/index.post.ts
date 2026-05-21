@@ -1,8 +1,7 @@
 import prisma from "~/server/utils/prisma";
-import { validateBody, reviewSchema } from "~/server/utils/validators";
-import { logAction } from "~/server/utils/audit";
+import { validateBody, sectionReviewSchema } from "~/server/utils/validators";
+import { logAction, AuditActions } from "~/server/utils/audit";
 import { sendNotification } from "~/server/services/notification.service";
-import { generateUniqueCode } from "~/server/utils/code-generator";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -14,7 +13,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Check if user is a schedule officer or admin
   const userRoles = await prisma.userRole.findMany({
     where: { userId: auth.userId },
     include: { role: true },
@@ -30,9 +28,8 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const data = await validateBody(event, reviewSchema);
+  const data = await validateBody(event, sectionReviewSchema);
 
-  // Get the declaration
   const declaration = await prisma.declaration.findUnique({
     where: { id: data.declarationId },
     include: {
@@ -40,10 +37,7 @@ export default defineEventHandler(async (event) => {
         include: {
           user: true,
           offices: {
-            include: {
-              officeCategory: true,
-              institution: true,
-            },
+            include: { officeCategory: true, institution: true },
             orderBy: { startDate: "desc" as const },
           },
         },
@@ -58,109 +52,68 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Check if declaration is in the correct status
-  if (declaration.status !== "UNDER_REVIEW") {
+  if (declaration.status !== "SUBMITTED" && declaration.status !== "UNDER_REVIEW") {
     throw createError({
       statusCode: 400,
-      statusMessage: `Cannot review. Declaration status is ${declaration.status}, expected UNDER_REVIEW.`,
+      statusMessage: `Cannot review. Declaration status is ${declaration.status}, expected SUBMITTED or UNDER_REVIEW.`,
     });
   }
 
-  // Check if review already exists
-  const existingReview = await prisma.review.findFirst({
-    where: { declarationId: data.declarationId },
-  });
+  const allAcceptable = data.sections.every((s) => s.isAcceptable);
 
-  if (existingReview) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: "Review already exists for this declaration",
-    });
-  }
+  if (allAcceptable) {
+    const result = await prisma.$transaction(async (tx) => {
+      await tx.declarationSectionReview.deleteMany({
+        where: { declarationId: data.declarationId },
+      });
 
-  const isApproved = data.status === "APPROVED";
-  const newStatus = isApproved ? "APPROVED" : "REJECTED";
+      await tx.declarationSectionReview.createMany({
+        data: data.sections.map((s) => ({
+          declarationId: data.declarationId,
+          reviewedBy: auth.userId,
+          section: s.section,
+          isAcceptable: true,
+        })),
+      });
 
-  // Start transaction
-  const result = await prisma.$transaction(async (tx) => {
-    // Create review
-    const review = await tx.review.create({
-      data: {
-        declarationId: data.declarationId,
-        reviewedBy: auth.userId,
-        reviewDate: new Date(),
-        status: data.status,
-        rejectionReason: data.rejectionReason,
-      },
-      include: {
-        declaration: true,
-        reviewer: {
-          select: {
-            id: true,
-            email: true,
-          },
-        },
-      },
-    });
-
-    // Update declaration status
-    await tx.declaration.update({
-      where: { id: data.declarationId },
-      data: { status: newStatus },
-    });
-
-    // Add status history
-    await tx.declarationStatusHistory.create({
-      data: {
-        declarationId: data.declarationId,
-        status: newStatus,
-        changedById: auth.userId,
-        notes: isApproved
-          ? "Declaration approved"
-          : `Declaration rejected: ${data.rejectionReason}`,
-      },
-    });
-
-    // If rejected, create a new unique code for resubmission
-    let newCode: string | null = null;
-    if (!isApproved) {
-      newCode = await generateUniqueCode();
-
-      // Create new declaration for resubmission
-      await tx.declaration.create({
+      const review = await tx.review.create({
         data: {
-          applicantId: declaration.applicantId,
-          uniqueCode: newCode,
-          status: "CODE_GENERATED",
-          previousDeclarationId: declaration.id,
+          declarationId: data.declarationId,
+          reviewedBy: auth.userId,
+          reviewDate: new Date(),
+          status: "APPROVED",
         },
       });
-    }
 
-    return { review, newCode };
-  });
+      await tx.declaration.update({
+        where: { id: data.declarationId },
+        data: { status: "APPROVED" },
+      });
 
-  // Log the action
-  await logAction({
-    userId: auth.userId,
-    action: isApproved ? "DECLARATION_APPROVED" : "DECLARATION_REJECTED",
-    entityType: "review",
-    entityId: result.review.id,
-    newValues: {
-      declarationId: data.declarationId,
-      status: data.status,
-      rejectionReason: data.rejectionReason,
-    },
-    event,
-  });
+      await tx.declarationStatusHistory.create({
+        data: {
+          declarationId: data.declarationId,
+          status: "APPROVED",
+          changedById: auth.userId,
+          notes: "All form sections reviewed and approved",
+        },
+      });
 
-  // Send notification to applicant
-  if (declaration.applicant.user) {
-    const user = declaration.applicant.user;
+      return review;
+    });
 
-    if (isApproved) {
+    await logAction({
+      userId: auth.userId,
+      action: AuditActions.DECLARATION_APPROVED,
+      entityType: "review",
+      entityId: result.id,
+      newValues: { declarationId: data.declarationId, status: "APPROVED" },
+      event,
+    });
+
+    if (declaration.applicant.user) {
       await sendNotification({
-        userId: user.id,
+        userId: declaration.applicant.user.id,
         type: "REVIEW_APPROVED",
         title: "Declaration Approved",
         message: `Your asset declaration (${declaration.uniqueCode}) has been approved. A receipt will be generated shortly.`,
@@ -169,30 +122,79 @@ export default defineEventHandler(async (event) => {
           uniqueCode: declaration.uniqueCode,
         },
       });
-    } else {
-      await sendNotification({
-        userId: user.id,
-        type: "REVIEW_REJECTED",
-        title: "Declaration Requires Revision",
-        message: `Your asset declaration (${declaration.uniqueCode}) requires revision. Reason: ${data.rejectionReason}. A new code has been issued: ${result.newCode}`,
-        metadata: {
-          declarationId: declaration.id,
-          uniqueCode: declaration.uniqueCode,
-          newCode: result.newCode,
-          rejectionReason: data.rejectionReason,
-        },
-      });
     }
+
+    return {
+      success: true,
+      message: "All sections acceptable — declaration approved.",
+      data: { approved: true },
+    };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.declarationSectionReview.deleteMany({
+      where: { declarationId: data.declarationId },
+    });
+
+    await tx.declarationSectionReview.createMany({
+      data: data.sections.map((s) => ({
+        declarationId: data.declarationId,
+        reviewedBy: auth.userId,
+        section: s.section,
+        isAcceptable: s.isAcceptable,
+        comments: s.isAcceptable ? null : s.comments,
+      })),
+    });
+
+    await tx.declaration.update({
+      where: { id: data.declarationId },
+      data: { status: "UNDER_REVIEW" },
+    });
+
+    await tx.declarationStatusHistory.create({
+      data: {
+        declarationId: data.declarationId,
+        status: "UNDER_REVIEW",
+        changedById: auth.userId,
+        notes: "Section review submitted — issues found in: " +
+          data.sections
+            .filter((s) => !s.isAcceptable)
+            .map((s) => s.section)
+            .join(", "),
+      },
+    });
+  });
+
+  await logAction({
+    userId: auth.userId,
+    action: AuditActions.SECTION_REVIEW_SUBMITTED,
+    entityType: "declaration",
+    entityId: data.declarationId,
+    newValues: {
+      sectionsWithIssues: data.sections
+        .filter((s) => !s.isAcceptable)
+        .map((s) => ({ section: s.section, comments: s.comments })),
+    },
+    event,
+  });
+
+  if (declaration.applicant.user) {
+    const issueCount = data.sections.filter((s) => !s.isAcceptable).length;
+    await sendNotification({
+      userId: declaration.applicant.user.id,
+      type: "SECTION_REVIEW_COMMENTS",
+      title: "Declaration Review — Issues Found",
+      message: `Your asset declaration (${declaration.uniqueCode}) has been reviewed. ${issueCount} section(s) require attention. Please visit your declaration page for details.`,
+      metadata: {
+        declarationId: declaration.id,
+        uniqueCode: declaration.uniqueCode,
+      },
+    });
   }
 
   return {
     success: true,
-    message: isApproved
-      ? "Declaration approved successfully"
-      : "Declaration rejected. New code issued for resubmission.",
-    data: {
-      review: result.review,
-      newCode: result.newCode,
-    },
+    message: "Section review submitted. Issues flagged for applicant.",
+    data: { approved: false },
   };
 });

@@ -19,6 +19,7 @@ interface ActiveDeclaration {
   status: string;
   createdAt: string;
   submittedAt: string | null;
+  unresolvedComments: number;
 }
 
 interface ApplicantDashboardData {
@@ -68,6 +69,19 @@ const timelineOptions = computed(() => ({
 }));
 
 const showCodeHistory = ref(false);
+const codeCopied = ref(false);
+
+const canCreateDeclaration = computed(() =>
+  user.value?.hasProfile && isVerified.value && !dashboard.value?.activeDeclaration
+);
+
+async function copyCode() {
+  const code = dashboard.value?.activeDeclaration?.uniqueCode;
+  if (!code) return;
+  await navigator.clipboard.writeText(code);
+  codeCopied.value = true;
+  setTimeout(() => { codeCopied.value = false; }, 2000);
+}
 
 const resendLoading = ref(false);
 
@@ -195,7 +209,25 @@ async function resendVerification() {
           <div class="space-y-3 min-w-0">
             <div class="flex items-center gap-2">
               <span class="inline-flex w-2 h-2 rounded-full bg-primary animate-pulse" />
-              <p class="text-sm font-medium text-primary">Your Active Declaration Code</p>
+              <p class="text-sm font-medium text-primary">Your Active Declaration</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <p class="text-2xl font-bold font-mono tracking-wide text-foreground">
+                {{ dashboard.activeDeclaration.uniqueCode }}
+              </p>
+              <button
+                type="button"
+                class="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                title="Copy code"
+                @click="copyCode"
+              >
+                <svg v-if="!codeCopied" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <svg v-else class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </button>
             </div>
             <CodeBadge :code="dashboard.activeDeclaration.uniqueCode" size="lg" show-qr />
             <p class="text-xs text-muted-foreground">
@@ -217,6 +249,35 @@ async function resendVerification() {
             </Button>
           </div>
         </div>
+
+        <!-- Unresolved Review Comments Banner -->
+        <div
+          v-if="dashboard.activeDeclaration.unresolvedComments > 0"
+          class="mt-4 flex items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3"
+        >
+          <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-amber-800">
+              {{ dashboard.activeDeclaration.unresolvedComments }} unresolved review
+              {{ dashboard.activeDeclaration.unresolvedComments === 1 ? 'comment' : 'comments' }}
+            </p>
+            <p class="text-xs text-amber-600">
+              A reviewer has flagged sections of your declaration that need attention.
+            </p>
+          </div>
+          <Button as-child size="sm" variant="outline" class="border-amber-300 text-amber-700 hover:bg-amber-100 shrink-0">
+            <NuxtLink :to="`/applicant/declaration/${dashboard.activeDeclaration.id}`">
+              View Comments
+            </NuxtLink>
+          </Button>
+        </div>
+
+        <!-- New declaration note -->
+        <p class="mt-4 text-xs text-muted-foreground italic">
+          A new declaration can only be started once this one has been completed (sealed) or rejected.
+        </p>
       </CardContent>
     </Card>
 
@@ -278,8 +339,10 @@ async function resendVerification() {
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <NuxtLink
               to="/applicant/declaration/new"
-              class="flex items-center gap-3 p-3 rounded-md border hover:bg-muted transition-colors"
-              :class="{ 'opacity-50 pointer-events-none': !user?.hasProfile || !isVerified }"
+              class="flex items-center gap-3 p-3 rounded-md border transition-colors"
+              :class="canCreateDeclaration
+                ? 'hover:bg-muted'
+                : 'opacity-50 pointer-events-none cursor-not-allowed'"
             >
               <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                 <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -288,7 +351,9 @@ async function resendVerification() {
               </div>
               <div>
                 <p class="font-medium text-sm">New Declaration</p>
-                <p class="text-xs text-muted-foreground">Submit a new declaration</p>
+                <p class="text-xs text-muted-foreground">
+                  {{ canCreateDeclaration ? 'Submit a new declaration' : 'Active declaration in progress' }}
+                </p>
               </div>
             </NuxtLink>
             <NuxtLink

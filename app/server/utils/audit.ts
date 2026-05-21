@@ -80,9 +80,9 @@ export const AuditActions = {
   RECEIPT_GENERATED: "receipt_generated",
   RECEIPT_DOWNLOADED: "receipt_downloaded",
 
-  // Pickup
-  PICKUP_AUTHORIZED: "pickup_authorized",
-  PICKUP_COMPLETED: "pickup_completed",
+  // Section Review
+  SECTION_REVIEW_SUBMITTED: "section_review_submitted",
+  SECTION_REVIEW_RESOLVED: "section_review_resolved",
 
   // Admin
   USER_ROLE_CHANGED: "user_role_changed",

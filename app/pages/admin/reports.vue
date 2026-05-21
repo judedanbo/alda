@@ -12,7 +12,6 @@ interface ReportData {
   processingTimes: {
     avgSubmissionToReview: number;
     avgReviewToReceipt: number;
-    avgReceiptToPickup: number;
   };
 }
 
@@ -45,9 +44,10 @@ await fetchReportData();
 
 const getStatusBarColor = (status: string) => {
   const colors: Record<string, string> = {
-    PENDING: "bg-yellow-500",
+    CODE_GENERATED: "bg-amber-500",
+    FORM_COLLECTED: "bg-cyan-500",
     SUBMITTED: "bg-blue-500",
-    UNDER_REVIEW: "bg-orange-500",
+    UNDER_REVIEW: "bg-purple-500",
     APPROVED: "bg-green-500",
     REJECTED: "bg-red-500",
     SEALED: "bg-purple-500",
@@ -142,7 +142,7 @@ const exportReport = async (format: 'csv' | 'pdf') => {
 
     <template v-else-if="reportData">
       <!-- Summary Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardContent class="pt-6">
             <h3 class="text-sm font-medium text-muted-foreground mb-1">Avg. Submission to Review</h3>
@@ -156,14 +156,6 @@ const exportReport = async (format: 'csv' | 'pdf') => {
             <h3 class="text-sm font-medium text-muted-foreground mb-1">Avg. Review to Receipt</h3>
             <p class="text-2xl font-bold text-foreground">
               {{ formatDays(reportData.processingTimes.avgReviewToReceipt) }}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent class="pt-6">
-            <h3 class="text-sm font-medium text-muted-foreground mb-1">Avg. Receipt to Pickup</h3>
-            <p class="text-2xl font-bold text-foreground">
-              {{ formatDays(reportData.processingTimes.avgReceiptToPickup) }}
             </p>
           </CardContent>
         </Card>

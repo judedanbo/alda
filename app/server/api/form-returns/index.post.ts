@@ -60,11 +60,21 @@ export default defineEventHandler(async (event) => {
 
   const submittedAt = new Date();
 
-  // Update declaration status and record the transition
+  const returnOffice = await prisma.collectionOffice.findUnique({
+    where: { id: data.returnOfficeId },
+  });
+
+  if (!returnOffice) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Selected return office not found.",
+    });
+  }
+
   await prisma.$transaction([
     prisma.declaration.update({
       where: { id: data.declarationId },
-      data: { status: "SUBMITTED", submittedAt },
+      data: { status: "SUBMITTED", submittedAt, returnOfficeId: data.returnOfficeId },
     }),
     prisma.declarationStatusHistory.create({
       data: {
@@ -72,8 +82,8 @@ export default defineEventHandler(async (event) => {
         status: "SUBMITTED",
         changedById: auth.userId,
         notes: data.notes
-          ? `Form returned by applicant: ${data.notes}`
-          : "Applicant filled and returned the form; recorded by GAS officer",
+          ? `Form returned to ${returnOffice.name}: ${data.notes}`
+          : `Form returned to ${returnOffice.name}; recorded by GAS officer`,
       },
     }),
   ]);

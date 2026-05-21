@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { FORM_SECTION_LABELS } from "~/utils/form-sections";
+
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
@@ -172,6 +174,44 @@ const submitReissueRequest = async () => {
         <AlertTitle>Rejection Reason</AlertTitle>
         <AlertDescription>{{ declaration.latestReview.rejectionReason }}</AlertDescription>
       </Alert>
+
+      <!-- Section Review Comments -->
+      <Card
+        v-if="declaration.sectionReviews?.some((r: any) => !r.isAcceptable)"
+        class="mb-6"
+      >
+        <CardHeader>
+          <CardTitle class="text-lg">Review Comments</CardTitle>
+          <CardDescription>
+            The following sections need your attention. Please address these issues before your next visit.
+          </CardDescription>
+        </CardHeader>
+        <CardContent class="space-y-3">
+          <div
+            v-for="review in declaration.sectionReviews.filter((r: any) => !r.isAcceptable)"
+            :key="review.id"
+            class="rounded-lg border p-4"
+            :class="review.resolvedAt ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'"
+          >
+            <div class="flex items-center gap-2 mb-1">
+              <h4 class="font-medium text-sm">
+                {{ FORM_SECTION_LABELS[review.section] || review.section }}
+              </h4>
+              <Badge
+                :class="review.resolvedAt
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-amber-100 text-amber-700'"
+              >
+                {{ review.resolvedAt ? 'Resolved' : 'Pending' }}
+              </Badge>
+            </div>
+            <p class="text-sm text-muted-foreground">{{ review.comments }}</p>
+            <p v-if="review.resolvedAt" class="text-xs text-muted-foreground mt-1">
+              Resolved {{ formatDate(review.resolvedAt) }}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       <!-- Receipt Info -->
       <Alert

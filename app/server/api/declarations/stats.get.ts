@@ -5,7 +5,7 @@ interface TimelineRow {
   count: bigint;
 }
 
-const ACTIVE_STATUSES = ["PENDING", "SUBMITTED", "UNDER_REVIEW"] as const;
+const ACTIVE_STATUSES = ["CODE_GENERATED", "FORM_COLLECTED", "SUBMITTED", "UNDER_REVIEW"] as const;
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -63,6 +63,10 @@ export default defineEventHandler(async (event) => {
         status: true,
         createdAt: true,
         submittedAt: true,
+        sectionReviews: {
+          where: { isAcceptable: false, resolvedAt: null },
+          select: { id: true },
+        },
       },
     }),
     prisma.declaration.findMany({
@@ -129,6 +133,7 @@ export default defineEventHandler(async (event) => {
           status: activeDeclaration.status,
           createdAt: activeDeclaration.createdAt.toISOString(),
           submittedAt: activeDeclaration.submittedAt?.toISOString() ?? null,
+          unresolvedComments: activeDeclaration.sectionReviews.length,
         }
         : null,
       codeHistory: codeHistory.map((d) => ({

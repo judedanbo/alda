@@ -59,14 +59,10 @@ export default defineEventHandler(async (event) => {
           },
         },
       },
-      submissions: {
+      sectionReviews: {
         include: {
-          recorder: {
-            select: {
-              id: true,
-              email: true,
-            },
-          },
+          reviewer: { select: { id: true, email: true } },
+          resolvedBy: { select: { id: true, email: true } },
         },
         orderBy: { createdAt: "desc" },
       },
@@ -82,7 +78,6 @@ export default defineEventHandler(async (event) => {
         orderBy: { createdAt: "desc" },
       },
       receipts: { orderBy: { createdAt: "desc" }, take: 1 },
-      pickupAuthorization: true,
       statusHistory: {
         include: {
           changedBy: {

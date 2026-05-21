@@ -161,11 +161,10 @@ function mapNotificationTypeToEmailTemplate(type: NotificationType): EmailTempla
     FORM_REISSUE_REQUESTED: "declaration-submitted",
     FORM_REISSUE_APPROVED: "declaration-submitted",
     FORM_REISSUE_DECLINED: "declaration-rejected",
-    SUBMISSION_RECORDED: "declaration-submitted",
+    SECTION_REVIEW_COMMENTS: "declaration-submitted",
     REVIEW_APPROVED: "declaration-approved",
     REVIEW_REJECTED: "declaration-rejected",
     RECEIPT_READY: "receipt-ready",
-    PICKUP_REMINDER: "pickup-notification",
     PASSWORD_RESET: "password-reset",
     EMAIL_VERIFICATION: "email-verification",
     VERIFICATION_SUBMITTED: "verification-submitted",
@@ -204,7 +203,7 @@ export async function notifyDeclarationSubmitted(
 ): Promise<void> {
   await sendNotification({
     userId,
-    type: "SUBMISSION_RECORDED",
+    type: "FORM_RETURNED",
     title: "Declaration Submitted",
     message: `Your declaration (${uniqueCode}) has been submitted for review.`,
     metadata: {
@@ -342,32 +341,6 @@ export async function notifyReceiptReady(
       uniqueCode,
       receiptNumber,
       name,
-    },
-  });
-}
-
-/**
- * Send pickup reminder notification
- */
-export async function notifyPickupReady(
-  userId: string,
-  uniqueCode: string,
-  receiptNumber: string,
-  name: string,
-  authorizedPerson?: string,
-  authorizedPhone?: string
-): Promise<void> {
-  await sendNotification({
-    userId,
-    type: "PICKUP_REMINDER",
-    title: "Pickup Notification",
-    message: `Your sealed declaration document (${uniqueCode}) is ready for pickup.`,
-    metadata: {
-      uniqueCode,
-      receiptNumber,
-      name,
-      authorizedPerson,
-      authorizedPhone,
     },
   });
 }
