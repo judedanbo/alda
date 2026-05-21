@@ -27,6 +27,7 @@ CREATE TABLE "traffic_events" (
     "duration_ms" INTEGER NOT NULL DEFAULT 0,
     "response_bytes" INTEGER NOT NULL DEFAULT 0,
     "referrer" TEXT,
+    "referrer_host" VARCHAR(255),
     "user_agent" TEXT,
     "browser" VARCHAR(60),
     "os" VARCHAR(60),
@@ -60,6 +61,9 @@ CREATE TABLE "traffic_rollup_hourly" (
     "ai_category" VARCHAR(40) NOT NULL DEFAULT '-',
     "country" VARCHAR(8) NOT NULL DEFAULT '-',
     "route_pattern" VARCHAR(255) NOT NULL,
+    "referrer_host" VARCHAR(255) NOT NULL DEFAULT '-',
+    "device_type" VARCHAR(20) NOT NULL DEFAULT '-',
+    "browser" VARCHAR(60) NOT NULL DEFAULT '-',
     "requests" INTEGER NOT NULL DEFAULT 0,
     "client_errors" INTEGER NOT NULL DEFAULT 0,
     "server_errors" INTEGER NOT NULL DEFAULT 0,
@@ -86,6 +90,9 @@ CREATE TABLE "traffic_rollup_daily" (
     "ai_category" VARCHAR(40) NOT NULL DEFAULT '-',
     "country" VARCHAR(8) NOT NULL DEFAULT '-',
     "route_pattern" VARCHAR(255) NOT NULL,
+    "referrer_host" VARCHAR(255) NOT NULL DEFAULT '-',
+    "device_type" VARCHAR(20) NOT NULL DEFAULT '-',
+    "browser" VARCHAR(60) NOT NULL DEFAULT '-',
     "requests" INTEGER NOT NULL DEFAULT 0,
     "client_errors" INTEGER NOT NULL DEFAULT 0,
     "server_errors" INTEGER NOT NULL DEFAULT 0,
@@ -174,7 +181,7 @@ CREATE INDEX "traffic_events_route_pattern_occurred_at_idx" ON "traffic_events"(
 CREATE INDEX "traffic_events_status_code_occurred_at_idx" ON "traffic_events"("status_code", "occurred_at");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "rollup_hourly_dims" ON "traffic_rollup_hourly"("bucket", "visitor_class", "ai_provider", "ai_category", "country", "route_pattern");
+CREATE UNIQUE INDEX "rollup_hourly_dims" ON "traffic_rollup_hourly"("bucket", "visitor_class", "ai_provider", "ai_category", "country", "route_pattern", "referrer_host", "device_type", "browser");
 
 -- CreateIndex
 CREATE INDEX "traffic_rollup_hourly_bucket_idx" ON "traffic_rollup_hourly"("bucket");
@@ -183,7 +190,7 @@ CREATE INDEX "traffic_rollup_hourly_bucket_idx" ON "traffic_rollup_hourly"("buck
 CREATE INDEX "traffic_rollup_hourly_visitor_class_bucket_idx" ON "traffic_rollup_hourly"("visitor_class", "bucket");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "rollup_daily_dims" ON "traffic_rollup_daily"("bucket", "visitor_class", "ai_provider", "ai_category", "country", "route_pattern");
+CREATE UNIQUE INDEX "rollup_daily_dims" ON "traffic_rollup_daily"("bucket", "visitor_class", "ai_provider", "ai_category", "country", "route_pattern", "referrer_host", "device_type", "browser");
 
 -- CreateIndex
 CREATE INDEX "traffic_rollup_daily_bucket_idx" ON "traffic_rollup_daily"("bucket");

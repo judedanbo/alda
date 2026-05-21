@@ -30,9 +30,9 @@ function rollupSql(table: string, bucketExpr: string, windowExpr: string): { del
   const ins = `
     INSERT INTO ${table}
       (id, bucket, visitor_class, ai_provider, ai_category, country, route_pattern,
-       requests, client_errors, server_errors, sum_duration_ms, max_duration_ms,
-       p95_duration_ms, sum_bytes, unique_visitors, unique_sessions,
-       new_visitors, new_sessions, created_at, updated_at)
+       referrer_host, device_type, browser, requests, client_errors, server_errors,
+       sum_duration_ms, max_duration_ms, p95_duration_ms, sum_bytes, unique_visitors,
+       unique_sessions, new_visitors, new_sessions, created_at, updated_at)
     SELECT
       gen_random_uuid(),
       ${windowExpr},
@@ -41,6 +41,9 @@ function rollupSql(table: string, bucketExpr: string, windowExpr: string): { del
       COALESCE(ai_category::text, '-'),
       COALESCE(country, '-'),
       route_pattern,
+      COALESCE(referrer_host, '-'),
+      COALESCE(device_type, '-'),
+      COALESCE(browser, '-'),
       COUNT(*)::int,
       COUNT(*) FILTER (WHERE status_code >= 400 AND status_code < 500)::int,
       COUNT(*) FILTER (WHERE status_code >= 500)::int,
@@ -55,7 +58,7 @@ function rollupSql(table: string, bucketExpr: string, windowExpr: string): { del
       now(), now()
     FROM traffic_events
     WHERE occurred_at >= ${bucketExpr}
-    GROUP BY 2, 3, 4, 5, 6, 7`;
+    GROUP BY 2, 3, 4, 5, 6, 7, 8, 9, 10`;
   return { del, ins };
 }
 

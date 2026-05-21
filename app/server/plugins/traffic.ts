@@ -72,6 +72,16 @@ async function recordOnce(storage: KvStorage, key: string, ttl: number): Promise
   return true;
 }
 
+/** Extracts the bare host of a Referer header, or `null` when absent/invalid. */
+function referrerHost(referer: string | null): string | null {
+  if (!referer) return null;
+  try {
+    return new URL(referer).hostname.slice(0, 255);
+  } catch {
+    return null;
+  }
+}
+
 function estimateBytes(event: Parameters<typeof getResponseHeader>[0], body: unknown): number {
   const header = getResponseHeader(event, "content-length");
   if (header) {
@@ -190,6 +200,7 @@ export default defineNitroPlugin((nitroApp) => {
       const storage = getAnalyticsStorage();
       const auth = event.context.auth;
       const userAgent = getHeader(event, "user-agent") ?? null;
+      const referer = actx.dnt ? null : (getHeader(event, "referer") ?? null);
 
       let classification = actx.classification;
       let aiVerified = actx.aiVerified;
@@ -247,7 +258,8 @@ export default defineNitroPlugin((nitroApp) => {
         statusCode: status,
         durationMs: duration,
         responseBytes: bytes,
-        referrer: actx.dnt ? null : (getHeader(event, "referer") ?? null)?.slice(0, 1024) ?? null,
+        referrer: referer?.slice(0, 1024) ?? null,
+        referrerHost: referrerHost(referer),
         userAgent: userAgent?.slice(0, 1024) ?? null,
         browser: actx.ua.browser,
         os: actx.ua.os,

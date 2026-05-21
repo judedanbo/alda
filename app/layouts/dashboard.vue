@@ -65,6 +65,7 @@ const navigation = computed<NavItem[]>(() => {
       { name: "Institutions", href: "/admin/institutions", icon: "building" },
       { name: "Categories", href: "/admin/categories", icon: "tag" },
       { name: "Audit Logs", href: "/admin/audit-logs", icon: "shield" },
+      { name: "Analytics", href: "/admin/analytics", icon: "activity" },
       { name: "Reports", href: "/admin/reports", icon: "bar-chart" },
     ];
   }

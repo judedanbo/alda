@@ -690,6 +690,7 @@ model TrafficEvent {
   durationMs    Int          @default(0) @map("duration_ms")
   responseBytes Int          @default(0) @map("response_bytes")
   referrer      String?      @db.Text
+  referrerHost  String?      @map("referrer_host") @db.VarChar(255)
   userAgent     String?      @map("user_agent") @db.Text
   browser       String?      @db.VarChar(60)
   os            String?      @db.VarChar(60)
@@ -731,6 +732,9 @@ model TrafficRollupHourly {
   aiCategory     String       @default("-") @map("ai_category") @db.VarChar(40)
   country        String       @default("-") @db.VarChar(8)
   routePattern   String       @map("route_pattern") @db.VarChar(255)
+  referrerHost   String       @default("-") @map("referrer_host") @db.VarChar(255)
+  deviceType     String       @default("-") @map("device_type") @db.VarChar(20)
+  browser        String       @default("-") @db.VarChar(60)
   requests       Int          @default(0)
   clientErrors   Int          @default(0) @map("client_errors")
   serverErrors   Int          @default(0) @map("server_errors")
@@ -745,7 +749,7 @@ model TrafficRollupHourly {
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
-  @@unique([bucket, visitorClass, aiProvider, aiCategory, country, routePattern], name: "rollup_hourly_dims")
+  @@unique([bucket, visitorClass, aiProvider, aiCategory, country, routePattern, referrerHost, deviceType, browser], name: "rollup_hourly_dims")
   @@index([bucket])
   @@index([visitorClass, bucket])
   @@map("traffic_rollup_hourly")
@@ -760,6 +764,9 @@ model TrafficRollupDaily {
   aiCategory     String       @default("-") @map("ai_category") @db.VarChar(40)
   country        String       @default("-") @db.VarChar(8)
   routePattern   String       @map("route_pattern") @db.VarChar(255)
+  referrerHost   String       @default("-") @map("referrer_host") @db.VarChar(255)
+  deviceType     String       @default("-") @map("device_type") @db.VarChar(20)
+  browser        String       @default("-") @db.VarChar(60)
   requests       Int          @default(0)
   clientErrors   Int          @default(0) @map("client_errors")
   serverErrors   Int          @default(0) @map("server_errors")
@@ -774,7 +781,7 @@ model TrafficRollupDaily {
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
-  @@unique([bucket, visitorClass, aiProvider, aiCategory, country, routePattern], name: "rollup_daily_dims")
+  @@unique([bucket, visitorClass, aiProvider, aiCategory, country, routePattern, referrerHost, deviceType, browser], name: "rollup_daily_dims")
   @@index([bucket])
   @@index([visitorClass, bucket])
   @@map("traffic_rollup_daily")
