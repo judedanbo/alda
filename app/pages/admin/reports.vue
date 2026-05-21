@@ -47,6 +47,7 @@ const getStatusBarColor = (status: string) => {
     CODE_GENERATED: "bg-amber-500",
     FORM_COLLECTED: "bg-cyan-500",
     SUBMITTED: "bg-blue-500",
+    UNDER_REVIEW: "bg-purple-500",
     APPROVED: "bg-green-500",
     REJECTED: "bg-red-500",
     SEALED: "bg-purple-500",

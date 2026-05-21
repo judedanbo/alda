@@ -78,7 +78,7 @@ export default defineEventHandler(async (event) => {
 
     prisma.declaration.count({
       where: {
-        status: { in: ["CODE_GENERATED", "FORM_COLLECTED", "SUBMITTED"] },
+        status: { in: ["CODE_GENERATED", "FORM_COLLECTED", "SUBMITTED", "UNDER_REVIEW"] },
       },
     }),
 
@@ -134,7 +134,7 @@ export default defineEventHandler(async (event) => {
     prisma.$queryRaw<CodeLifecycleRow[]>`
       SELECT
         COUNT(*) AS total_codes,
-        COUNT(*) FILTER (WHERE status IN ('CODE_GENERATED', 'FORM_COLLECTED', 'SUBMITTED', 'APPROVED')) AS active_codes,
+        COUNT(*) FILTER (WHERE status IN ('CODE_GENERATED', 'FORM_COLLECTED', 'SUBMITTED', 'UNDER_REVIEW', 'APPROVED')) AS active_codes,
         COUNT(*) FILTER (WHERE status = 'SEALED') AS sealed_codes,
         COUNT(*) FILTER (WHERE previous_declaration_id IS NOT NULL) AS regenerated_codes
       FROM declarations

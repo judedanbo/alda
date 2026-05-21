@@ -9,6 +9,7 @@ interface OfficerDashboardData {
     pendingFormCollections: number;
     pendingFormReturns: number;
     pendingReviews: number;
+    underReview: number;
     pendingReceipts: number;
     withReviewComments: number;
   };
@@ -32,7 +33,7 @@ const funnelOptions = computed(() => ({
     bar: { horizontal: true, borderRadius: 4, barHeight: "70%", distributed: true },
   },
   legend: { show: false },
-  colors: ["#94A3B8", "#06B6D4", "#3B82F6", "#F59E0B", "#10B981", "#8B5CF6", "#EF4444"],
+  colors: ["#94A3B8", "#06B6D4", "#3B82F6", "#8B5CF6", "#F59E0B", "#10B981", "#6D28D9", "#EF4444"],
   xaxis: {
     categories: dashboard.value?.funnel.map((f) => f.status.replace("_", " ")) ?? [],
   },
@@ -142,6 +143,16 @@ const quickActions = [
         icon-bg="bg-yellow-100"
         icon-color="text-yellow-600"
         icon-path="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+      />
+      <StatCard
+        label="Under Review"
+        :value="dashboard?.queues.underReview ?? 0"
+        :loading="loading"
+        footnote="Currently being reviewed"
+        href="/officer/reviews"
+        icon-bg="bg-purple-100"
+        icon-color="text-purple-600"
+        icon-path="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
       />
       <StatCard
         label="With Review Comments"

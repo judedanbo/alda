@@ -52,10 +52,10 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  if (declaration.status !== "SUBMITTED") {
+  if (declaration.status !== "SUBMITTED" && declaration.status !== "UNDER_REVIEW") {
     throw createError({
       statusCode: 400,
-      statusMessage: `Cannot review. Declaration status is ${declaration.status}, expected SUBMITTED.`,
+      statusMessage: `Cannot review. Declaration status is ${declaration.status}, expected SUBMITTED or UNDER_REVIEW.`,
     });
   }
 
@@ -146,10 +146,15 @@ export default defineEventHandler(async (event) => {
       })),
     });
 
+    await tx.declaration.update({
+      where: { id: data.declarationId },
+      data: { status: "UNDER_REVIEW" },
+    });
+
     await tx.declarationStatusHistory.create({
       data: {
         declarationId: data.declarationId,
-        status: "SUBMITTED",
+        status: "UNDER_REVIEW",
         changedById: auth.userId,
         notes: "Section review submitted — issues found in: " +
           data.sections

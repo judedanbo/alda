@@ -301,16 +301,20 @@ function formatTimestamp(iso: string) {
         <CardContent>
           <div class="grid grid-cols-2 gap-3">
             <div class="text-center p-3 bg-muted/50 rounded-lg">
-              <StatusBadge status="PENDING" class="mb-2" />
+              <StatusBadge status="CODE_GENERATED" class="mb-2" />
               <p class="text-xs text-muted-foreground">Code issued</p>
             </div>
             <div class="text-center p-3 bg-muted/50 rounded-lg">
+              <StatusBadge status="FORM_COLLECTED" class="mb-2" />
+              <p class="text-xs text-muted-foreground">Form collected</p>
+            </div>
+            <div class="text-center p-3 bg-muted/50 rounded-lg">
               <StatusBadge status="SUBMITTED" class="mb-2" />
-              <p class="text-xs text-muted-foreground">Awaiting recording</p>
+              <p class="text-xs text-muted-foreground">Awaiting review</p>
             </div>
             <div class="text-center p-3 bg-muted/50 rounded-lg">
               <StatusBadge status="UNDER_REVIEW" class="mb-2" />
-              <p class="text-xs text-muted-foreground">In review</p>
+              <p class="text-xs text-muted-foreground">Being reviewed</p>
             </div>
             <div class="text-center p-3 bg-muted/50 rounded-lg">
               <StatusBadge status="APPROVED" class="mb-2" />
@@ -318,7 +322,7 @@ function formatTimestamp(iso: string) {
             </div>
             <div class="text-center p-3 bg-muted/50 rounded-lg">
               <StatusBadge status="SEALED" class="mb-2" />
-              <p class="text-xs text-muted-foreground">Receipt generated</p>
+              <p class="text-xs text-muted-foreground">Complete</p>
             </div>
             <div class="text-center p-3 bg-muted/50 rounded-lg">
               <StatusBadge status="REJECTED" class="mb-2" />

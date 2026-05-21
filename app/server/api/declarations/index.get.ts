@@ -37,10 +37,6 @@ export default defineEventHandler(async (event) => {
     prisma.declaration.findMany({
       where,
       include: {
-        submissions: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-        },
         reviews: {
           orderBy: { createdAt: "desc" },
           take: 1,

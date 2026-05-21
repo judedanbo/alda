@@ -179,7 +179,7 @@ const onReviewed = async () => {
 };
 
 const canReview = (declaration: Declaration) => {
-  return declaration.status === "SUBMITTED";
+  return declaration.status === "SUBMITTED" || declaration.status === "UNDER_REVIEW";
 };
 
 const statuses = [
@@ -187,6 +187,7 @@ const statuses = [
   { value: "CODE_GENERATED", label: "Code Generated" },
   { value: "FORM_COLLECTED", label: "Form Collected" },
   { value: "SUBMITTED", label: "Submitted" },
+  { value: "UNDER_REVIEW", label: "Under Review" },
   { value: "APPROVED", label: "Approved" },
   { value: "REJECTED", label: "Rejected" },
   { value: "SEALED", label: "Sealed" },
@@ -217,7 +218,7 @@ const statuses = [
           </CardContent>
         </Card>
       </div>
-      <SectionReviewForm
+      <AppSectionReviewForm
         v-else
         :declaration="selectedDeclaration"
         :existing-reviews="sectionReviewsData"

@@ -150,7 +150,7 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
         </Card>
       </div>
 
-      <SectionReviewForm
+      <AppSectionReviewForm
         v-else
         :declaration="selectedDeclaration"
         :existing-reviews="sectionReviews"

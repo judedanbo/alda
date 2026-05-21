@@ -7,7 +7,10 @@ interface DailyBucket {
 }
 
 interface QueueRow {
+  pending_form_collections: bigint;
+  pending_form_returns: bigint;
   pending_reviews: bigint;
+  under_review: bigint;
   pending_receipts: bigint;
   with_review_comments: bigint;
 }
@@ -38,12 +41,15 @@ export default defineEventHandler(async (event) => {
   const [queueRows, codeWindowRows, funnelRows, throughputRows] = await Promise.all([
     prisma.$queryRaw<QueueRow[]>`
       SELECT
+        (SELECT COUNT(*) FROM declarations WHERE status = 'CODE_GENERATED') AS pending_form_collections,
+        (SELECT COUNT(*) FROM declarations WHERE status = 'FORM_COLLECTED') AS pending_form_returns,
         (SELECT COUNT(*) FROM declarations WHERE status = 'SUBMITTED') AS pending_reviews,
+        (SELECT COUNT(*) FROM declarations WHERE status = 'UNDER_REVIEW') AS under_review,
         (SELECT COUNT(*) FROM declarations d
           WHERE status = 'APPROVED'
             AND NOT EXISTS (SELECT 1 FROM receipts r WHERE r.declaration_id = d.id)) AS pending_receipts,
         (SELECT COUNT(*) FROM declarations d
-          WHERE status = 'SUBMITTED'
+          WHERE status = 'UNDER_REVIEW'
             AND EXISTS (
               SELECT 1 FROM declaration_section_reviews dsr
               WHERE dsr.declaration_id = d.id
@@ -82,7 +88,7 @@ export default defineEventHandler(async (event) => {
 
   const queue = queueRows[0]!;
   const codeWindow = codeWindowRows[0]!;
-  const statusOrder = ["CODE_GENERATED", "FORM_COLLECTED", "SUBMITTED", "APPROVED", "SEALED", "REJECTED"];
+  const statusOrder = ["CODE_GENERATED", "FORM_COLLECTED", "SUBMITTED", "UNDER_REVIEW", "APPROVED", "SEALED", "REJECTED"];
   const funnel = statusOrder.map((status) => ({
     status,
     count: Number(funnelRows.find((r) => r.status === status)?.count ?? 0),
@@ -97,7 +103,10 @@ export default defineEventHandler(async (event) => {
     success: true,
     data: {
       queues: {
+        pendingFormCollections: Number(queue.pending_form_collections),
+        pendingFormReturns: Number(queue.pending_form_returns),
         pendingReviews: Number(queue.pending_reviews),
+        underReview: Number(queue.under_review),
         pendingReceipts: Number(queue.pending_receipts),
         withReviewComments: Number(queue.with_review_comments),
       },

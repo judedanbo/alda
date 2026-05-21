@@ -277,20 +277,35 @@ const formatDate = (date: string) =>
             v-for="(item, index) in sections"
             :key="item.section"
             class="rounded-lg border p-4 space-y-3"
-            :class="item.isAcceptable ? '' : 'border-red-200 bg-red-50/50'"
+            :class="item.isAcceptable
+              ? 'border-green-200 bg-green-50/30'
+              : 'border-red-300 bg-red-50/50'"
           >
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between gap-4">
               <h4 class="font-medium text-sm">
                 {{ index + 1 }}. {{ FORM_SECTION_LABELS[item.section] }}
               </h4>
-              <div class="flex items-center gap-2">
-                <span class="text-xs text-muted-foreground">
-                  {{ item.isAcceptable ? 'Acceptable' : 'Needs Attention' }}
-                </span>
-                <Switch
-                  :checked="item.isAcceptable"
-                  @update:checked="item.isAcceptable = $event"
-                />
+              <div class="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  class="px-3 py-1.5 text-xs font-medium rounded-l-md border transition-colors"
+                  :class="item.isAcceptable
+                    ? 'bg-green-600 text-white border-green-600'
+                    : 'bg-white text-muted-foreground border-border hover:bg-green-50 hover:text-green-700 hover:border-green-300'"
+                  @click="item.isAcceptable = true"
+                >
+                  Acceptable
+                </button>
+                <button
+                  type="button"
+                  class="px-3 py-1.5 text-xs font-medium rounded-r-md border border-l-0 transition-colors"
+                  :class="!item.isAcceptable
+                    ? 'bg-red-600 text-white border-red-600'
+                    : 'bg-white text-muted-foreground border-border hover:bg-red-50 hover:text-red-700 hover:border-red-300'"
+                  @click="item.isAcceptable = false"
+                >
+                  Needs Attention
+                </button>
               </div>
             </div>
             <div v-if="!item.isAcceptable" class="space-y-1">

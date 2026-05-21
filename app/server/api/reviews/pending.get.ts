@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
   const search = query.search as string | undefined;
 
   const where: Record<string, unknown> = {
-    status: "SUBMITTED",
+    status: { in: ["SUBMITTED", "UNDER_REVIEW"] },
   };
 
   if (search) {

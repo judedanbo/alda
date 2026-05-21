@@ -47,10 +47,10 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  if (declaration.status !== "SUBMITTED") {
+  if (declaration.status !== "UNDER_REVIEW") {
     throw createError({
       statusCode: 400,
-      statusMessage: `Cannot approve. Declaration status is ${declaration.status}, expected SUBMITTED.`,
+      statusMessage: `Cannot approve. Declaration status is ${declaration.status}, expected UNDER_REVIEW.`,
     });
   }
 
