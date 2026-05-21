@@ -27,7 +27,8 @@ model User {
   applicantProfile         ApplicantProfile?
   refreshTokens            RefreshToken[]
   formCollections          FormCollection[]             @relation("FormCollectedBy")
-  submissions              Submission[]                 @relation("RecordedBy")
+  sectionReviews           DeclarationSectionReview[]    @relation("SectionReviewedBy")
+  sectionResolutions       DeclarationSectionReview[]    @relation("SectionResolvedBy")
   reviews                  Review[]                     @relation("ReviewedBy")
   receipts                 Receipt[]                    @relation("GeneratedBy")
   auditLogs                AuditLog[]
@@ -207,13 +208,24 @@ enum DeclarationStatus {
   CODE_GENERATED
   FORM_COLLECTED
   SUBMITTED
-  UNDER_REVIEW
   APPROVED
   REJECTED
   SEALED
-  COMPLETED
 
   @@map("declaration_status")
+}
+
+enum FormSection {
+  PERSONAL_PARTICULARS
+  PROPERTIES
+  EMPLOYMENT_BUSINESS
+  SECURITIES_BANK
+  ALIASES_PROPERTIES
+  LIABILITIES
+  VOLUNTARY_INFO
+  DECLARANT_CERTIFICATE
+
+  @@map("form_section")
 }
 
 enum CollectionOfficeType {
@@ -262,10 +274,9 @@ model Declaration {
   applicant            ApplicantProfile           @relation(fields: [applicantId], references: [id])
   formCollections      FormCollection[]
   formReissueRequests  FormReissueRequest[]
-  submissions          Submission[]
   reviews             Review[]
   receipts            Receipt[]
-  pickupAuthorization PickupAuthorization?
+  sectionReviews      DeclarationSectionReview[]
   statusHistory       DeclarationStatusHistory[]
   previousDeclaration Declaration?               @relation("DeclarationChain", fields: [previousDeclarationId], references: [id])
   nextDeclaration     Declaration?               @relation("DeclarationChain")
@@ -348,21 +359,6 @@ model FormReissueRequest {
   @@map("form_reissue_requests")
 }
 
-model Submission {
-  id             String   @id @default(uuid()) @db.Uuid
-  declarationId  String   @map("declaration_id") @db.Uuid
-  recordedBy     String   @map("recorded_by") @db.Uuid
-  submissionDate DateTime @map("submission_date")
-  notes          String?  @db.Text
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  // Relations
-  declaration Declaration @relation(fields: [declarationId], references: [id])
-  recorder    User        @relation("RecordedBy", fields: [recordedBy], references: [id])
-
-  @@map("submissions")
-}
-
 enum ReviewStatus {
   APPROVED
   REJECTED
@@ -402,23 +398,27 @@ model Receipt {
 }
 
 // ============================================
-// Pickup Management
+// Section Review (Declaration Form Review)
 // ============================================
 
-model PickupAuthorization {
-  id              String    @id @default(uuid()) @db.Uuid
-  declarationId   String    @unique @map("declaration_id") @db.Uuid
-  authorizedName  String?   @map("authorized_name") @db.VarChar(255)
-  authorizedPhone String?   @map("authorized_phone") @db.VarChar(20)
-  isSelfPickup    Boolean   @default(true) @map("is_self_pickup")
-  pickupDate      DateTime? @map("pickup_date")
-  pickedUp        Boolean   @default(false) @map("picked_up")
-  createdAt       DateTime  @default(now()) @map("created_at")
+model DeclarationSectionReview {
+  id            String      @id @default(uuid()) @db.Uuid
+  declarationId String      @map("declaration_id") @db.Uuid
+  reviewedBy    String      @map("reviewed_by") @db.Uuid
+  section       FormSection
+  isAcceptable  Boolean     @map("is_acceptable")
+  comments      String?     @db.Text
+  resolvedAt    DateTime?   @map("resolved_at")
+  resolvedById  String?     @map("resolved_by_id") @db.Uuid
+  createdAt     DateTime    @default(now()) @map("created_at")
 
   // Relations
-  declaration Declaration @relation(fields: [declarationId], references: [id])
+  declaration Declaration @relation(fields: [declarationId], references: [id], onDelete: Cascade)
+  reviewer    User        @relation("SectionReviewedBy", fields: [reviewedBy], references: [id])
+  resolvedBy  User?       @relation("SectionResolvedBy", fields: [resolvedById], references: [id])
 
-  @@map("pickup_authorizations")
+  @@index([declarationId])
+  @@map("declaration_section_reviews")
 }
 
 // ============================================
@@ -458,11 +458,10 @@ enum NotificationType {
   FORM_REISSUE_REQUESTED
   FORM_REISSUE_APPROVED
   FORM_REISSUE_DECLINED
-  SUBMISSION_RECORDED
+  SECTION_REVIEW_COMMENTS
   REVIEW_APPROVED
   REVIEW_REJECTED
   RECEIPT_READY
-  PICKUP_REMINDER
   PASSWORD_RESET
   EMAIL_VERIFICATION
   VERIFICATION_SUBMITTED

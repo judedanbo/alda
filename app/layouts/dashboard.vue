@@ -35,10 +35,9 @@ const navigation = computed<NavItem[]>(() => {
   if (authStore.isOfficer) {
     return [
       { name: "Dashboard", href: "/officer/dashboard", icon: "home" },
-      { name: "Submissions", href: "/officer/submissions", icon: "inbox" },
+      { name: "Form Returns", href: "/officer/form-returns", icon: "inbox" },
       { name: "Reviews", href: "/officer/reviews", icon: "check-circle" },
       { name: "Receipts", href: "/officer/receipts", icon: "receipt" },
-      { name: "Pickups", href: "/officer/pickups", icon: "package" },
     ];
   }
 

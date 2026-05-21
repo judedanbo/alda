@@ -80,14 +80,6 @@ export const declarationSchema = z.object({
 });
 
 /**
- * Submission recording schema (GAS Officer)
- */
-export const submissionRecordSchema = z.object({
-  declarationId: z.string().uuid("Invalid declaration ID"),
-  notes: z.string().optional(),
-});
-
-/**
  * Form collection recording schema (GAS Officer records that the applicant
  * collected the physical declaration form from a collection office).
  */
@@ -107,19 +99,41 @@ export const formReturnRecordSchema = z.object({
 });
 
 /**
- * Review schema
+ * Section review schemas
  */
-export const reviewSchema = z.object({
-  declarationId: z.string().uuid("Invalid declaration ID"),
-  status: z.enum(["APPROVED", "REJECTED"]),
-  rejectionReason: z.string().optional(),
+const FORM_SECTIONS = [
+  "PERSONAL_PARTICULARS",
+  "PROPERTIES",
+  "EMPLOYMENT_BUSINESS",
+  "SECURITIES_BANK",
+  "ALIASES_PROPERTIES",
+  "LIABILITIES",
+  "VOLUNTARY_INFO",
+  "DECLARANT_CERTIFICATE",
+] as const;
+
+const sectionReviewItemSchema = z.object({
+  section: z.enum(FORM_SECTIONS),
+  isAcceptable: z.boolean(),
+  comments: z.string().optional(),
 }).refine(
-  (data) => data.status !== "REJECTED" || (data.rejectionReason && data.rejectionReason.length > 0),
-  {
-    message: "Rejection reason is required when rejecting a declaration",
-    path: ["rejectionReason"],
-  }
+  (d) => d.isAcceptable || (d.comments && d.comments.length > 0),
+  { message: "Comments are required for sections marked as not acceptable", path: ["comments"] }
 );
+
+export const sectionReviewSchema = z.object({
+  declarationId: z.string().uuid("Invalid declaration ID"),
+  sections: z.array(sectionReviewItemSchema).length(8, "All 8 form sections must be reviewed"),
+});
+
+export const approveReviewSchema = z.object({
+  declarationId: z.string().uuid("Invalid declaration ID"),
+});
+
+export const rejectReviewSchema = z.object({
+  declarationId: z.string().uuid("Invalid declaration ID"),
+  rejectionReason: z.string().min(1, "Rejection reason is required"),
+});
 
 /**
  * Lost-form reissue request schema (applicant)
@@ -167,30 +181,6 @@ export const verificationReviewSchema = z.object({
     path: ["messageToApplicant"],
   }
 );
-
-/**
- * Pickup authorization schema (request body — declarationId comes from the URL)
- */
-const pickupAuthorizationRefinement = (data: { isSelfPickup: boolean; authorizedName?: string; authorizedPhone?: string }) =>
-  data.isSelfPickup || (Boolean(data.authorizedName) && Boolean(data.authorizedPhone));
-
-const pickupAuthorizationRefinementMessage = {
-  message: "Authorized person details are required for third-party pickup",
-  path: ["authorizedName"],
-};
-
-export const pickupAuthorizationBodySchema = z.object({
-  isSelfPickup: z.boolean(),
-  authorizedName: z.string().optional(),
-  authorizedPhone: z.string().regex(ghanaPhoneRegex, "Invalid phone number").optional(),
-}).refine(pickupAuthorizationRefinement, pickupAuthorizationRefinementMessage);
-
-export const pickupAuthorizationSchema = z.object({
-  declarationId: z.string().uuid("Invalid declaration ID"),
-  isSelfPickup: z.boolean(),
-  authorizedName: z.string().optional(),
-  authorizedPhone: z.string().regex(ghanaPhoneRegex, "Invalid phone number").optional(),
-}).refine(pickupAuthorizationRefinement, pickupAuthorizationRefinementMessage);
 
 /**
  * Notification preferences schema

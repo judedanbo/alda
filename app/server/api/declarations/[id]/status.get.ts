@@ -39,9 +39,12 @@ export default defineEventHandler(async (event) => {
       formReissueRequests: {
         orderBy: { createdAt: "desc" },
       },
-      submissions: {
+      sectionReviews: {
+        include: {
+          reviewer: { select: { email: true } },
+          resolvedBy: { select: { email: true } },
+        },
         orderBy: { createdAt: "desc" },
-        take: 1,
       },
       reviews: {
         orderBy: { createdAt: "desc" },
@@ -127,16 +130,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const submission = declaration.submissions[0];
-  if (submission) {
-    timeline.push({
-      status: "RECORDED",
-      date: submission.submissionDate,
-      title: "Submission Recorded",
-      description: submission.notes || "Physical submission recorded by officer",
-    });
-  }
-
   const review = declaration.reviews[0];
   if (review) {
     timeline.push({
@@ -179,6 +172,7 @@ export default defineEventHandler(async (event) => {
       ),
       latestReview: declaration.reviews[0] || null,
       receipt: declaration.receipts[0] || null,
+      sectionReviews: declaration.sectionReviews,
       hasPendingReissue: declaration.formReissueRequests.some(
         (r) => r.status === "PENDING"
       ),

@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
   const search = query.search as string | undefined;
 
   const where: Record<string, unknown> = {
-    status: "UNDER_REVIEW",
+    status: "SUBMITTED",
   };
 
   if (search) {
@@ -63,17 +63,9 @@ export default defineEventHandler(async (event) => {
             },
           },
         },
-        submissions: {
-          include: {
-            recorder: {
-              select: {
-                id: true,
-                email: true,
-              },
-            },
-          },
-          orderBy: { createdAt: "desc" },
-          take: 1,
+        sectionReviews: {
+          where: { isAcceptable: false, resolvedAt: null },
+          select: { id: true, section: true },
         },
       },
       orderBy: { submittedAt: "asc" }, // FIFO

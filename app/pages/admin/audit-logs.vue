@@ -132,9 +132,9 @@ const actionTypes = [
   "DECLARATION_SUBMIT",
   "DECLARATION_APPROVE",
   "DECLARATION_REJECT",
+  "SECTION_REVIEW_SUBMITTED",
+  "SECTION_REVIEW_RESOLVED",
   "RECEIPT_GENERATE",
-  "PICKUP_SCHEDULE",
-  "PICKUP_COMPLETE",
   "USER_UPDATE",
   "ROLE_ASSIGN",
 ];
@@ -142,10 +142,9 @@ const actionTypes = [
 const entityTypes = [
   "User",
   "Declaration",
-  "Submission",
+  "DeclarationSectionReview",
   "Review",
   "Receipt",
-  "PickupAuthorization",
   "Institution",
 ];
 </script>

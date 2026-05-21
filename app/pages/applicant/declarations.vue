@@ -67,7 +67,6 @@ const formatDate = (date: string) => {
           <SelectItem value="CODE_GENERATED">Code Generated</SelectItem>
           <SelectItem value="FORM_COLLECTED">Form Collected</SelectItem>
           <SelectItem value="SUBMITTED">Submitted</SelectItem>
-          <SelectItem value="UNDER_REVIEW">Under Review</SelectItem>
           <SelectItem value="APPROVED">Approved</SelectItem>
           <SelectItem value="REJECTED">Rejected</SelectItem>
           <SelectItem value="SEALED">Sealed</SelectItem>

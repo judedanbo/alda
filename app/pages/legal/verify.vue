@@ -31,10 +31,13 @@ interface VerificationResult {
         createdAt: string;
       };
     };
-    submissions: Array<{
-      submissionDate: string;
-      notes: string | null;
-      recorder: { email: string };
+    sectionReviews: Array<{
+      id: string;
+      section: string;
+      isAcceptable: boolean;
+      comments: string | null;
+      resolvedAt: string | null;
+      createdAt: string;
     }>;
     reviews: Array<{
       reviewDate: string;
@@ -47,13 +50,6 @@ interface VerificationResult {
       pdfUrl: string | null;
       createdAt: string;
     }>;
-    pickupAuthorization: {
-      isSelfPickup: boolean;
-      authorizedName: string | null;
-      authorizedPhone: string | null;
-      pickedUp: boolean;
-      pickupDate: string | null;
-    } | null;
     statusHistory: Array<{
       status: string;
       notes: string | null;
@@ -277,14 +273,6 @@ const formatDate = (date: string) => {
               <span class="text-muted-foreground">Generated:</span>
               <p>{{ formatDate(verificationResult.declaration.receipts[0].createdAt) }}</p>
             </div>
-          </div>
-          <div v-if="verificationResult.declaration.pickupAuthorization" class="mt-4 pt-4 border-t">
-            <p class="text-sm">
-              <span class="text-muted-foreground">Pickup Status:</span>
-              <Badge :class="verificationResult.declaration.pickupAuthorization.pickedUp ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'" class="ml-2">
-                {{ verificationResult.declaration.pickupAuthorization.pickedUp ? 'Collected' : 'Pending Collection' }}
-              </Badge>
-            </p>
           </div>
         </CardContent>
       </Card>

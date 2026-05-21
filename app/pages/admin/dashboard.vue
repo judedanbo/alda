@@ -86,7 +86,7 @@ const formatDate = (dateString: string) =>
   });
 
 const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const statusOrder = ["PENDING", "SUBMITTED", "UNDER_REVIEW", "APPROVED", "SEALED", "REJECTED"];
+const statusOrder = ["CODE_GENERATED", "FORM_COLLECTED", "SUBMITTED", "APPROVED", "SEALED", "REJECTED"];
 
 const funnelSeries = computed(() =>
   statusOrder.map((status) => ({

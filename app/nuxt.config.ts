@@ -28,6 +28,9 @@ export default defineNuxtConfig({
 
   vite: {
     plugins: [tailwindcss()],
+    optimizeDeps: {
+      include: ["vue3-apexcharts", "apexcharts"],
+    },
   },
 
   shadcn: {
@@ -73,6 +76,10 @@ export default defineNuxtConfig({
 
   typescript: {
     strict: true,
+  },
+
+  build: {
+    transpile: ["vue3-apexcharts", "apexcharts"],
   },
 
   // Nuxt 4 features

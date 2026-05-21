@@ -12,10 +12,24 @@ export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
   const body = await validateBody(event, verificationReviewSchema);
 
-  const profile = await prisma.applicantProfile.findUnique({
-    where: { id },
-    include: { user: { select: { id: true } } },
-  });
+  const [profile, reviewer] = await Promise.all([
+    prisma.applicantProfile.findUnique({
+      where: { id },
+      include: { user: { select: { id: true } } },
+    }),
+    prisma.user.findUnique({
+      where: { id: auth.userId },
+      select: { id: true },
+    }),
+  ]);
+
+  if (!reviewer) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: "Unauthorized",
+      message: "Your session is invalid. Please log out and log back in.",
+    });
+  }
 
   if (!profile) {
     throw createError({

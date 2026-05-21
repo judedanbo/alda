@@ -8,10 +8,9 @@ interface OfficerDashboardData {
   queues: {
     pendingFormCollections: number;
     pendingFormReturns: number;
-    pendingSubmissions: number;
     pendingReviews: number;
     pendingReceipts: number;
-    pendingPickups: number;
+    withReviewComments: number;
   };
   codeWindows: { today: number; week: number; month: number };
   funnel: { status: string; count: number }[];
@@ -73,15 +72,8 @@ const quickActions = [
     color: "bg-teal-500",
   },
   {
-    title: "Record Submission",
-    description: "Record a new declaration submission",
-    icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
-    href: "/officer/submissions",
-    color: "bg-blue-500",
-  },
-  {
     title: "Review Declarations",
-    description: "Approve or reject pending declarations",
+    description: "Review submitted declarations section by section",
     icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4",
     href: "/officer/reviews",
     color: "bg-green-500",
@@ -92,13 +84,6 @@ const quickActions = [
     icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01",
     href: "/officer/receipts",
     color: "bg-purple-500",
-  },
-  {
-    title: "Manage Pickups",
-    description: "Schedule and record receipt pickups",
-    icon: "M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4",
-    href: "/officer/pickups",
-    color: "bg-orange-500",
   },
 ];
 </script>
@@ -149,24 +134,24 @@ const quickActions = [
         icon-path="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
       />
       <StatCard
-        label="Pending Submissions"
-        :value="dashboard?.queues.pendingSubmissions ?? 0"
-        :loading="loading"
-        footnote="Awaiting recording"
-        href="/officer/submissions"
-        icon-bg="bg-blue-100"
-        icon-color="text-blue-600"
-        icon-path="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-      />
-      <StatCard
         label="Pending Reviews"
         :value="dashboard?.queues.pendingReviews ?? 0"
         :loading="loading"
-        footnote="Awaiting approval"
+        footnote="Awaiting section review"
         href="/officer/reviews"
         icon-bg="bg-yellow-100"
         icon-color="text-yellow-600"
         icon-path="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+      />
+      <StatCard
+        label="With Review Comments"
+        :value="dashboard?.queues.withReviewComments ?? 0"
+        :loading="loading"
+        footnote="Have unresolved section issues"
+        href="/officer/reviews"
+        icon-bg="bg-amber-100"
+        icon-color="text-amber-600"
+        icon-path="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
       />
       <StatCard
         label="Pending Receipts"
@@ -177,16 +162,6 @@ const quickActions = [
         icon-bg="bg-purple-100"
         icon-color="text-purple-600"
         icon-path="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-      />
-      <StatCard
-        label="Pending Pickups"
-        :value="dashboard?.queues.pendingPickups ?? 0"
-        :loading="loading"
-        footnote="Scheduled for pickup"
-        href="/officer/pickups"
-        icon-bg="bg-orange-100"
-        icon-color="text-orange-600"
-        icon-path="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
       />
     </div>
 

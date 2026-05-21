@@ -162,7 +162,7 @@ export default defineEventHandler(async (event) => {
       userId: user.id,
       type: "RECEIPT_READY",
       title: "Receipt Ready",
-      message: `Your receipt (${receiptNumber}) for asset declaration ${declaration.uniqueCode} is ready. You will be notified when it's ready for pickup.`,
+      message: `Your receipt (${receiptNumber}) for asset declaration ${declaration.uniqueCode} is ready. You can view and download it from your declaration page.`,
       metadata: {
         declarationId,
         receiptNumber,
