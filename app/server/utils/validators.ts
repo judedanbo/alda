@@ -135,7 +135,12 @@ export const rejectReviewSchema = z.object({
   declarationId: z.string().uuid("Invalid declaration ID"),
   rejectionReason: z.string().min(1, "Rejection reason is required"),
   reissueCode: z.boolean().default(false),
-});
+  reissueStage: z.enum(["CODE_GENERATED", "FORM_COLLECTED"]).default("FORM_COLLECTED"),
+  collectionOfficeId: z.string().uuid("Invalid collection office ID").optional(),
+}).refine(
+  (d) => !d.reissueCode || d.reissueStage !== "FORM_COLLECTED" || d.collectionOfficeId,
+  { message: "Collection office is required when reissuing at Form Collected stage", path: ["collectionOfficeId"] },
+);
 
 /**
  * Lost-form reissue request schema (applicant)

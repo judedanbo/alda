@@ -10,6 +10,16 @@ const isLoading = ref(false);
 const error = ref("");
 const createdDeclaration = ref<{ id: string; uniqueCode: string } | null>(null);
 
+// Check for active declaration — redirect if one exists
+const { data: statsData } = await useAsyncData(
+  "declaration-new-check",
+  () => authFetch<{ data: { activeDeclaration: { id: string } | null } }>("/api/declarations/stats"),
+);
+
+if (statsData.value?.data?.activeDeclaration) {
+  await navigateTo("/applicant/dashboard", { replace: true });
+}
+
 // Fetch user profile
 const { data: profileData, error: profileError } = await useAsyncData(
   "declaration-new-profile",

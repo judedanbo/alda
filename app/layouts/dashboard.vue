@@ -11,6 +11,13 @@ import {
 
 const authStore = useAuthStore();
 const route = useRoute();
+const { hasActiveDeclaration, check: checkActiveDeclaration } = useActiveDeclaration();
+
+onMounted(() => {
+  if (authStore.isApplicant) {
+    checkActiveDeclaration();
+  }
+});
 
 interface NavItem {
   name: string;
@@ -28,7 +35,7 @@ const navigation = computed<NavItem[]>(() => {
     return [
       ...baseNav,
       { name: "My Declarations", href: "/applicant/declarations", icon: "file-text" },
-      { name: "New Declaration", href: "/applicant/declaration/new", icon: "plus-circle", disabled: !authStore.isVerified },
+      { name: "New Declaration", href: "/applicant/declaration/new", icon: "plus-circle", disabled: !authStore.isVerified || hasActiveDeclaration.value },
     ];
   }
 
@@ -105,7 +112,9 @@ const handleLogout = async () => {
               <span
                 v-else
                 class="px-3 py-2 text-sm font-medium rounded-md text-muted-foreground/50 cursor-not-allowed"
-                :title="'Registration verification required'"
+                :title="hasActiveDeclaration && item.href === '/applicant/declaration/new'
+                  ? 'You have an active declaration in progress'
+                  : 'Registration verification required'"
               >
                 {{ item.name }}
               </span>
@@ -170,7 +179,9 @@ const handleLogout = async () => {
           <span
             v-else
             class="px-3 py-2 text-sm font-medium rounded-md whitespace-nowrap text-muted-foreground/50 cursor-not-allowed"
-            :title="'Registration verification required'"
+            :title="hasActiveDeclaration && item.href === '/applicant/declaration/new'
+              ? 'You have an active declaration in progress'
+              : 'Registration verification required'"
           >
             {{ item.name }}
           </span>

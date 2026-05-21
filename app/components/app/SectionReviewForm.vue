@@ -44,8 +44,35 @@ const submitError = ref("");
 const showRejectModal = ref(false);
 const rejectionReason = ref("");
 const reissueCode = ref(false);
+const reissueStage = ref<"CODE_GENERATED" | "FORM_COLLECTED">("FORM_COLLECTED");
+const collectionOfficeId = ref("");
 const isRejecting = ref(false);
 const rejectError = ref("");
+
+interface Office {
+  id: string;
+  name: string;
+  type: string;
+  region: string | null;
+}
+
+const offices = ref<Office[]>([]);
+const officesLoaded = ref(false);
+
+const fetchOffices = async () => {
+  if (officesLoaded.value) return;
+  try {
+    const response = await authFetch<{ data: Office[] }>("/api/collection-offices");
+    offices.value = response.data;
+    officesLoaded.value = true;
+  } catch {
+    offices.value = [];
+  }
+};
+
+watch([reissueCode, reissueStage], ([code, stage]) => {
+  if (code && stage === "FORM_COLLECTED") fetchOffices();
+});
 
 const sections = ref(
   FORM_SECTIONS.map((section) => ({
@@ -141,6 +168,10 @@ const rejectDeclaration = async () => {
     rejectError.value = "Please provide a reason for rejection.";
     return;
   }
+  if (reissueCode.value && reissueStage.value === "FORM_COLLECTED" && !collectionOfficeId.value) {
+    rejectError.value = "Please select the office where the form was collected.";
+    return;
+  }
   isRejecting.value = true;
   rejectError.value = "";
   try {
@@ -150,11 +181,15 @@ const rejectDeclaration = async () => {
         declarationId: props.declaration.id,
         rejectionReason: rejectionReason.value,
         reissueCode: reissueCode.value,
+        ...(reissueCode.value ? { reissueStage: reissueStage.value } : {}),
+        ...(reissueCode.value && reissueStage.value === "FORM_COLLECTED" ? { collectionOfficeId: collectionOfficeId.value } : {}),
       },
     });
     showRejectModal.value = false;
     rejectionReason.value = "";
     reissueCode.value = false;
+    reissueStage.value = "FORM_COLLECTED";
+    collectionOfficeId.value = "";
     emit("reviewed");
   } catch (error: any) {
     rejectError.value = error.data?.statusMessage || "Failed to reject";
@@ -371,8 +406,7 @@ const formatDate = (date: string) =>
 
           <label class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer hover:bg-muted/30 transition-colors">
             <Checkbox
-              :checked="reissueCode"
-              @update:checked="reissueCode = $event"
+              v-model="reissueCode"
               class="mt-0.5"
             />
             <div>
@@ -383,6 +417,50 @@ const formatDate = (date: string) =>
               </p>
             </div>
           </label>
+
+          <!-- Reissue options (shown when reissue is checked) -->
+          <template v-if="reissueCode">
+            <div class="space-y-2">
+              <Label>New declaration stage</Label>
+              <Select v-model="reissueStage">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CODE_GENERATED">Code Generated</SelectItem>
+                  <SelectItem value="FORM_COLLECTED">Form Collected</SelectItem>
+                </SelectContent>
+              </Select>
+              <p class="text-xs text-muted-foreground">
+                The new declaration will start at this stage. "Form Collected" skips the code collection step.
+              </p>
+            </div>
+
+            <!-- Office selector (shown when stage is FORM_COLLECTED) -->
+            <div v-if="reissueStage === 'FORM_COLLECTED'" class="space-y-2">
+              <Label>
+                Collection Office <span class="text-red-500">*</span>
+              </Label>
+              <Select v-model="collectionOfficeId">
+                <SelectTrigger>
+                  <SelectValue placeholder="Select office..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="office in offices"
+                    :key="office.id"
+                    :value="office.id"
+                  >
+                    {{ office.name }}
+                    <span v-if="office.region" class="text-muted-foreground"> — {{ office.region }}</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p class="text-xs text-muted-foreground">
+                The office where the replacement form was collected.
+              </p>
+            </div>
+          </template>
 
           <Alert v-if="rejectError" variant="destructive">
             <AlertDescription>{{ rejectError }}</AlertDescription>

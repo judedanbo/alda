@@ -71,6 +71,10 @@ const timelineOptions = computed(() => ({
 const showCodeHistory = ref(false);
 const codeCopied = ref(false);
 
+const canCreateDeclaration = computed(() =>
+  user.value?.hasProfile && isVerified.value && !dashboard.value?.activeDeclaration
+);
+
 async function copyCode() {
   const code = dashboard.value?.activeDeclaration?.uniqueCode;
   if (!code) return;
@@ -269,6 +273,11 @@ async function resendVerification() {
             </NuxtLink>
           </Button>
         </div>
+
+        <!-- New declaration note -->
+        <p class="mt-4 text-xs text-muted-foreground italic">
+          A new declaration can only be started once this one has been completed (sealed) or rejected.
+        </p>
       </CardContent>
     </Card>
 
@@ -330,8 +339,10 @@ async function resendVerification() {
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <NuxtLink
               to="/applicant/declaration/new"
-              class="flex items-center gap-3 p-3 rounded-md border hover:bg-muted transition-colors"
-              :class="{ 'opacity-50 pointer-events-none': !user?.hasProfile || !isVerified }"
+              class="flex items-center gap-3 p-3 rounded-md border transition-colors"
+              :class="canCreateDeclaration
+                ? 'hover:bg-muted'
+                : 'opacity-50 pointer-events-none cursor-not-allowed'"
             >
               <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                 <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -340,7 +351,9 @@ async function resendVerification() {
               </div>
               <div>
                 <p class="font-medium text-sm">New Declaration</p>
-                <p class="text-xs text-muted-foreground">Submit a new declaration</p>
+                <p class="text-xs text-muted-foreground">
+                  {{ canCreateDeclaration ? 'Submit a new declaration' : 'Active declaration in progress' }}
+                </p>
               </div>
             </NuxtLink>
             <NuxtLink

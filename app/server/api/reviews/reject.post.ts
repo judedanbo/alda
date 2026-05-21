@@ -86,19 +86,55 @@ export default defineEventHandler(async (event) => {
     });
 
     let newCode: string | null = null;
+    let newDeclarationStatus: string | null = null;
     if (data.reissueCode) {
       newCode = await generateUniqueCode();
-      await tx.declaration.create({
+      const newDeclaration = await tx.declaration.create({
         data: {
           applicantId: declaration.applicantId,
           uniqueCode: newCode,
-          status: "CODE_GENERATED",
+          status: data.reissueStage,
           previousDeclarationId: declaration.id,
         },
       });
+      newDeclarationStatus = data.reissueStage;
+
+      await tx.declarationStatusHistory.create({
+        data: {
+          declarationId: newDeclaration.id,
+          status: "CODE_GENERATED",
+          changedById: auth.userId,
+          notes: `Replacement declaration for rejected ${declaration.uniqueCode}`,
+        },
+      });
+
+      if (data.reissueStage === "FORM_COLLECTED" && data.collectionOfficeId) {
+        const office = await tx.collectionOffice.findUnique({
+          where: { id: data.collectionOfficeId },
+        });
+
+        await tx.formCollection.create({
+          data: {
+            declarationId: newDeclaration.id,
+            recordedBy: auth.userId,
+            collectionOfficeId: data.collectionOfficeId,
+            collectedAt: new Date(),
+            notes: `Replacement form for rejected declaration ${declaration.uniqueCode}; recorded by ${auth.email}`,
+          },
+        });
+
+        await tx.declarationStatusHistory.create({
+          data: {
+            declarationId: newDeclaration.id,
+            status: "FORM_COLLECTED",
+            changedById: auth.userId,
+            notes: `Replacement form collected from ${office?.name ?? "office"}; recorded by ${auth.email}`,
+          },
+        });
+      }
     }
 
-    return { review, newCode };
+    return { review, newCode, newDeclarationStatus };
   });
 
   await logAction({
@@ -111,13 +147,18 @@ export default defineEventHandler(async (event) => {
       status: "REJECTED",
       rejectionReason: data.rejectionReason,
       reissueCode: data.reissueCode,
+      ...(data.reissueCode ? { reissueStage: data.reissueStage } : {}),
+      ...(data.collectionOfficeId ? { collectionOfficeId: data.collectionOfficeId } : {}),
     },
     event,
   });
 
   if (declaration.applicant.user) {
+    const stageLabel = result.newDeclarationStatus === "FORM_COLLECTED"
+      ? " Your replacement form is ready to be collected."
+      : "";
     const message = result.newCode
-      ? `Your asset declaration (${declaration.uniqueCode}) requires revision. Reason: ${data.rejectionReason}. A new code has been issued: ${result.newCode}`
+      ? `Your asset declaration (${declaration.uniqueCode}) requires revision. Reason: ${data.rejectionReason}. A new code has been issued: ${result.newCode}.${stageLabel}`
       : `Your asset declaration (${declaration.uniqueCode}) has been rejected. Reason: ${data.rejectionReason}`;
 
     await sendNotification({
@@ -142,6 +183,7 @@ export default defineEventHandler(async (event) => {
     data: {
       review: result.review,
       newCode: result.newCode,
+      newDeclarationStatus: result.newDeclarationStatus,
     },
   };
 });
