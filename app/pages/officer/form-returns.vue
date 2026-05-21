@@ -40,11 +40,25 @@ const search = ref("");
 const currentPage = ref(1);
 const limit = 10;
 
+interface Office {
+  id: string;
+  name: string;
+  type: string;
+  region: string | null;
+}
+
 const selectedDeclaration = ref<Declaration | null>(null);
 const showRecordModal = ref(false);
+const returnOfficeId = ref("");
 const recordingNotes = ref("");
 const isRecording = ref(false);
 const recordError = ref("");
+
+const { data: officesResponse } = await useAsyncData(
+  "collection-offices",
+  () => authFetch<{ data: Office[] }>("/api/collection-offices"),
+);
+const offices = computed(() => officesResponse.value?.data ?? []);
 
 const fetchPendingReturns = async () => {
   loading.value = true;
@@ -76,6 +90,7 @@ watch([search, currentPage], fetchPendingReturns);
 
 const openRecordModal = (declaration: Declaration) => {
   selectedDeclaration.value = declaration;
+  returnOfficeId.value = "";
   recordingNotes.value = "";
   recordError.value = "";
   showRecordModal.value = true;
@@ -92,6 +107,7 @@ const recordReturn = async () => {
       method: "POST",
       body: {
         declarationId: selectedDeclaration.value.id,
+        returnOfficeId: returnOfficeId.value,
         notes: recordingNotes.value || undefined,
       },
     });
@@ -265,6 +281,26 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
             </div>
           </div>
 
+          <!-- Return Office -->
+          <div class="space-y-2">
+            <Label>Returned To Office <span class="text-red-500">*</span></Label>
+            <Select v-model="returnOfficeId">
+              <SelectTrigger>
+                <SelectValue placeholder="Select office..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem
+                  v-for="office in offices"
+                  :key="office.id"
+                  :value="office.id"
+                >
+                  {{ office.name }}
+                  <span v-if="office.region" class="text-muted-foreground"> — {{ office.region }}</span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <!-- Notes -->
           <div class="space-y-2">
             <Label>Notes (optional)</Label>
@@ -283,7 +319,7 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
 
         <DialogFooter>
           <Button variant="outline" @click="showRecordModal = false">Cancel</Button>
-          <Button :disabled="isRecording" @click="recordReturn">
+          <Button :disabled="isRecording || !returnOfficeId" @click="recordReturn">
             {{ isRecording ? 'Recording...' : 'Confirm & Record' }}
           </Button>
         </DialogFooter>

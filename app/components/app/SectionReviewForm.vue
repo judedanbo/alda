@@ -43,6 +43,7 @@ const submitError = ref("");
 
 const showRejectModal = ref(false);
 const rejectionReason = ref("");
+const reissueCode = ref(false);
 const isRejecting = ref(false);
 const rejectError = ref("");
 
@@ -148,9 +149,12 @@ const rejectDeclaration = async () => {
       body: {
         declarationId: props.declaration.id,
         rejectionReason: rejectionReason.value,
+        reissueCode: reissueCode.value,
       },
     });
     showRejectModal.value = false;
+    rejectionReason.value = "";
+    reissueCode.value = false;
     emit("reviewed");
   } catch (error: any) {
     rejectError.value = error.data?.statusMessage || "Failed to reject";
@@ -350,7 +354,7 @@ const formatDate = (date: string) =>
         <DialogHeader>
           <DialogTitle>Reject Declaration</DialogTitle>
           <DialogDescription>
-            This will reject the declaration and issue a new code for resubmission.
+            This will reject the declaration. You can optionally issue a new code for resubmission.
           </DialogDescription>
         </DialogHeader>
         <div class="space-y-4">
@@ -364,9 +368,22 @@ const formatDate = (date: string) =>
               placeholder="Explain why this declaration is being rejected..."
             />
           </div>
-          <p class="text-xs text-muted-foreground">
-            A new unique code will be issued for resubmission.
-          </p>
+
+          <label class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer hover:bg-muted/30 transition-colors">
+            <Checkbox
+              :checked="reissueCode"
+              @update:checked="reissueCode = $event"
+              class="mt-0.5"
+            />
+            <div>
+              <p class="text-sm font-medium">Issue a new declaration code</p>
+              <p class="text-xs text-muted-foreground">
+                A new unique code will be generated so the applicant can resubmit.
+                Leave unchecked if the declaration is being rejected outright.
+              </p>
+            </div>
+          </label>
+
           <Alert v-if="rejectError" variant="destructive">
             <AlertDescription>{{ rejectError }}</AlertDescription>
           </Alert>

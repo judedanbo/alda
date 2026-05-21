@@ -95,6 +95,7 @@ export const formCollectionRecordSchema = z.object({
  */
 export const formReturnRecordSchema = z.object({
   declarationId: z.string().uuid("Invalid declaration ID"),
+  returnOfficeId: z.string().uuid("Invalid office ID"),
   notes: z.string().optional(),
 });
 
@@ -133,6 +134,7 @@ export const approveReviewSchema = z.object({
 export const rejectReviewSchema = z.object({
   declarationId: z.string().uuid("Invalid declaration ID"),
   rejectionReason: z.string().min(1, "Rejection reason is required"),
+  reissueCode: z.boolean().default(false),
 });
 
 /**

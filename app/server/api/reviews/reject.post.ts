@@ -85,15 +85,18 @@ export default defineEventHandler(async (event) => {
       },
     });
 
-    const newCode = await generateUniqueCode();
-    await tx.declaration.create({
-      data: {
-        applicantId: declaration.applicantId,
-        uniqueCode: newCode,
-        status: "CODE_GENERATED",
-        previousDeclarationId: declaration.id,
-      },
-    });
+    let newCode: string | null = null;
+    if (data.reissueCode) {
+      newCode = await generateUniqueCode();
+      await tx.declaration.create({
+        data: {
+          applicantId: declaration.applicantId,
+          uniqueCode: newCode,
+          status: "CODE_GENERATED",
+          previousDeclarationId: declaration.id,
+        },
+      });
+    }
 
     return { review, newCode };
   });
@@ -107,20 +110,25 @@ export default defineEventHandler(async (event) => {
       declarationId: data.declarationId,
       status: "REJECTED",
       rejectionReason: data.rejectionReason,
+      reissueCode: data.reissueCode,
     },
     event,
   });
 
   if (declaration.applicant.user) {
+    const message = result.newCode
+      ? `Your asset declaration (${declaration.uniqueCode}) requires revision. Reason: ${data.rejectionReason}. A new code has been issued: ${result.newCode}`
+      : `Your asset declaration (${declaration.uniqueCode}) has been rejected. Reason: ${data.rejectionReason}`;
+
     await sendNotification({
       userId: declaration.applicant.user.id,
       type: "REVIEW_REJECTED",
-      title: "Declaration Requires Revision",
-      message: `Your asset declaration (${declaration.uniqueCode}) requires revision. Reason: ${data.rejectionReason}. A new code has been issued: ${result.newCode}`,
+      title: result.newCode ? "Declaration Requires Revision" : "Declaration Rejected",
+      message,
       metadata: {
         declarationId: declaration.id,
         uniqueCode: declaration.uniqueCode,
-        newCode: result.newCode,
+        ...(result.newCode ? { newCode: result.newCode } : {}),
         rejectionReason: data.rejectionReason,
       },
     });
@@ -128,7 +136,9 @@ export default defineEventHandler(async (event) => {
 
   return {
     success: true,
-    message: "Declaration rejected. New code issued for resubmission.",
+    message: result.newCode
+      ? "Declaration rejected. New code issued for resubmission."
+      : "Declaration rejected.",
     data: {
       review: result.review,
       newCode: result.newCode,

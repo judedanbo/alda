@@ -267,12 +267,14 @@ model Declaration {
   uniqueCode            String            @unique @map("unique_code") @db.VarChar(20)
   status                DeclarationStatus @default(CODE_GENERATED)
   submittedAt           DateTime?         @map("submitted_at")
+  returnOfficeId        String?           @map("return_office_id") @db.Uuid
   previousDeclarationId String?           @unique @map("previous_declaration_id") @db.Uuid
   createdAt             DateTime          @default(now()) @map("created_at")
   updatedAt             DateTime          @updatedAt @map("updated_at")
 
   // Relations
   applicant            ApplicantProfile           @relation(fields: [applicantId], references: [id])
+  returnOffice         CollectionOffice?          @relation("FormReturnedTo", fields: [returnOfficeId], references: [id])
   formCollections      FormCollection[]
   formReissueRequests  FormReissueRequest[]
   reviews             Review[]
@@ -314,6 +316,7 @@ model CollectionOffice {
 
   // Relations
   formCollections FormCollection[]
+  formReturns     Declaration[]    @relation("FormReturnedTo")
 
   @@map("collection_offices")
 }
