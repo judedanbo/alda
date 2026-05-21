@@ -1,4 +1,5 @@
 import { authFetch } from "~/utils/authFetch";
+import { useAuthStore } from "~/stores/auth";
 
 export interface AnalyticsFilterState {
   dateFrom: string;
@@ -195,9 +196,32 @@ export function useAnalytics() {
     fetchList();
   }
 
-  function getExportUrl(format: "csv" | "pdf"): string {
+  const exporting = ref(false);
+
+  async function exportData(format: "csv" | "pdf") {
     const qs = buildQueryString({ ...filterParams.value, format });
-    return `/api/analytics/declarations/export${qs}`;
+    const url = `/api/analytics/declarations/export${qs}`;
+    exporting.value = true;
+    try {
+      const { getAuthHeaders } = useAuthStore();
+      const res = await fetch(url, { headers: getAuthHeaders() });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.message || `Export failed (${res.status})`);
+      }
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      const date = new Date().toISOString().slice(0, 10);
+      a.download = `sealed-declarations-${date}.${format}`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : "Export failed";
+      console.error(e);
+    } finally {
+      exporting.value = false;
+    }
   }
 
   onMounted(refreshAll);
@@ -210,6 +234,7 @@ export function useAnalytics() {
     loadingSummary,
     loadingCharts,
     loadingList,
+    exporting,
     error,
     applyFilters,
     resetFilters,
@@ -217,6 +242,6 @@ export function useAnalytics() {
     fetchList,
     setPage,
     setSort,
-    getExportUrl,
+    exportData,
   };
 }

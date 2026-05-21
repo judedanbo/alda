@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { useAuthStore } from "~/stores/auth";
-
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
 });
 
-const authStore = useAuthStore();
 const {
   filters,
   summary,
@@ -19,14 +16,8 @@ const {
   resetFilters,
   setPage,
   setSort,
-  getExportUrl,
+  exportData,
 } = useAnalytics();
-
-function handleExport(format: "csv" | "pdf") {
-  const url = getExportUrl(format);
-  const token = authStore.tokens?.accessToken;
-  window.open(`${url}&_token=${token}`, "_blank");
-}
 </script>
 
 <template>
@@ -40,9 +31,10 @@ function handleExport(format: "csv" | "pdf") {
     <AnalyticsFilterBar
       :filters="filters"
       :show-officer-filter="true"
+      :show-export="true"
       @apply="applyFilters"
       @reset="resetFilters"
-      @export="handleExport"
+      @export="exportData"
     />
 
     <!-- Zone 2: KPIs -->

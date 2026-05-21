@@ -5,6 +5,7 @@ import { authFetch } from "~/utils/authFetch";
 const props = defineProps<{
   filters: AnalyticsFilterState;
   showOfficerFilter?: boolean;
+  showExport?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -175,20 +176,22 @@ function handleReset() {
           <Button size="sm" variant="outline" class="h-8 text-xs" @click="handleReset">
             Reset
           </Button>
-          <Button
-            size="sm"
-            class="h-8 text-xs bg-primary"
-            @click="$emit('export', 'csv')"
-          >
-            CSV
-          </Button>
-          <Button
-            size="sm"
-            class="h-8 text-xs bg-destructive"
-            @click="$emit('export', 'pdf')"
-          >
-            PDF
-          </Button>
+          <template v-if="showExport">
+            <Button
+              size="sm"
+              class="h-8 text-xs bg-primary"
+              @click="$emit('export', 'csv')"
+            >
+              CSV
+            </Button>
+            <Button
+              size="sm"
+              class="h-8 text-xs bg-destructive"
+              @click="$emit('export', 'pdf')"
+            >
+              PDF
+            </Button>
+          </template>
         </div>
       </div>
     </CardContent>

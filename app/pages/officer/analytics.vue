@@ -16,6 +16,7 @@ const {
   resetFilters,
   setPage,
   setSort,
+  exportData,
 } = useAnalytics();
 </script>
 
@@ -29,8 +30,10 @@ const {
     <AnalyticsFilterBar
       :filters="filters"
       :show-officer-filter="false"
+      :show-export="true"
       @apply="applyFilters"
       @reset="resetFilters"
+      @export="exportData"
     />
 
     <AnalyticsKpiCards :data="summary" :loading="loadingSummary" />
