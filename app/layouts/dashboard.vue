@@ -36,6 +36,7 @@ const navigation = computed<NavItem[]>(() => {
       ...baseNav,
       { name: "My Declarations", href: "/applicant/declarations", icon: "file-text" },
       { name: "New Declaration", href: "/applicant/declaration/new", icon: "plus-circle", disabled: !authStore.isVerified || hasActiveDeclaration.value },
+      { name: "Analytics", href: "/applicant/analytics", icon: "bar-chart" },
     ];
   }
 
@@ -45,6 +46,7 @@ const navigation = computed<NavItem[]>(() => {
       { name: "Form Returns", href: "/officer/form-returns", icon: "inbox" },
       { name: "Reviews", href: "/officer/reviews", icon: "check-circle" },
       { name: "Receipts", href: "/officer/receipts", icon: "receipt" },
+      { name: "Analytics", href: "/officer/analytics", icon: "bar-chart" },
     ];
   }
 
@@ -54,6 +56,7 @@ const navigation = computed<NavItem[]>(() => {
       { name: "Applicant Verifications", href: "/legal/verifications", icon: "user-check" },
       { name: "Form Reissues", href: "/legal/form-reissues", icon: "file-text" },
       { name: "Verify Code", href: "/legal/verify", icon: "search" },
+      { name: "Analytics", href: "/legal/analytics", icon: "bar-chart" },
     ];
   }
 
@@ -66,6 +69,7 @@ const navigation = computed<NavItem[]>(() => {
       { name: "Categories", href: "/admin/categories", icon: "tag" },
       { name: "Audit Logs", href: "/admin/audit-logs", icon: "shield" },
       { name: "Reports", href: "/admin/reports", icon: "bar-chart" },
+      { name: "Analytics", href: "/admin/analytics", icon: "bar-chart" },
     ];
   }
 

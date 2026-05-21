@@ -62,6 +62,9 @@ export default defineNuxtConfig({
     smtpPass: process.env.SMTP_PASS || "",
     smtpFrom: process.env.SMTP_FROM || "noreply@adla.gov.gh",
 
+    // Redis
+    redisUrl: process.env.REDIS_URL || "redis://localhost:6379",
+
     // Public runtime config (exposed to client)
     public: {
       appName: "Asset Declaration Portal",

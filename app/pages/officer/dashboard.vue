@@ -93,6 +93,8 @@ const quickActions = [
   <div class="space-y-6">
     <PageHeader title="Officer Dashboard" description="Manage asset declarations, reviews, and receipts" />
 
+    <AnalyticsSealedSummaryWidget role="officer" />
+
     <!-- Code lookup -->
     <Card>
       <CardContent class="p-4">
@@ -114,7 +116,7 @@ const quickActions = [
 
     <!-- Pending Queues -->
     <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
-      <StatCard
+      <AppStatCard
         label="Pending Form Collections"
         :value="dashboard?.queues.pendingFormCollections ?? 0"
         :loading="loading"
@@ -124,7 +126,7 @@ const quickActions = [
         icon-color="text-cyan-600"
         icon-path="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
       />
-      <StatCard
+      <AppStatCard
         label="Pending Form Returns"
         :value="dashboard?.queues.pendingFormReturns ?? 0"
         :loading="loading"
@@ -134,7 +136,7 @@ const quickActions = [
         icon-color="text-teal-600"
         icon-path="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
       />
-      <StatCard
+      <AppStatCard
         label="Pending Reviews"
         :value="dashboard?.queues.pendingReviews ?? 0"
         :loading="loading"
@@ -144,7 +146,7 @@ const quickActions = [
         icon-color="text-yellow-600"
         icon-path="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
       />
-      <StatCard
+      <AppStatCard
         label="Under Review"
         :value="dashboard?.queues.underReview ?? 0"
         :loading="loading"
@@ -154,7 +156,7 @@ const quickActions = [
         icon-color="text-purple-600"
         icon-path="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
       />
-      <StatCard
+      <AppStatCard
         label="With Review Comments"
         :value="dashboard?.queues.withReviewComments ?? 0"
         :loading="loading"
@@ -164,7 +166,7 @@ const quickActions = [
         icon-color="text-amber-600"
         icon-path="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
       />
-      <StatCard
+      <AppStatCard
         label="Pending Receipts"
         :value="dashboard?.queues.pendingReceipts ?? 0"
         :loading="loading"
@@ -202,7 +204,7 @@ const quickActions = [
 
     <!-- Charts -->
     <div class="grid lg:grid-cols-2 gap-4">
-      <ChartCard
+      <AppChartCard
         title="Declaration Pipeline"
         description="Current count of declarations in each status"
         type="bar"
@@ -211,7 +213,7 @@ const quickActions = [
         :loading="loading"
         :height="320"
       />
-      <ChartCard
+      <AppChartCard
         title="Daily Throughput"
         description="Codes issued vs. receipts generated, last 30 days"
         type="area"
