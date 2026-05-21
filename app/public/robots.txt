@@ -1,0 +1,116 @@
+# Asset Declaration Portal (ADLA) — robots policy
+# This service holds sensitive government PII (asset declarations, Ghana Card
+# images). Only the public marketing pages may be crawled.
+#
+# AI training/dataset crawlers are fully disallowed. AI search/live agents and
+# legitimate search engines may index the public pages only. App-level
+# enforcement mirrors this policy (see server/middleware/00.security.ts);
+# agents that ignore these rules are flagged as robots.txt violators.
+
+# --- AI training / dataset crawlers: fully disallowed ---
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Meta-ExternalAgent
+Disallow: /
+
+User-agent: FacebookBot
+Disallow: /
+
+User-agent: Amazonbot
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /
+
+User-agent: cohere-ai
+Disallow: /
+
+User-agent: cohere-training-data-crawler
+Disallow: /
+
+User-agent: Diffbot
+Disallow: /
+
+User-agent: Omgilibot
+Disallow: /
+
+User-agent: ImagesiftBot
+Disallow: /
+
+User-agent: PanguBot
+Disallow: /
+
+User-agent: Timpibot
+Disallow: /
+
+# --- AI search / live-retrieval agents: public pages only ---
+User-agent: OAI-SearchBot
+Disallow: /admin/
+Disallow: /applicant/
+Disallow: /officer/
+Disallow: /legal/
+Disallow: /auth/
+Disallow: /settings/
+Disallow: /api/
+
+User-agent: ChatGPT-User
+Disallow: /admin/
+Disallow: /applicant/
+Disallow: /officer/
+Disallow: /legal/
+Disallow: /auth/
+Disallow: /settings/
+Disallow: /api/
+
+User-agent: PerplexityBot
+Disallow: /admin/
+Disallow: /applicant/
+Disallow: /officer/
+Disallow: /legal/
+Disallow: /auth/
+Disallow: /settings/
+Disallow: /api/
+
+User-agent: Perplexity-User
+Disallow: /admin/
+Disallow: /applicant/
+Disallow: /officer/
+Disallow: /legal/
+Disallow: /auth/
+Disallow: /settings/
+Disallow: /api/
+
+User-agent: Claude-User
+Disallow: /admin/
+Disallow: /applicant/
+Disallow: /officer/
+Disallow: /legal/
+Disallow: /auth/
+Disallow: /settings/
+Disallow: /api/
+
+# --- All other crawlers (incl. legitimate search engines) ---
+User-agent: *
+Disallow: /admin/
+Disallow: /applicant/
+Disallow: /officer/
+Disallow: /legal/
+Disallow: /auth/
+Disallow: /settings/
+Disallow: /api/

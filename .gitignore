@@ -11,3 +11,6 @@ app/.nuxt-dev/
 
 # Root-level lockfile (real one is in app/)
 package-lock.json
+
+# Stray root-level dependency/cache dir (real node_modules is in app/)
+node_modules/
