@@ -25,6 +25,7 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
     where: { id: payload.userId },
     include: {
       notificationPrefs: true,
+      notificationTypePrefs: { where: { type: payload.type } },
       applicantProfile: true,
     },
   });
@@ -35,10 +36,16 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
   }
 
   const prefs = user.notificationPrefs;
+  // Per-type preference for this notification (missing row => all channels on)
+  const typePref = user.notificationTypePrefs[0];
   const channels = payload.channels || ["EMAIL", "SMS", "IN_APP"] as NotificationChannel[];
 
   // Create in-app notification if enabled
-  if (channels.includes("IN_APP") && (prefs?.inAppEnabled ?? true)) {
+  if (
+    channels.includes("IN_APP") &&
+    (prefs?.inAppEnabled ?? true) &&
+    (typePref?.inAppEnabled ?? true)
+  ) {
     await prisma.notification.create({
       data: {
         userId: payload.userId,
@@ -52,7 +59,11 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
   }
 
   // Send email if enabled
-  if (channels.includes("EMAIL") && (prefs?.emailEnabled ?? true)) {
+  if (
+    channels.includes("EMAIL") &&
+    (prefs?.emailEnabled ?? true) &&
+    (typePref?.emailEnabled ?? true)
+  ) {
     const notification = await prisma.notification.create({
       data: {
         userId: payload.userId,
@@ -104,7 +115,12 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
   }
 
   // Send SMS if enabled and user has phone
-  if (channels.includes("SMS") && (prefs?.smsEnabled ?? true) && user.phone) {
+  if (
+    channels.includes("SMS") &&
+    (prefs?.smsEnabled ?? true) &&
+    (typePref?.smsEnabled ?? true) &&
+    user.phone
+  ) {
     const notification = await prisma.notification.create({
       data: {
         userId: payload.userId,

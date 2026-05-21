@@ -1,4 +1,5 @@
 import prisma from "~/server/utils/prisma";
+import { buildPreferencesPayload } from "~/server/utils/notifications-catalog";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -10,13 +11,13 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  let preferences = await prisma.notificationPreference.findUnique({
+  let channels = await prisma.notificationPreference.findUnique({
     where: { userId: auth.userId },
   });
 
-  // Create default preferences if not exist
-  if (!preferences) {
-    preferences = await prisma.notificationPreference.create({
+  // Create default channel preferences if they don't exist yet
+  if (!channels) {
+    channels = await prisma.notificationPreference.create({
       data: {
         userId: auth.userId,
         emailEnabled: true,
@@ -26,8 +27,12 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  const typeRows = await prisma.notificationTypePreference.findMany({
+    where: { userId: auth.userId },
+  });
+
   return {
     success: true,
-    data: preferences,
+    data: buildPreferencesPayload(auth.roles, channels, typeRows),
   };
 });
