@@ -77,9 +77,13 @@ watch([reissueCode, reissueStage], ([code, stage]) => {
 const sections = ref(
   FORM_SECTIONS.map((section) => ({
     section,
-    isAcceptable: true,
+    isAcceptable: null as boolean | null,
     comments: "",
   }))
+);
+
+const allSectionsDecided = computed(() =>
+  sections.value.every((s) => s.isAcceptable !== null)
 );
 
 const existingIssues = computed(() =>
@@ -103,9 +107,14 @@ const canApprove = computed(() => {
 const submitSectionReview = async () => {
   submitError.value = "";
 
-  const hasIssues = sections.value.some((s) => !s.isAcceptable);
+  if (!allSectionsDecided.value) {
+    submitError.value = "Please review all sections before submitting.";
+    return;
+  }
+
+  const hasIssues = sections.value.some((s) => s.isAcceptable === false);
   if (hasIssues) {
-    const missing = sections.value.filter((s) => !s.isAcceptable && !s.comments.trim());
+    const missing = sections.value.filter((s) => s.isAcceptable === false && !s.comments.trim());
     if (missing.length > 0) {
       submitError.value = "Please provide comments for all sections marked as not acceptable.";
       return;
@@ -121,7 +130,7 @@ const submitSectionReview = async () => {
         sections: sections.value.map((s) => ({
           section: s.section,
           isAcceptable: s.isAcceptable,
-          comments: s.isAcceptable ? undefined : s.comments,
+          comments: s.isAcceptable === false ? s.comments : undefined,
         })),
       },
     });
@@ -308,27 +317,37 @@ const formatDate = (date: string) =>
         <CardHeader>
           <CardTitle class="text-lg">Section Review</CardTitle>
           <CardDescription>
-            Review each section of the declaration form. Mark whether each section has been filled correctly.
+            Review each section of the declaration form. Select "Acceptable" or "Needs Attention" for every section before submitting.
           </CardDescription>
         </CardHeader>
         <CardContent class="space-y-4">
           <div
             v-for="(item, index) in sections"
             :key="item.section"
-            class="rounded-lg border p-4 space-y-3"
-            :class="item.isAcceptable
-              ? 'border-green-200 bg-green-50/30'
-              : 'border-red-300 bg-red-50/50'"
+            class="rounded-lg border-2 p-4 space-y-3 transition-colors"
+            :class="[
+              item.isAcceptable === true && 'border-green-300 bg-green-50/30',
+              item.isAcceptable === false && 'border-red-300 bg-red-50/50',
+              item.isAcceptable === null && 'border-dashed border-amber-300 bg-amber-50/20',
+            ]"
           >
             <div class="flex items-center justify-between gap-4">
-              <h4 class="font-medium text-sm">
-                {{ index + 1 }}. {{ FORM_SECTION_LABELS[item.section] }}
-              </h4>
+              <div class="flex items-center gap-2">
+                <h4 class="font-medium text-sm">
+                  {{ index + 1 }}. {{ FORM_SECTION_LABELS[item.section] }}
+                </h4>
+                <span
+                  v-if="item.isAcceptable === null"
+                  class="text-[10px] font-medium text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded"
+                >
+                  Pending
+                </span>
+              </div>
               <div class="flex items-center gap-1 shrink-0">
                 <button
                   type="button"
                   class="px-3 py-1.5 text-xs font-medium rounded-l-md border transition-colors"
-                  :class="item.isAcceptable
+                  :class="item.isAcceptable === true
                     ? 'bg-green-600 text-white border-green-600'
                     : 'bg-white text-muted-foreground border-border hover:bg-green-50 hover:text-green-700 hover:border-green-300'"
                   @click="item.isAcceptable = true"
@@ -338,7 +357,7 @@ const formatDate = (date: string) =>
                 <button
                   type="button"
                   class="px-3 py-1.5 text-xs font-medium rounded-r-md border border-l-0 transition-colors"
-                  :class="!item.isAcceptable
+                  :class="item.isAcceptable === false
                     ? 'bg-red-600 text-white border-red-600'
                     : 'bg-white text-muted-foreground border-border hover:bg-red-50 hover:text-red-700 hover:border-red-300'"
                   @click="item.isAcceptable = false"
@@ -347,7 +366,7 @@ const formatDate = (date: string) =>
                 </button>
               </div>
             </div>
-            <div v-if="!item.isAcceptable" class="space-y-1">
+            <div v-if="item.isAcceptable === false" class="space-y-1">
               <Label class="text-sm">
                 Comments <span class="text-red-500">*</span>
               </Label>
@@ -361,20 +380,25 @@ const formatDate = (date: string) =>
         </CardContent>
       </Card>
 
-      <div class="flex gap-3">
-        <Button
-          class="flex-1"
-          :disabled="isSubmitting"
-          @click="submitSectionReview"
-        >
-          {{ isSubmitting ? 'Submitting...' : 'Submit Review' }}
-        </Button>
-        <Button
-          variant="destructive"
-          @click="showRejectModal = true"
-        >
-          Reject
-        </Button>
+      <div class="space-y-2">
+        <div v-if="!allSectionsDecided" class="text-sm text-amber-600">
+          {{ sections.filter(s => s.isAcceptable === null).length }} of {{ sections.length }} sections still need a decision.
+        </div>
+        <div class="flex gap-3">
+          <Button
+            class="flex-1"
+            :disabled="isSubmitting || !allSectionsDecided"
+            @click="submitSectionReview"
+          >
+            {{ isSubmitting ? 'Submitting...' : 'Submit Review' }}
+          </Button>
+          <Button
+            variant="destructive"
+            @click="showRejectModal = true"
+          >
+            Reject
+          </Button>
+        </div>
       </div>
     </template>
 
