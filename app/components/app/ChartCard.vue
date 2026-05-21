@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { ApexOptions } from "apexcharts";
 
+const ApexChart = defineAsyncComponent(() => import("vue3-apexcharts"));
+
 interface Props {
   title: string;
   description?: string;
@@ -76,7 +78,7 @@ const baseOptions = computed<ApexOptions>(() => ({
     <CardContent>
       <Skeleton v-if="loading" class="w-full" :style="{ height: `${height}px` }" />
       <ClientOnly v-else>
-        <apexchart
+        <ApexChart
           :type="type"
           :series="series"
           :options="baseOptions"
