@@ -25,7 +25,8 @@ import { refreshAiIpRanges } from "~/server/utils/ai-agents";
  * configured interval, so no separate scheduled task is needed.
  */
 
-function rollupSql(table: string, bucketExpr: string, windowExpr: string): { del: string; ins: string } {
+/** Builds the idempotent delete + insert SQL for a rollup window (exported for tests). */
+export function rollupSql(table: string, bucketExpr: string, windowExpr: string): { del: string; ins: string } {
   const del = `DELETE FROM ${table} WHERE bucket >= ${bucketExpr}`;
   const ins = `
     INSERT INTO ${table}

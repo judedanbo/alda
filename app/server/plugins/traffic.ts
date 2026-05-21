@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import type { AiCategory } from "@prisma/client";
 import prisma from "~/server/utils/prisma";
 import { getAnalyticsConfig, isExcludedPath } from "~/server/utils/analytics-config";
@@ -13,6 +12,7 @@ import {
   routePatternFromPath,
 } from "~/server/utils/request-meta";
 import { parseUserAgent } from "~/server/utils/user-agent";
+import { resolveVisitorSession } from "~/server/utils/sessionization";
 import {
   classifyVisitor,
   detectCloakedScraper,
@@ -142,23 +142,19 @@ export default defineNitroPlugin((nitroApp) => {
       const uaString = getHeader(event, "user-agent") ?? "";
       const dnt = config.respectDnt && hasDoNotTrack(event);
 
-      // Anonymous visitor id — suppressed under Do-Not-Track (no cross-visit id).
-      let visitorId = getCookie(event, VISITOR_COOKIE) ?? null;
-      let isNewVisitor = false;
-      if (!visitorId && !dnt) {
-        visitorId = randomUUID();
-        isNewVisitor = true;
-        setCookie(event, VISITOR_COOKIE, visitorId, cookieOptions(365 * 24 * 3600));
+      const session = resolveVisitorSession({
+        visitorCookie: getCookie(event, VISITOR_COOKIE) ?? null,
+        sessionCookie: getCookie(event, SESSION_COOKIE) ?? null,
+        dnt,
+      });
+      // Persistent visitor cookie — suppressed under Do-Not-Track.
+      if (session.setVisitorCookie && session.visitorId) {
+        setCookie(event, VISITOR_COOKIE, session.visitorId, cookieOptions(365 * 24 * 3600));
       }
-
-      // Session id — rolling inactivity window; always set (security-essential).
-      let sessionId = getCookie(event, SESSION_COOKIE) ?? null;
-      let isNewSession = false;
-      if (!sessionId) {
-        sessionId = randomUUID();
-        isNewSession = true;
+      // Session cookie — rolling inactivity window, always refreshed.
+      if (session.setSessionCookie) {
+        setCookie(event, SESSION_COOKIE, session.sessionId, cookieOptions(config.sessionWindowMinutes * 60));
       }
-      setCookie(event, SESSION_COOKIE, sessionId, cookieOptions(config.sessionWindowMinutes * 60));
 
       event.context.analytics = {
         excluded: false,
@@ -168,10 +164,10 @@ export default defineNitroPlugin((nitroApp) => {
         ipTruncated: truncateIp(ip),
         country: deriveCountry(event),
         requestId: getRequestId(event),
-        visitorId,
-        sessionId,
-        isNewVisitor,
-        isNewSession,
+        visitorId: session.visitorId,
+        sessionId: session.sessionId,
+        isNewVisitor: session.isNewVisitor,
+        isNewSession: session.isNewSession,
         dnt,
         ua: parseUserAgent(uaString),
         classification: classifyVisitor(uaString),
