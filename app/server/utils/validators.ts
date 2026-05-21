@@ -1,3 +1,4 @@
+import type { H3Event } from "h3";
 import { z } from "zod";
 import { NotificationType } from "@prisma/client";
 
@@ -209,6 +210,16 @@ export const notificationPreferencesSchema = z.object({
 });
 
 /**
+ * Analytics actor allow/block rule schema (admin manual enforcement)
+ */
+export const analyticsActorRuleSchema = z.object({
+  action: z.enum(["block", "allow", "unblock"]),
+  ip: z.string().trim().min(3, "IP address is required").max(64),
+  reason: z.string().max(500).optional(),
+  expiresInMinutes: z.number().int().positive().max(525600).optional(),
+});
+
+/**
  * Validate request body against a schema
  */
 export async function validateBody<T extends z.ZodSchema>(
@@ -228,6 +239,3 @@ export async function validateBody<T extends z.ZodSchema>(
 
   return result.data;
 }
-
-// Re-export H3Event type for use in validators
-import type { H3Event } from "h3";

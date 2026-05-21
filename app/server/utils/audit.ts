@@ -113,6 +113,18 @@ export const AuditActions = {
   FORM_REISSUE_REQUESTED: "form_reissue_requested",
   FORM_REISSUE_APPROVED: "form_reissue_approved",
   FORM_REISSUE_DECLINED: "form_reissue_declined",
+
+  // Web analytics, abuse detection & rate limiting
+  ABUSE_DETECTED: "abuse_detected",
+  ABUSE_THROTTLE_APPLIED: "abuse_throttle_applied",
+  ABUSE_BLOCK_APPLIED: "abuse_block_applied",
+  RATE_LIMIT_EXCEEDED: "rate_limit_exceeded",
+  AI_AGENT_BLOCKED: "ai_agent_blocked",
+  AI_AGENT_SPOOFED: "ai_agent_spoofed",
+  AI_ROBOTS_VIOLATION: "ai_robots_violation",
+  ACTOR_MANUALLY_BLOCKED: "actor_manually_blocked",
+  ACTOR_MANUALLY_UNBLOCKED: "actor_manually_unblocked",
+  ACTOR_MANUALLY_ALLOWED: "actor_manually_allowed",
 } as const;
 
 export type AuditAction = typeof AuditActions[keyof typeof AuditActions];

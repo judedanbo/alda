@@ -58,6 +58,18 @@ const mode = ref<"category" | "type">("category");
 const groups = ref<GroupState[]>([]);
 
 let successTimer: ReturnType<typeof setTimeout> | null = null;
+const savedSnapshot = ref("");
+
+function takeSnapshot(): string {
+  return JSON.stringify({
+    channels: { ...channels },
+    types: groups.value.flatMap((g) =>
+      g.types.map((t) => ({ type: t.type, e: t.emailEnabled, s: t.smsEnabled, i: t.inAppEnabled })),
+    ),
+  });
+}
+
+const isDirty = computed(() => savedSnapshot.value !== "" && takeSnapshot() !== savedSnapshot.value);
 
 function applyData(data: PreferencesData) {
   channels.emailEnabled = data.channels.emailEnabled;
@@ -92,6 +104,7 @@ onMounted(async () => {
     );
     if (response.success) {
       applyData(response.data);
+      savedSnapshot.value = takeSnapshot();
     }
   } catch (err: any) {
     errorMessage.value = err.data?.message || "Failed to load notification preferences.";
@@ -145,6 +158,7 @@ const savePreferences = async () => {
 
     if (response.success) {
       applyData(response.data);
+      savedSnapshot.value = takeSnapshot();
     }
 
     successMessage.value = "Your notification preferences have been saved.";
@@ -327,7 +341,7 @@ onUnmounted(() => {
 
       <!-- Save button -->
       <div class="flex justify-end pt-6">
-        <Button :disabled="saving" @click="savePreferences">
+        <Button :disabled="saving || !isDirty" @click="savePreferences">
           <span v-if="saving">Saving...</span>
           <span v-else>Save Preferences</span>
         </Button>

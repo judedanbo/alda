@@ -268,44 +268,6 @@ async function resendVerification() {
       </CardContent>
     </Card>
 
-    <!-- Stats Grid -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <AppStatCard
-        label="Total Declarations"
-        :value="dashboard?.total ?? 0"
-        :loading="loading"
-        icon-bg="bg-blue-100 dark:bg-blue-950/50"
-        icon-color="text-blue-600 dark:text-blue-400"
-        icon-path="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-      />
-      <AppStatCard
-        label="Pending Review"
-        :value="dashboard?.pending ?? 0"
-        :loading="loading"
-        icon-bg="bg-yellow-100 dark:bg-yellow-950/50"
-        icon-color="text-yellow-600 dark:text-yellow-400"
-        icon-path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-      <AppStatCard
-        label="Approved"
-        :value="dashboard?.approved ?? 0"
-        :loading="loading"
-        value-color="text-emerald-600 dark:text-emerald-400"
-        icon-bg="bg-emerald-100 dark:bg-emerald-950/50"
-        icon-color="text-emerald-600 dark:text-emerald-400"
-        icon-path="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-      <AppStatCard
-        label="Rejected"
-        :value="dashboard?.rejected ?? 0"
-        :loading="loading"
-        value-color="text-red-600 dark:text-red-400"
-        icon-bg="bg-red-100 dark:bg-red-950/50"
-        icon-color="text-red-600 dark:text-red-400"
-        icon-path="M6 18L18 6M6 6l12 12"
-      />
-    </div>
-
     <!-- Verification activity + Quick actions -->
     <div class="grid md:grid-cols-3 gap-4">
       <AppStatCard
