@@ -30,7 +30,7 @@ interface RecentDeclaration {
   id: string;
   uniqueCode: string;
   status: string;
-  applicantName: string;
+  applicant: { fullName: string | null };
   createdAt: string;
 }
 
@@ -38,7 +38,7 @@ interface RecentCode {
   id: string;
   uniqueCode: string;
   status: string;
-  applicantName: string;
+  applicant: { fullName: string | null };
   createdAt: string;
   isRegenerated: boolean;
   verificationCount: number;
@@ -358,8 +358,8 @@ function getActionColor(action: string): string {
 
     <!-- Tabbed Recent Activity -->
     <Card>
-      <Tabs default-value="codes">
-        <CardHeader class="pb-0">
+      <Tabs default-value="codes" class="flex-col">
+        <CardHeader class="relative z-10 pb-0">
           <TabsList>
             <TabsTrigger value="codes">Recent Codes</TabsTrigger>
             <TabsTrigger value="users">Recent Users</TabsTrigger>
@@ -367,7 +367,7 @@ function getActionColor(action: string): string {
             <TabsTrigger value="audit">Audit Logs</TabsTrigger>
           </TabsList>
         </CardHeader>
-        <CardContent class="pt-4">
+        <CardContent class="px-0 pt-6">
           <!-- Recent Codes -->
           <TabsContent value="codes">
             <AppDataTable
@@ -386,7 +386,7 @@ function getActionColor(action: string): string {
                 <AppCodePill :code="(row as RecentCode).uniqueCode" :status="(row as RecentCode).status" />
               </template>
               <template #cell-applicantName="{ row }">
-                <AppUserCell :name="(row as RecentCode).applicantName" />
+                <AppUserCell :name="(row as RecentCode).applicant?.fullName ?? undefined" />
               </template>
               <template #cell-status="{ value }">
                 <StatusBadge :status="(value as string)" />
@@ -469,7 +469,7 @@ function getActionColor(action: string): string {
                 <AppCodePill :code="(row as RecentDeclaration).uniqueCode" :status="(row as RecentDeclaration).status" />
               </template>
               <template #cell-applicantName="{ row }">
-                <AppUserCell :name="(row as RecentDeclaration).applicantName" />
+                <AppUserCell :name="(row as RecentDeclaration).applicant?.fullName ?? undefined" />
               </template>
               <template #cell-status="{ value }">
                 <StatusBadge :status="(value as string)" />
