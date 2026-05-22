@@ -74,22 +74,23 @@ const handleSubmit = async () => {
             </Alert>
 
             <!-- Email Field -->
-            <div class="space-y-2">
-              <Label for="email">Email address</Label>
+            <FormField
+              v-slot="{ id, ariaInvalid, ariaDescribedby }"
+              label="Email address"
+              :error="fieldErrors.email"
+            >
               <Input
-                id="email"
+                :id="id"
                 v-model="email"
                 type="email"
                 required
                 autocomplete="email"
                 placeholder="you@example.com"
-                :class="{ 'border-destructive': fieldErrors.email }"
+                :aria-invalid="ariaInvalid"
+                :aria-describedby="ariaDescribedby"
                 @input="clearFieldError('email')"
               />
-              <p v-if="fieldErrors.email" class="text-xs text-destructive">
-                {{ fieldErrors.email }}
-              </p>
-            </div>
+            </FormField>
 
             <!-- Submit Button -->
             <Button type="submit" class="w-full" :disabled="isLoading || !email">

@@ -298,45 +298,38 @@ const institutionTypes = [
         </DialogHeader>
 
         <div class="space-y-4">
-          <div class="space-y-2">
-            <Label for="inst-name">
-              Name <span class="text-destructive">*</span>
-            </Label>
+          <FormField
+            v-slot="{ id, ariaInvalid, ariaDescribedby }"
+            label="Name"
+            required
+            :error="fieldErrors.name"
+          >
             <Input
-              id="inst-name"
+              :id="id"
               v-model="formData.name"
               type="text"
               placeholder="Institution name"
-              :class="{ 'border-destructive': fieldErrors.name }"
+              :aria-invalid="ariaInvalid"
+              :aria-describedby="ariaDescribedby"
               @input="clearFieldError('name')"
             />
-            <p v-if="fieldErrors.name" class="text-xs text-destructive">
-              {{ fieldErrors.name }}
-            </p>
-          </div>
+          </FormField>
 
-          <div>
-            <Label for="inst-type">Type</Label>
+          <FormField v-slot="{ id }" label="Type">
             <Select v-model="formData.type">
-              <SelectTrigger class="mt-1">
+              <SelectTrigger :id="id" class="w-full">
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Select type</SelectItem>
                 <SelectItem v-for="type in institutionTypes" :key="type" :value="type">
                   {{ type }}
                 </SelectItem>
               </SelectContent>
             </Select>
-          </div>
+          </FormField>
 
           <div v-if="isEditing" class="flex items-center gap-2">
-            <input
-              id="isActive"
-              v-model="formData.isActive"
-              type="checkbox"
-              class="w-4 h-4"
-            >
+            <Checkbox id="isActive" v-model="formData.isActive" />
             <Label for="isActive">Active</Label>
           </div>
         </div>

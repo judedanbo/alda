@@ -239,57 +239,51 @@ const toggleStatus = async (category: Category) => {
         </Alert>
 
         <div class="space-y-4">
-          <div class="space-y-2">
-            <Label for="cat-name">
-              Name <span class="text-destructive">*</span>
-            </Label>
+          <FormField
+            v-slot="{ id, ariaInvalid, ariaDescribedby }"
+            label="Name"
+            required
+            :error="fieldErrors.name"
+          >
             <Input
-              id="cat-name"
+              :id="id"
               v-model="formData.name"
               type="text"
               placeholder="Category name"
-              :class="{ 'border-destructive': fieldErrors.name }"
+              :aria-invalid="ariaInvalid"
+              :aria-describedby="ariaDescribedby"
               @input="clearFieldError('name')"
             />
-            <p v-if="fieldErrors.name" class="text-xs text-destructive">
-              {{ fieldErrors.name }}
-            </p>
-          </div>
+          </FormField>
 
-          <div>
-            <Label for="cat-article" class="inline-flex items-center gap-1.5">
+          <FormField>
+            <template #label>
               Article Reference
               <HelpTip field-id="category.articleReference" />
-            </Label>
-            <Input
-              id="cat-article"
-              v-model="formData.articleReference"
-              type="text"
-              placeholder="e.g. Article 286(1)(a)"
-              maxlength="50"
-              class="mt-1"
-            />
-          </div>
+            </template>
+            <template #default="{ id }">
+              <Input
+                :id="id"
+                v-model="formData.articleReference"
+                type="text"
+                placeholder="e.g. Article 286(1)(a)"
+                maxlength="50"
+              />
+            </template>
+          </FormField>
 
-          <div>
-            <Label for="cat-desc">Description</Label>
+          <FormField v-slot="{ id }" label="Description">
             <Textarea
-              id="cat-desc"
+              :id="id"
               v-model="formData.description"
               placeholder="Brief description of this category"
               :rows="3"
               maxlength="500"
-              class="mt-1"
             />
-          </div>
+          </FormField>
 
           <div v-if="isEditing" class="flex items-center gap-2">
-            <input
-              id="cat-active"
-              v-model="formData.isActive"
-              type="checkbox"
-              class="w-4 h-4"
-            >
+            <Checkbox id="cat-active" v-model="formData.isActive" />
             <Label for="cat-active">Active</Label>
           </div>
         </div>

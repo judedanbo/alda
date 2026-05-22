@@ -369,52 +369,47 @@ const handleSubmit = async () => {
           >
             <h3 class="text-lg font-semibold text-foreground">Personal Information</h3>
 
-            <div class="space-y-2">
-              <Label for="fullName">
-                Full Name (as on Ghana Card) <span class="text-destructive">*</span>
-              </Label>
+            <FormField
+              v-slot="{ id, ariaInvalid, ariaDescribedby }"
+              label="Full Name (as on Ghana Card)"
+              required
+              :error="fieldErrors.fullName || (form.fullName && form.fullName.length < 2 ? 'Name must be at least 2 characters' : undefined)"
+            >
               <Input
-                id="fullName"
+                :id="id"
                 v-model="form.fullName"
                 type="text"
                 required
                 placeholder="Enter your full name"
-                :class="{ 'border-destructive': fieldErrors.fullName || (form.fullName && form.fullName.length < 2) }"
+                :aria-invalid="ariaInvalid"
+                :aria-describedby="ariaDescribedby"
                 @input="clearFieldError('fullName')"
               />
-              <p v-if="fieldErrors.fullName" class="text-xs text-destructive">
-                {{ fieldErrors.fullName }}
-              </p>
-              <p v-else-if="form.fullName && form.fullName.length < 2" class="text-xs text-destructive">
-                Name must be at least 2 characters
-              </p>
-            </div>
+            </FormField>
 
-            <div class="space-y-2">
-              <Label for="ghanaCardNumber" class="inline-flex items-center gap-1.5">
-                Ghana Card Number <span class="text-destructive">*</span>
+            <FormField
+              required
+              hint="Format: GHA-XXXXXXXXX-X (e.g., GHA-123456789-0)"
+              :error="fieldErrors.ghanaCardNumber || (form.ghanaCardNumber && !isGhanaCardValid ? 'Invalid format. Use: GHA-XXXXXXXXX-X (e.g., GHA-123456789-0)' : undefined)"
+            >
+              <template #label>
+                Ghana Card Number
                 <HelpTip field-id="profile.ghanaCardNumber" />
-              </Label>
-              <Input
-                id="ghanaCardNumber"
-                v-model="form.ghanaCardNumber"
-                type="text"
-                required
-                class="uppercase"
-                placeholder="GHA-XXXXXXXXX-X"
-                :class="{ 'border-destructive': fieldErrors.ghanaCardNumber || (form.ghanaCardNumber && !isGhanaCardValid) }"
-                @input="clearFieldError('ghanaCardNumber')"
-              />
-              <p v-if="fieldErrors.ghanaCardNumber" class="text-xs text-destructive">
-                {{ fieldErrors.ghanaCardNumber }}
-              </p>
-              <p v-else-if="form.ghanaCardNumber && !isGhanaCardValid" class="text-xs text-destructive">
-                Invalid format. Use: GHA-XXXXXXXXX-X (e.g., GHA-123456789-0)
-              </p>
-              <p v-else class="text-xs text-muted-foreground">
-                Format: GHA-XXXXXXXXX-X (e.g., GHA-123456789-0)
-              </p>
-            </div>
+              </template>
+              <template #default="{ id, ariaInvalid, ariaDescribedby }">
+                <Input
+                  :id="id"
+                  v-model="form.ghanaCardNumber"
+                  type="text"
+                  required
+                  class="uppercase"
+                  placeholder="GHA-XXXXXXXXX-X"
+                  :aria-invalid="ariaInvalid"
+                  :aria-describedby="ariaDescribedby"
+                  @input="clearFieldError('ghanaCardNumber')"
+                />
+              </template>
+            </FormField>
           </div>
 
           <!-- Step 2: Ghana Card Upload -->
@@ -564,99 +559,106 @@ const handleSubmit = async () => {
             <div class="border rounded-lg p-4 space-y-4">
               <h4 class="text-sm font-medium text-foreground">Add Office</h4>
 
-              <div class="space-y-2">
-                <Label for="officeCategoryId" class="inline-flex items-center gap-1.5">
-                  Public Office Category <span class="text-destructive">*</span>
+              <FormField :error="fieldErrors.officeCategoryId" required>
+                <template #label>
+                  Public Office Category
                   <HelpTip field-id="profile.category" />
-                </Label>
-                <select
-                  id="officeCategoryId"
-                  v-model="officeForm.officeCategoryId"
-                  class="w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  :class="{ 'border-destructive': fieldErrors.officeCategoryId }"
-                  @change="clearFieldError('officeCategoryId')"
-                >
-                  <option :value="null" disabled>Select category</option>
-                  <option
-                    v-for="cat in categories?.data || []"
-                    :key="cat.id"
-                    :value="cat.id"
+                </template>
+                <template #default="{ id, ariaDescribedby }">
+                  <Select
+                    v-model="officeForm.officeCategoryId"
+                    @update:model-value="clearFieldError('officeCategoryId')"
                   >
-                    {{ cat.name }}
-                  </option>
-                </select>
-                <p v-if="fieldErrors.officeCategoryId" class="text-xs text-destructive">
-                  {{ fieldErrors.officeCategoryId }}
-                </p>
-              </div>
+                    <SelectTrigger :id="id" :aria-describedby="ariaDescribedby" class="w-full">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem
+                        v-for="cat in categories?.data || []"
+                        :key="cat.id"
+                        :value="cat.id"
+                      >
+                        {{ cat.name }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </template>
+              </FormField>
 
-              <div class="space-y-2">
-                <Label for="institutionId" class="inline-flex items-center gap-1.5">
+              <FormField>
+                <template #label>
                   Institution
                   <HelpTip field-id="profile.institution" />
-                </Label>
-                <select
-                  id="institutionId"
-                  v-model="officeForm.institutionId"
-                  class="w-full px-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option :value="null">Select institution (optional)</option>
-                  <option
-                    v-for="inst in institutions?.data || []"
-                    :key="inst.id"
-                    :value="inst.id"
-                  >
-                    {{ inst.name }}
-                  </option>
-                </select>
-              </div>
+                </template>
+                <template #default="{ id }">
+                  <Select v-model="officeForm.institutionId">
+                    <SelectTrigger :id="id" class="w-full">
+                      <SelectValue placeholder="Select institution (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem :value="null">
+                        None
+                      </SelectItem>
+                      <SelectItem
+                        v-for="inst in institutions?.data || []"
+                        :key="inst.id"
+                        :value="inst.id"
+                      >
+                        {{ inst.name }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </template>
+              </FormField>
 
-              <div class="space-y-2">
-                <Label for="designation" class="inline-flex items-center gap-1.5">
-                  Designation / Position <span class="text-destructive">*</span>
+              <FormField :error="fieldErrors.designation" required>
+                <template #label>
+                  Designation / Position
                   <HelpTip field-id="profile.designation" />
-                </Label>
-                <Input
-                  id="designation"
-                  v-model="officeForm.designation"
-                  type="text"
-                  placeholder="e.g., Deputy Minister, Director, etc."
-                  :class="{ 'border-destructive': fieldErrors.designation }"
-                  @input="clearFieldError('designation')"
-                />
-                <p v-if="fieldErrors.designation" class="text-xs text-destructive">
-                  {{ fieldErrors.designation }}
-                </p>
-              </div>
+                </template>
+                <template #default="{ id, ariaInvalid, ariaDescribedby }">
+                  <Input
+                    :id="id"
+                    v-model="officeForm.designation"
+                    type="text"
+                    placeholder="e.g., Deputy Minister, Director, etc."
+                    :aria-invalid="ariaInvalid"
+                    :aria-describedby="ariaDescribedby"
+                    @input="clearFieldError('designation')"
+                  />
+                </template>
+              </FormField>
 
               <div class="grid grid-cols-2 gap-4">
-                <div class="space-y-2">
-                  <Label for="startDate">
-                    Start Date <span class="text-destructive">*</span>
-                  </Label>
+                <FormField
+                  v-slot="{ id, ariaInvalid, ariaDescribedby }"
+                  label="Start Date"
+                  required
+                  :error="fieldErrors.startDate"
+                >
                   <Input
-                    id="startDate"
+                    :id="id"
                     v-model="officeForm.startDate"
                     type="date"
-                    :class="{ 'border-destructive': fieldErrors.startDate }"
+                    :aria-invalid="ariaInvalid"
+                    :aria-describedby="ariaDescribedby"
                     @input="clearFieldError('startDate')"
                   />
-                  <p v-if="fieldErrors.startDate" class="text-xs text-destructive">
-                    {{ fieldErrors.startDate }}
-                  </p>
-                </div>
-                <div class="space-y-2">
-                  <Label for="endDate">End Date</Label>
+                </FormField>
+                <FormField
+                  v-slot="{ id, ariaInvalid, ariaDescribedby }"
+                  label="End Date"
+                  hint="Leave blank if current"
+                  :error="fieldErrors.endDate"
+                >
                   <Input
-                    id="endDate"
+                    :id="id"
                     v-model="officeForm.endDate"
                     type="date"
+                    :aria-invalid="ariaInvalid"
+                    :aria-describedby="ariaDescribedby"
                   />
-                  <p v-if="fieldErrors.endDate" class="text-xs text-destructive">
-                    {{ fieldErrors.endDate }}
-                  </p>
-                  <p v-else class="text-xs text-muted-foreground">Leave blank if current</p>
-                </div>
+                </FormField>
               </div>
 
               <Button

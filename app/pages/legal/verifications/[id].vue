@@ -135,10 +135,13 @@ const formatDate = (date: string) =>
     </div>
 
     <!-- Error -->
-    <div v-else-if="error" class="text-center py-12">
-      <p class="text-destructive">Failed to load applicant details</p>
-      <Button variant="link" class="mt-4" @click="refresh()">Try again</Button>
-    </div>
+    <EmptyState v-else-if="error" title="Failed to load applicant details">
+      <template #action>
+        <Button variant="link" @click="refresh()">
+          Try again
+        </Button>
+      </template>
+    </EmptyState>
 
     <template v-else-if="profile">
       <!-- Header -->
@@ -147,12 +150,9 @@ const formatDate = (date: string) =>
           <h1 class="text-2xl font-bold text-foreground">{{ profile.fullName }}</h1>
           <p class="text-muted-foreground">{{ profile.user?.email }}</p>
         </div>
-        <span
-          class="px-4 py-2 rounded-full text-sm font-medium"
-          :class="statusColors[profile.verificationStatus] || 'bg-muted'"
-        >
+        <Badge :class="statusColors[profile.verificationStatus] || 'bg-muted text-muted-foreground'">
           {{ statusLabels[profile.verificationStatus] || profile.verificationStatus }}
-        </span>
+        </Badge>
       </div>
 
       <div class="grid lg:grid-cols-3 gap-6">
@@ -257,50 +257,63 @@ const formatDate = (date: string) =>
             <CardHeader><CardTitle>Review Decision</CardTitle></CardHeader>
             <CardContent>
               <div class="space-y-4">
-                <div>
-                  <label class="text-sm font-medium mb-2 flex items-center gap-1.5">
+                <FormField>
+                  <template #label>
                     Decision
                     <HelpTip field-id="verification.decision" />
-                  </label>
-                  <Select v-model="reviewForm.status">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select decision..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="VERIFIED">Verify (Approve)</SelectItem>
-                      <SelectItem value="ON_HOLD">Put On Hold</SelectItem>
-                      <SelectItem value="MORE_INFO_REQUIRED">Request More Info</SelectItem>
-                      <SelectItem value="REJECTED">Reject</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                  </template>
+                  <template #default="{ id: fieldId }">
+                    <Select v-model="reviewForm.status">
+                      <SelectTrigger :id="fieldId" class="w-full">
+                        <SelectValue placeholder="Select decision..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="VERIFIED">
+                          Verify (Approve)
+                        </SelectItem>
+                        <SelectItem value="ON_HOLD">
+                          Put On Hold
+                        </SelectItem>
+                        <SelectItem value="MORE_INFO_REQUIRED">
+                          Request More Info
+                        </SelectItem>
+                        <SelectItem value="REJECTED">
+                          Reject
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </template>
+                </FormField>
 
-                <div>
-                  <label class="text-sm font-medium mb-2 flex items-center gap-1.5">
-                    Reason <span class="text-destructive">*</span>
+                <FormField required>
+                  <template #label>
+                    Reason
                     <HelpTip field-id="verification.reason" />
-                  </label>
-                  <textarea
-                    v-model="reviewForm.reason"
-                    rows="3"
-                    class="w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="Explain the reason for this decision..."
-                  />
-                </div>
+                  </template>
+                  <template #default="{ id: fieldId }">
+                    <Textarea
+                      :id="fieldId"
+                      v-model="reviewForm.reason"
+                      :rows="3"
+                      placeholder="Explain the reason for this decision..."
+                    />
+                  </template>
+                </FormField>
 
-                <div v-if="reviewForm.status === 'MORE_INFO_REQUIRED' || reviewForm.status === 'REJECTED' || reviewForm.status === 'ON_HOLD'">
-                  <label class="text-sm font-medium mb-2 block">
-                    Message to Applicant
-                    <span v-if="reviewForm.status === 'MORE_INFO_REQUIRED'" class="text-destructive">*</span>
-                    <span v-else class="text-muted-foreground">(optional)</span>
-                  </label>
-                  <textarea
+                <FormField
+                  v-if="reviewForm.status === 'MORE_INFO_REQUIRED' || reviewForm.status === 'REJECTED' || reviewForm.status === 'ON_HOLD'"
+                  v-slot="{ id: fieldId }"
+                  :required="reviewForm.status === 'MORE_INFO_REQUIRED'"
+                  :hint="reviewForm.status === 'MORE_INFO_REQUIRED' ? undefined : 'Optional'"
+                  label="Message to Applicant"
+                >
+                  <Textarea
+                    :id="fieldId"
                     v-model="reviewForm.messageToApplicant"
-                    rows="3"
-                    class="w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                    :rows="3"
                     placeholder="Specific message to the applicant..."
                   />
-                </div>
+                </FormField>
 
                 <div v-if="submitError" class="text-sm text-destructive">{{ submitError }}</div>
 
@@ -336,12 +349,9 @@ const formatDate = (date: string) =>
                   }"
                 >
                   <div class="flex items-center gap-2 mb-1">
-                    <span
-                      class="px-2 py-0.5 rounded text-xs font-medium"
-                      :class="statusColors[review.status] || 'bg-muted'"
-                    >
+                    <Badge :class="statusColors[review.status] || 'bg-muted text-muted-foreground'">
                       {{ statusLabels[review.status] || review.status }}
-                    </span>
+                    </Badge>
                     <span class="text-xs text-muted-foreground">
                       {{ formatDate(review.createdAt) }}
                     </span>

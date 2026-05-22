@@ -147,14 +147,13 @@ const submitReissueRequest = async () => {
     </div>
 
     <!-- Error -->
-    <Card v-else-if="error" class="text-center py-12">
-      <CardContent>
-        <p class="text-destructive mb-4">Failed to load declaration</p>
+    <EmptyState v-else-if="error" title="Failed to load declaration">
+      <template #action>
         <Button variant="link" @click="refresh()">
           Try again
         </Button>
-      </CardContent>
-    </Card>
+      </template>
+    </EmptyState>
 
     <!-- Declaration Details -->
     <template v-else-if="declaration">

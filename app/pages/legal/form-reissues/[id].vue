@@ -215,10 +215,13 @@ const formatDate = (date: string) =>
     </div>
 
     <!-- Error -->
-    <div v-else-if="error" class="text-center py-12">
-      <p class="text-destructive">Failed to load reissue request</p>
-      <Button variant="link" class="mt-4" @click="refresh()">Try again</Button>
-    </div>
+    <EmptyState v-else-if="error" title="Failed to load reissue request">
+      <template #action>
+        <Button variant="link" @click="refresh()">
+          Try again
+        </Button>
+      </template>
+    </EmptyState>
 
     <template v-else-if="request">
       <!-- Header -->
@@ -229,12 +232,9 @@ const formatDate = (date: string) =>
           </h1>
           <p class="text-muted-foreground font-mono">{{ declaration?.uniqueCode }}</p>
         </div>
-        <span
-          class="px-4 py-2 rounded-full text-sm font-medium"
-          :class="statusColors[request.status] || 'bg-muted'"
-        >
+        <Badge :class="statusColors[request.status] || 'bg-muted text-muted-foreground'">
           {{ statusLabels[request.status] || request.status }}
-        </span>
+        </Badge>
       </div>
 
       <div class="grid lg:grid-cols-3 gap-6">
@@ -309,12 +309,9 @@ const formatDate = (date: string) =>
                   }"
                 >
                   <div class="flex items-center gap-2 mb-1">
-                    <span
-                      class="px-2 py-0.5 rounded text-xs font-medium"
-                      :class="statusColors[h.status] || 'bg-muted'"
-                    >
+                    <Badge :class="statusColors[h.status] || 'bg-muted text-muted-foreground'">
                       {{ statusLabels[h.status] || h.status }}
-                    </span>
+                    </Badge>
                     <span class="text-xs text-muted-foreground">{{ formatDate(h.createdAt) }}</span>
                   </div>
                   <p v-if="h.applicantNote" class="text-sm mt-1">{{ h.applicantNote }}</p>
@@ -337,88 +334,101 @@ const formatDate = (date: string) =>
             <CardHeader><CardTitle>Record Decision</CardTitle></CardHeader>
             <CardContent>
               <div class="space-y-4">
-                <div>
-                  <label class="text-sm font-medium mb-2 block">Decision</label>
+                <FormField v-slot="{ id: fieldId }" label="Decision">
                   <Select v-model="decisionForm.status">
-                    <SelectTrigger>
+                    <SelectTrigger :id="fieldId" class="w-full">
                       <SelectValue placeholder="Select decision..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="APPROVED">Approve & Reissue</SelectItem>
-                      <SelectItem value="DECLINED">Decline</SelectItem>
+                      <SelectItem value="APPROVED">
+                        Approve &amp; Reissue
+                      </SelectItem>
+                      <SelectItem value="DECLINED">
+                        Decline
+                      </SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
+                </FormField>
 
                 <template v-if="decisionForm.status === 'APPROVED'">
-                  <div>
-                    <label class="text-sm font-medium mb-2 flex items-center gap-1.5">
-                      Scanned Approved Letter <span class="text-destructive">*</span>
+                  <FormField required>
+                    <template #label>
+                      Scanned Approved Letter
                       <HelpTip field-id="reissue.letterScan" />
-                    </label>
-                    <input
-                      type="file"
-                      accept="application/pdf,image/*"
-                      class="w-full text-sm"
-                      @change="handleLetterUpload"
-                    >
-                    <p v-if="uploadingLetter" class="text-xs text-muted-foreground mt-1">Uploading...</p>
-                    <p v-else-if="letterScanUrl" class="text-xs text-green-600 dark:text-green-400 mt-1">Letter uploaded</p>
-                    <p v-if="uploadError" class="text-xs text-destructive mt-1">{{ uploadError }}</p>
-                  </div>
+                    </template>
+                    <template #default="{ id: fieldId }">
+                      <FileInput
+                        :id="fieldId"
+                        accept="application/pdf,image/*"
+                        button-label="Upload letter"
+                        @change="handleLetterUpload"
+                      />
+                      <p v-if="uploadingLetter" class="mt-1 text-xs text-muted-foreground">
+                        Uploading...
+                      </p>
+                      <p v-else-if="letterScanUrl" class="mt-1 text-xs text-green-600 dark:text-green-400">
+                        Letter uploaded
+                      </p>
+                      <p v-if="uploadError" class="mt-1 text-xs text-destructive">
+                        {{ uploadError }}
+                      </p>
+                    </template>
+                  </FormField>
 
-                  <div>
-                    <label class="text-sm font-medium mb-2 flex items-center gap-1.5">
-                      Approved By <span class="text-destructive">*</span>
+                  <FormField required>
+                    <template #label>
+                      Approved By
                       <HelpTip field-id="reissue.approverType" />
-                    </label>
-                    <Select v-model="decisionForm.approverType">
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select approver..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="AUDITOR_GENERAL">Auditor General</SelectItem>
-                        <SelectItem value="REGIONAL_AUDITOR">Regional Auditor</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                    </template>
+                    <template #default="{ id: fieldId }">
+                      <Select v-model="decisionForm.approverType">
+                        <SelectTrigger :id="fieldId" class="w-full">
+                          <SelectValue placeholder="Select approver..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="AUDITOR_GENERAL">
+                            Auditor General
+                          </SelectItem>
+                          <SelectItem value="REGIONAL_AUDITOR">
+                            Regional Auditor
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </template>
+                  </FormField>
 
-                  <div>
-                    <label class="text-sm font-medium mb-2 block">
-                      Approver Detail <span class="text-muted-foreground">(optional)</span>
-                    </label>
-                    <input
+                  <FormField v-slot="{ id: fieldId }" label="Approver Detail" hint="Optional">
+                    <Input
+                      :id="fieldId"
                       v-model="decisionForm.approverDetail"
                       type="text"
                       placeholder="e.g. Regional Auditor, Ashanti"
-                      class="w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                  </div>
+                    />
+                  </FormField>
 
-                  <div>
-                    <label class="text-sm font-medium mb-2 block">
-                      Reasons <span class="text-muted-foreground">(optional)</span>
-                    </label>
-                    <textarea
+                  <FormField v-slot="{ id: fieldId }" label="Reasons" hint="Optional">
+                    <Textarea
+                      :id="fieldId"
                       v-model="decisionForm.decisionReason"
-                      rows="3"
-                      class="w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                      :rows="3"
                       placeholder="Any notes about this reissue..."
                     />
-                  </div>
+                  </FormField>
                 </template>
 
-                <div v-else-if="decisionForm.status === 'DECLINED'">
-                  <label class="text-sm font-medium mb-2 block">
-                    Reason <span class="text-destructive">*</span>
-                  </label>
-                  <textarea
+                <FormField
+                  v-else-if="decisionForm.status === 'DECLINED'"
+                  v-slot="{ id: fieldId }"
+                  label="Reason"
+                  required
+                >
+                  <Textarea
+                    :id="fieldId"
                     v-model="decisionForm.decisionReason"
-                    rows="3"
-                    class="w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                    :rows="3"
                     placeholder="Explain why the reissue is declined..."
                   />
-                </div>
+                </FormField>
 
                 <div v-if="submitError" class="text-sm text-destructive">{{ submitError }}</div>
 
@@ -438,12 +448,9 @@ const formatDate = (date: string) =>
             <CardHeader><CardTitle>Decision Recorded</CardTitle></CardHeader>
             <CardContent class="space-y-2 text-sm">
               <div class="flex items-center gap-2">
-                <span
-                  class="px-2 py-0.5 rounded text-xs font-medium"
-                  :class="statusColors[request.status] || 'bg-muted'"
-                >
+                <Badge :class="statusColors[request.status] || 'bg-muted text-muted-foreground'">
                   {{ statusLabels[request.status] || request.status }}
-                </span>
+                </Badge>
                 <span v-if="request.reviewedAt" class="text-xs text-muted-foreground">{{ formatDate(request.reviewedAt) }}</span>
               </div>
               <p v-if="request.status === 'APPROVED'">
