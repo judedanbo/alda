@@ -212,7 +212,8 @@ function formatTimestamp(iso: string) {
                   <span v-if="row.verifierEmail"> · {{ row.verifierEmail }}</span>
                 </p>
               </div>
-              <Badge :class="row.found
+              <Badge
+:class="row.found
                 ? 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300'
                 : 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300'">
                 {{ row.found ? 'Found' : 'Invalid' }}

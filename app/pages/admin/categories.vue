@@ -32,7 +32,7 @@ const formData = ref({
 const fetchCategories = async () => {
   loading.value = true;
   try {
-    const response = await authFetch<any>(
+    const response = await authFetch<{ success: boolean; data: Category[] }>(
       "/api/admin/categories?includeInactive=true",
     );
 
@@ -198,7 +198,8 @@ const toggleStatus = async (category: Category) => {
               {{ category.description || "-" }}
             </TableCell>
             <TableCell>
-              <Badge :class="category.isActive
+              <Badge
+:class="category.isActive
                 ? 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300'
                 : 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300'">
                 {{ category.isActive ? "Active" : "Inactive" }}
@@ -288,7 +289,7 @@ const toggleStatus = async (category: Category) => {
               v-model="formData.isActive"
               type="checkbox"
               class="w-4 h-4"
-            />
+            >
             <Label for="cat-active">Active</Label>
           </div>
         </div>

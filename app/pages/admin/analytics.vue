@@ -29,7 +29,7 @@ const {
 
     <!-- Zone 1: Filters -->
     <AnalyticsFilterBar
-      :filters="filters"
+      v-model:filters="filters"
       :show-officer-filter="true"
       :show-export="true"
       @apply="applyFilters"

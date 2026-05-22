@@ -12,8 +12,11 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  footnote: undefined,
+  href: undefined,
   iconBg: "bg-primary/10",
   iconColor: "text-primary",
+  iconPath: undefined,
   valueColor: "text-foreground",
   loading: false,
 });

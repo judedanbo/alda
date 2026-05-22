@@ -30,7 +30,7 @@ const {
     />
 
     <ComplianceFilterBar
-      :filters="filters"
+      v-model:filters="filters"
       @apply="applyFilters"
       @reset="resetFilters"
     />

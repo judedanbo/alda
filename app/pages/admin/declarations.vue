@@ -83,7 +83,19 @@ const showDetailModal = ref(false);
 
 // Section review panel
 const showReviewPanel = ref(false);
-const sectionReviewsData = ref<any[]>([]);
+interface SectionReviewData {
+  id: string;
+  section: string;
+  isAcceptable: boolean;
+  comments: string | null;
+  resolvedAt: string | null;
+  resolvedById: string | null;
+  reviewer: { email: string } | null;
+  resolvedBy: { email: string } | null;
+  createdAt: string;
+}
+
+const sectionReviewsData = ref<SectionReviewData[]>([]);
 const loadingSections = ref(false);
 
 const fetchDeclarations = async () => {
@@ -99,7 +111,7 @@ const fetchDeclarations = async () => {
     if (dateFrom.value) params.append("dateFrom", dateFrom.value);
     if (dateTo.value) params.append("dateTo", dateTo.value);
 
-    const response = await authFetch<any>(`/api/admin/declarations?${params}`);
+    const response = await authFetch<{ success: boolean; data: { declarations: Declaration[]; total: number } }>(`/api/admin/declarations?${params}`);
 
     if (response.success) {
       declarations.value = response.data.declarations;
@@ -162,7 +174,7 @@ const openReviewPanel = async (declaration: Declaration) => {
   showReviewPanel.value = true;
   loadingSections.value = true;
   try {
-    const response = await authFetch<any>(`/api/reviews/${declaration.id}/sections`);
+    const response = await authFetch<{ data: SectionReviewData[] }>(`/api/reviews/${declaration.id}/sections`);
     sectionReviewsData.value = response.data || [];
   } catch {
     sectionReviewsData.value = [];
@@ -516,11 +528,11 @@ const statuses = [
           </div>
 
           <!-- Section Review Comments -->
-          <div v-if="selectedDeclaration.sectionReviews?.some((r: any) => !r.isAcceptable)" class="pt-4 border-t">
+          <div v-if="selectedDeclaration.sectionReviews?.some((r) => !r.isAcceptable)" class="pt-4 border-t">
             <h3 class="text-sm font-medium text-muted-foreground mb-3">Section Review Issues</h3>
             <div class="space-y-2">
               <div
-                v-for="review in selectedDeclaration.sectionReviews.filter((r: any) => !r.isAcceptable)"
+                v-for="review in selectedDeclaration.sectionReviews.filter((r) => !r.isAcceptable)"
                 :key="review.id"
                 class="rounded-lg border p-3 text-sm"
                 :class="review.resolvedAt
@@ -529,7 +541,8 @@ const statuses = [
               >
                 <div class="flex items-center gap-2">
                   <span class="font-medium">{{ FORM_SECTION_LABELS[review.section] || review.section }}</span>
-                  <Badge :class="review.resolvedAt
+                  <Badge
+:class="review.resolvedAt
                     ? 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300'
                     : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'">
                     {{ review.resolvedAt ? 'Resolved' : 'Pending' }}

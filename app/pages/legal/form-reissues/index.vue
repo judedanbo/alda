@@ -1,4 +1,33 @@
 <script setup lang="ts">
+interface ReissueApplicant {
+  fullName: string;
+  ghanaCardNumber: string;
+  user: { email: string };
+}
+
+interface ReissueDeclaration {
+  id: string;
+  uniqueCode: string;
+  applicant: ReissueApplicant;
+}
+
+interface ReissueRequestItem {
+  id: string;
+  status: string;
+  applicantNote: string | null;
+  createdAt: string;
+  declaration: ReissueDeclaration;
+  requestedBy: { email: string } | null;
+  reviewedBy: { email: string } | null;
+}
+
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
@@ -11,7 +40,7 @@ const search = ref("");
 
 const { data, pending, error, refresh } = await useAsyncData(
   "legal-form-reissues",
-  () => authFetch<{ data: { requests: any[]; pagination: any } }>("/api/legal/form-reissues", {
+  () => authFetch<{ data: { requests: ReissueRequestItem[]; pagination: PaginationInfo } }>("/api/legal/form-reissues", {
     query: {
       page: page.value,
       limit: 20,
@@ -53,7 +82,7 @@ const formatDate = (date: string) =>
           type="text"
           placeholder="Search by declaration code, name, or Ghana Card..."
           class="w-full px-4 py-2 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-        />
+        >
       </div>
       <Select v-model="statusFilter">
         <SelectTrigger class="w-[220px]">

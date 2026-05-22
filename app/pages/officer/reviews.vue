@@ -63,10 +63,10 @@ const fetchPendingReviews = async () => {
       query.set("search", search.value);
     }
 
-    const response = await authFetch<any>(`/api/reviews/pending?${query}`);
+    const response = await authFetch<{ success: boolean; data: { declarations: Declaration[]; total: number } }>(`/api/reviews/pending?${query}`);
 
     if (response.success) {
-      pendingDeclarations.value = response.data.declarations as Declaration[];
+      pendingDeclarations.value = response.data.declarations;
       total.value = response.data.total;
     }
   } catch (error) {
@@ -86,7 +86,7 @@ const openReview = async (declaration: Declaration) => {
   loadingSections.value = true;
 
   try {
-    const response = await authFetch<any>(`/api/reviews/${declaration.id}/sections`);
+    const response = await authFetch<{ data: SectionReview[] }>(`/api/reviews/${declaration.id}/sections`);
     sectionReviews.value = response.data || [];
   } catch {
     sectionReviews.value = [];

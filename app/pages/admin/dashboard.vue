@@ -88,7 +88,7 @@ const stats = computed<AdminStats>(() =>
   },
 );
 
-const formatDate = (dateString: string) =>
+const _formatDate = (dateString: string) =>
   new Date(dateString).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
@@ -417,7 +417,8 @@ function getActionColor(action: string): string {
                 <AppVerificationDots :count="(value as number) ?? 0" />
               </template>
               <template #cell-isRegenerated="{ value }">
-                <Badge :class="(value as boolean)
+                <Badge
+:class="(value as boolean)
                   ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
                   : 'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300'">
                   {{ (value as boolean) ? 'Reissued' : 'Initial' }}
@@ -454,7 +455,8 @@ function getActionColor(action: string): string {
                 </div>
               </template>
               <template #cell-isActive="{ value }">
-                <Badge :class="(value as boolean)
+                <Badge
+:class="(value as boolean)
                   ? 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300'
                   : 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300'">
                   {{ (value as boolean) ? 'Active' : 'Inactive' }}

@@ -67,7 +67,7 @@ const handleSubmit = async () => {
         </CardHeader>
 
         <CardContent>
-          <form @submit.prevent="handleSubmit" class="space-y-6">
+          <form class="space-y-6" @submit.prevent="handleSubmit">
             <!-- Error Alert -->
             <Alert v-if="error" variant="destructive">
               <AlertDescription>{{ error }}</AlertDescription>

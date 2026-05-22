@@ -39,9 +39,11 @@ const props = withDefaults(
     loading: false,
     striped: true,
     hoverable: true,
+    statusBorderKey: undefined,
     emptyMessage: "No data found",
     sortColumn: null,
     sortDirection: "desc",
+    meta: undefined,
     skeletonRows: 5,
   },
 );

@@ -2,12 +2,12 @@ export function useFieldErrors() {
   const fieldErrors = reactive<Record<string, string>>({});
 
   function clearFieldError(field: string) {
-    delete fieldErrors[field];
+    Reflect.deleteProperty(fieldErrors, field);
   }
 
   function clearAll() {
     for (const key of Object.keys(fieldErrors)) {
-      delete fieldErrors[key];
+      Reflect.deleteProperty(fieldErrors, key);
     }
   }
 

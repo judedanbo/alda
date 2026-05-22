@@ -1,4 +1,44 @@
 <script setup lang="ts">
+interface ProfileUser {
+  email: string;
+  phone: string | null;
+  createdAt: string;
+}
+
+interface OfficeCategoryInfo {
+  name: string;
+  articleReference: string | null;
+}
+
+interface InstitutionInfo {
+  name: string;
+}
+
+interface ProfileOffice {
+  id: string;
+  designation: string;
+  officeCategory: OfficeCategoryInfo;
+  institution: InstitutionInfo | null;
+}
+
+interface ProfileListItem {
+  id: string;
+  fullName: string;
+  ghanaCardNumber: string;
+  verificationStatus: string;
+  createdAt: string;
+  user: ProfileUser;
+  offices: ProfileOffice[];
+  verificationReviews: { id: string; status: string; createdAt: string; reviewer: { email: string } }[];
+}
+
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
@@ -13,7 +53,7 @@ const statusQuery = computed(() => statusFilter.value === "ALL" ? undefined : st
 
 const { data, pending, error, refresh } = await useAsyncData(
   "legal-verifications",
-  () => authFetch<{ data: { profiles: any[]; pagination: any } }>("/api/legal/verifications", {
+  () => authFetch<{ data: { profiles: ProfileListItem[]; pagination: PaginationInfo } }>("/api/legal/verifications", {
     query: {
       page: page.value,
       limit: 20,
@@ -59,7 +99,7 @@ const formatDate = (date: string) =>
           type="text"
           placeholder="Search by name, Ghana Card, or email..."
           class="w-full px-4 py-2 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-        />
+        >
       </div>
       <Select v-model="statusFilter">
         <SelectTrigger class="w-[220px]">

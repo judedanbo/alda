@@ -2,9 +2,7 @@
 import type { ComplianceFilterState } from "~/composables/useCompliance";
 import { authFetch } from "~/utils/authFetch";
 
-defineProps<{
-  filters: ComplianceFilterState;
-}>();
+const filters = defineModel<ComplianceFilterState>("filters", { required: true });
 
 const emit = defineEmits<{
   apply: [];

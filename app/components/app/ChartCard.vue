@@ -14,6 +14,8 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  description: undefined,
+  options: undefined,
   height: 300,
   loading: false,
 });

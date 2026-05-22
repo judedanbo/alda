@@ -40,6 +40,7 @@ export default defineNuxtConfig({
     "shadcn-nuxt",
     "@pinia/nuxt",
     "@nuxtjs/color-mode",
+    "@nuxt/eslint",
   ],
 
   css: ["~/assets/css/main.css"],

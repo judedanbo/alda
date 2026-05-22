@@ -83,13 +83,14 @@ const verifyCode = async () => {
   verificationResult.value = null;
 
   try {
-    const response = await authFetch<any>(`/api/verify/${encodeURIComponent(code.value.trim())}`);
+    const response = await authFetch<{ success: boolean; data: VerificationResult }>(`/api/verify/${encodeURIComponent(code.value.trim())}`);
 
     if (response.success) {
-      verificationResult.value = response.data as unknown as VerificationResult;
+      verificationResult.value = response.data;
     }
-  } catch (error: any) {
-    codeError.value = error.data?.statusMessage || "Verification failed. Code may be invalid.";
+  } catch (error: unknown) {
+    const e = error as { data?: { statusMessage?: string } };
+    codeError.value = e.data?.statusMessage || "Verification failed. Code may be invalid.";
   } finally {
     isVerifying.value = false;
   }

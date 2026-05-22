@@ -2,19 +2,19 @@ import { authFetch } from "~/utils/authFetch";
 
 export function useDeclarations() {
   async function fetchDeclarations(params?: { page?: number; status?: string }) {
-    return authFetch<any>("/api/declarations", { query: params as Record<string, unknown> });
+    return authFetch<Record<string, unknown>>("/api/declarations", { query: params as Record<string, unknown> });
   }
 
   async function fetchDeclaration(id: string) {
-    return authFetch<any>(`/api/declarations/${id}`);
+    return authFetch<Record<string, unknown>>(`/api/declarations/${id}`);
   }
 
   async function createDeclaration() {
-    return authFetch<any>("/api/declarations", { method: "POST" });
+    return authFetch<Record<string, unknown>>("/api/declarations", { method: "POST" });
   }
 
   async function fetchDeclarationStatus(id: string) {
-    return authFetch<any>(`/api/declarations/${id}/status`);
+    return authFetch<Record<string, unknown>>(`/api/declarations/${id}/status`);
   }
 
   return {

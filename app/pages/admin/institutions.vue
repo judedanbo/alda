@@ -46,7 +46,7 @@ const fetchInstitutions = async () => {
     if (searchQuery.value) params.append("search", searchQuery.value);
     if (selectedStatus.value) params.append("status", selectedStatus.value);
 
-    const response = await authFetch<any>(`/api/admin/institutions?${params}`);
+    const response = await authFetch<{ success: boolean; data: { institutions: Institution[]; total: number } }>(`/api/admin/institutions?${params}`);
 
     if (response.success) {
       institutions.value = response.data.institutions;
@@ -236,7 +236,8 @@ const institutionTypes = [
               {{ institution._count.applicantProfiles }}
             </TableCell>
             <TableCell>
-              <Badge :class="institution.isActive
+              <Badge
+:class="institution.isActive
                 ? 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300'
                 : 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300'">
                 {{ institution.isActive ? 'Active' : 'Inactive' }}
@@ -331,11 +332,11 @@ const institutionTypes = [
 
           <div v-if="isEditing" class="flex items-center gap-2">
             <input
+              id="isActive"
               v-model="formData.isActive"
               type="checkbox"
-              id="isActive"
               class="w-4 h-4"
-            />
+            >
             <Label for="isActive">Active</Label>
           </div>
         </div>

@@ -1,4 +1,85 @@
 <script setup lang="ts">
+interface ReissueUser {
+  email: string;
+}
+
+interface CollectionOfficeInfo {
+  id: string;
+  name: string;
+}
+
+interface FormCollectionInfo {
+  id: string;
+  collectedAt: string;
+  collectionOffice: CollectionOfficeInfo;
+}
+
+interface ApplicantUser {
+  id: string;
+  email: string;
+  phone: string | null;
+}
+
+interface OfficeCategoryInfo {
+  name: string;
+  articleReference: string | null;
+}
+
+interface InstitutionInfo {
+  id: string;
+  name: string;
+}
+
+interface ApplicantOfficeInfo {
+  id: string;
+  designation: string;
+  officeCategory: OfficeCategoryInfo;
+  institution: InstitutionInfo | null;
+}
+
+interface ApplicantInfo {
+  id: string;
+  fullName: string;
+  ghanaCardNumber: string;
+  user: ApplicantUser;
+  offices: ApplicantOfficeInfo[];
+}
+
+interface ReissueHistoryItem {
+  id: string;
+  status: string;
+  applicantNote: string | null;
+  approverType: string | null;
+  approverDetail: string | null;
+  decisionReason: string | null;
+  createdAt: string;
+  requestedBy: ReissueUser | null;
+  reviewedBy: ReissueUser | null;
+}
+
+interface DeclarationInfo {
+  id: string;
+  uniqueCode: string;
+  applicant: ApplicantInfo;
+  formCollections: FormCollectionInfo[];
+  formReissueRequests: ReissueHistoryItem[];
+}
+
+interface FormReissueRequest {
+  id: string;
+  status: string;
+  applicantNote: string | null;
+  approverType: string | null;
+  approverDetail: string | null;
+  letterScanUrl: string | null;
+  decisionReason: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+  declaration: DeclarationInfo;
+  requestedBy: ReissueUser | null;
+  reviewedBy: ReissueUser | null;
+}
+
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
@@ -9,7 +90,7 @@ const id = route.params.id as string;
 
 const { data, pending, error, refresh } = await useAsyncData(
   `form-reissue-${id}`,
-  () => authFetch<{ data: any }>(`/api/legal/form-reissues/${id}`),
+  () => authFetch<{ data: FormReissueRequest }>(`/api/legal/form-reissues/${id}`),
 );
 
 const request = computed(() => data.value?.data);
@@ -45,9 +126,10 @@ async function handleLetterUpload(event: Event) {
       { method: "POST", body: formData }
     );
     letterScanUrl.value = response.data.url;
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const err = e as { data?: { message?: string; statusMessage?: string } };
     uploadError.value =
-      e.data?.message || e.data?.statusMessage || "Failed to upload letter";
+      err.data?.message || err.data?.statusMessage || "Failed to upload letter";
   } finally {
     uploadingLetter.value = false;
   }
@@ -86,8 +168,9 @@ async function submitDecision() {
     decisionForm.value = { status: "", approverType: "", approverDetail: "", decisionReason: "" };
     letterScanUrl.value = "";
     await refresh();
-  } catch (e: any) {
-    submitError.value = e.data?.message || e.data?.statusMessage || "Failed to submit decision";
+  } catch (e: unknown) {
+    const err = e as { data?: { message?: string; statusMessage?: string } };
+    submitError.value = err.data?.message || err.data?.statusMessage || "Failed to submit decision";
   } finally {
     submitting.value = false;
   }
@@ -237,7 +320,7 @@ const formatDate = (date: string) =>
                   <p v-if="h.applicantNote" class="text-sm mt-1">{{ h.applicantNote }}</p>
                   <p v-if="h.status !== 'PENDING'" class="text-xs text-muted-foreground mt-1">
                     <template v-if="h.status === 'APPROVED'">
-                      Approved ({{ approverLabels[h.approverType] || h.approverType }}<span v-if="h.approverDetail"> — {{ h.approverDetail }}</span>)
+                      Approved ({{ (h.approverType && approverLabels[h.approverType]) || h.approverType }}<span v-if="h.approverDetail"> — {{ h.approverDetail }}</span>)
                     </template>
                     <template v-else>Declined: {{ h.decisionReason }}</template>
                     <span v-if="h.reviewedBy?.email"> by {{ h.reviewedBy.email }}</span>
@@ -278,7 +361,7 @@ const formatDate = (date: string) =>
                       accept="application/pdf,image/*"
                       class="w-full text-sm"
                       @change="handleLetterUpload"
-                    />
+                    >
                     <p v-if="uploadingLetter" class="text-xs text-muted-foreground mt-1">Uploading...</p>
                     <p v-else-if="letterScanUrl" class="text-xs text-green-600 dark:text-green-400 mt-1">Letter uploaded</p>
                     <p v-if="uploadError" class="text-xs text-destructive mt-1">{{ uploadError }}</p>
@@ -309,7 +392,7 @@ const formatDate = (date: string) =>
                       type="text"
                       placeholder="e.g. Regional Auditor, Ashanti"
                       class="w-full px-3 py-2 border rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
+                    >
                   </div>
 
                   <div>
@@ -361,10 +444,10 @@ const formatDate = (date: string) =>
                 >
                   {{ statusLabels[request.status] || request.status }}
                 </span>
-                <span class="text-xs text-muted-foreground">{{ formatDate(request.reviewedAt) }}</span>
+                <span v-if="request.reviewedAt" class="text-xs text-muted-foreground">{{ formatDate(request.reviewedAt) }}</span>
               </div>
               <p v-if="request.status === 'APPROVED'">
-                Approved by {{ approverLabels[request.approverType] || request.approverType }}
+                Approved by {{ (request.approverType && approverLabels[request.approverType]) || request.approverType }}
                 <span v-if="request.approverDetail"> — {{ request.approverDetail }}</span>
               </p>
               <p v-if="request.decisionReason">{{ request.decisionReason }}</p>

@@ -71,10 +71,10 @@ const fetchPendingReturns = async () => {
       query.set("search", search.value);
     }
 
-    const response = await authFetch<any>(`/api/form-returns/pending?${query}`);
+    const response = await authFetch<{ success: boolean; data: { declarations: Declaration[]; total: number } }>(`/api/form-returns/pending?${query}`);
 
     if (response.success) {
-      pendingDeclarations.value = response.data.declarations as Declaration[];
+      pendingDeclarations.value = response.data.declarations;
       total.value = response.data.total;
     }
   } catch (error) {
@@ -115,14 +115,15 @@ const recordReturn = async () => {
     showRecordModal.value = false;
     selectedDeclaration.value = null;
     await fetchPendingReturns();
-  } catch (error: any) {
-    recordError.value = error.data?.statusMessage || "Failed to record form return";
+  } catch (error: unknown) {
+    const e = error as { data?: { statusMessage?: string } };
+    recordError.value = e.data?.statusMessage || "Failed to record form return";
   } finally {
     isRecording.value = false;
   }
 };
 
-const formatDate = (date: string) => {
+const _formatDate = (date: string) => {
   return new Date(date).toLocaleString("en-GB", {
     day: "numeric",
     month: "short",

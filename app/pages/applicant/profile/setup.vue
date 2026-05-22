@@ -35,6 +35,17 @@ const form = reactive({
   ghanaCardBackUrl: "",
 });
 
+interface OfficeApiResponse {
+  id: string;
+  designation: string;
+  institutionId: string | null;
+  officeCategoryId: number | null;
+  startDate: string;
+  endDate: string | null;
+  officeCategory: { name: string } | null;
+  institution: { name: string } | null;
+}
+
 interface OfficeEntry {
   id?: string;
   designation: string;
@@ -97,8 +108,9 @@ const uploadGhanaCard = async (file: File, side: "front" | "back") => {
         form.ghanaCardBackUrl = response.data.url;
       }
     }
-  } catch (err: any) {
-    error.value = err.data?.message || `Failed to upload Ghana Card ${side}`;
+  } catch (err: unknown) {
+    const e = err as { data?: { message?: string } };
+    error.value = e.data?.message || `Failed to upload Ghana Card ${side}`;
   } finally {
     if (side === "front") uploadingFront.value = false;
     else uploadingBack.value = false;
@@ -118,7 +130,7 @@ const ghanaCardRegex = /^GHA-\d{9}-\d$/i;
 const isGhanaCardValid = computed(() => ghanaCardRegex.test(form.ghanaCardNumber));
 
 // Validate current step
-const isStepValid = computed(() => {
+const _isStepValid = computed(() => {
   switch (currentStep.value) {
     case 1:
       return form.fullName.length >= 2 && isGhanaCardValid.value;
@@ -245,7 +257,7 @@ const addOffice = async () => {
   error.value = "";
 
   try {
-    const response = await authFetch<{ success: boolean; data: any }>("/api/profile/offices", {
+    const response = await authFetch<{ success: boolean; data: OfficeApiResponse }>("/api/profile/offices", {
       method: "POST",
       body: {
         designation: officeForm.designation,
@@ -427,7 +439,7 @@ const handleSubmit = async () => {
                     :src="form.ghanaCardFrontUrl"
                     alt="Ghana Card Front"
                     class="max-h-40 mx-auto rounded-md mb-2"
-                  />
+                  >
                   <p class="text-sm text-success">Front uploaded successfully</p>
                 </div>
                 <div v-else>
@@ -437,12 +449,12 @@ const handleSubmit = async () => {
                   <p class="text-sm text-muted-foreground mb-2">Upload front of Ghana Card</p>
                 </div>
                 <input
+                  id="front-upload"
                   type="file"
                   accept="image/*"
                   class="hidden"
-                  id="front-upload"
                   @change="(e) => handleFileSelect(e, 'front')"
-                />
+                >
                 <label
                   for="front-upload"
                   class="inline-block cursor-pointer"
@@ -480,7 +492,7 @@ const handleSubmit = async () => {
                     :src="form.ghanaCardBackUrl"
                     alt="Ghana Card Back"
                     class="max-h-40 mx-auto rounded-md mb-2"
-                  />
+                  >
                   <p class="text-sm text-success">Back uploaded successfully</p>
                 </div>
                 <div v-else>
@@ -490,12 +502,12 @@ const handleSubmit = async () => {
                   <p class="text-sm text-muted-foreground mb-2">Upload back of Ghana Card</p>
                 </div>
                 <input
+                  id="back-upload"
                   type="file"
                   accept="image/*"
                   class="hidden"
-                  id="back-upload"
                   @change="(e) => handleFileSelect(e, 'back')"
-                />
+                >
                 <label
                   for="back-upload"
                   class="inline-block cursor-pointer"

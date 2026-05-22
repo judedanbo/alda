@@ -28,7 +28,7 @@ const {
     />
 
     <AnalyticsFilterBar
-      :filters="filters"
+      v-model:filters="filters"
       :show-officer-filter="false"
       :show-export="true"
       @apply="applyFilters"

@@ -73,8 +73,8 @@ const {
     </div>
 
     <AnalyticsFilterBar
+      v-model:filters="filters"
       data-tour="analytics-filters"
-      :filters="filters"
       :show-officer-filter="false"
       @apply="applyFilters"
       @reset="resetFilters"

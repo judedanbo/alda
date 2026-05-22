@@ -28,7 +28,7 @@ const fetchReportData = async () => {
     if (dateFrom.value) params.append("dateFrom", dateFrom.value);
     if (dateTo.value) params.append("dateTo", dateTo.value);
 
-    const response = await authFetch<any>(`/api/admin/reports?${params}`);
+    const response = await authFetch<{ success: boolean; data: ReportData }>(`/api/admin/reports?${params}`);
 
     if (response.success) {
       reportData.value = response.data;
@@ -77,7 +77,7 @@ const exportReport = async (format: 'csv' | 'pdf') => {
     if (dateFrom.value) params.append("dateFrom", dateFrom.value);
     if (dateTo.value) params.append("dateTo", dateTo.value);
 
-    const response = await authFetch<any>(`/api/admin/reports/export?${params}`);
+    const response = await authFetch<Record<string, unknown>>(`/api/admin/reports/export?${params}`);
 
     // Handle file download
     if (format === 'csv' && response) {

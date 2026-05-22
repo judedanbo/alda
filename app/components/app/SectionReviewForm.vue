@@ -135,8 +135,9 @@ const submitSectionReview = async () => {
       },
     });
     emit("reviewed");
-  } catch (error: any) {
-    submitError.value = error.data?.statusMessage || "Failed to submit review";
+  } catch (error: unknown) {
+    const e = error as { data?: { statusMessage?: string } };
+    submitError.value = e.data?.statusMessage || "Failed to submit review";
   } finally {
     isSubmitting.value = false;
   }
@@ -149,8 +150,9 @@ const resolveIssue = async (reviewId: string) => {
       method: "PATCH",
     });
     emit("reviewed");
-  } catch (error: any) {
-    submitError.value = error.data?.statusMessage || "Failed to resolve issue";
+  } catch (error: unknown) {
+    const e = error as { data?: { statusMessage?: string } };
+    submitError.value = e.data?.statusMessage || "Failed to resolve issue";
   } finally {
     isResolving.value = null;
   }
@@ -165,8 +167,9 @@ const approveDeclaration = async () => {
       body: { declarationId: props.declaration.id },
     });
     emit("reviewed");
-  } catch (error: any) {
-    submitError.value = error.data?.statusMessage || "Failed to approve";
+  } catch (error: unknown) {
+    const e = error as { data?: { statusMessage?: string } };
+    submitError.value = e.data?.statusMessage || "Failed to approve";
   } finally {
     isSubmitting.value = false;
   }
@@ -200,8 +203,9 @@ const rejectDeclaration = async () => {
     reissueStage.value = "FORM_COLLECTED";
     collectionOfficeId.value = "";
     emit("reviewed");
-  } catch (error: any) {
-    rejectError.value = error.data?.statusMessage || "Failed to reject";
+  } catch (error: unknown) {
+    const e = error as { data?: { statusMessage?: string } };
+    rejectError.value = e.data?.statusMessage || "Failed to reject";
   } finally {
     isRejecting.value = false;
   }

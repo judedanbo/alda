@@ -28,7 +28,7 @@ interface SmsResult {
  * Get SMS configuration from runtime config
  */
 function getSmsConfig(): SmsConfig {
-  const config = useRuntimeConfig();
+  const _config = useRuntimeConfig();
 
   // Default to a mock provider in development
   const provider = (process.env.SMS_PROVIDER as SmsProvider) || "hubtel";

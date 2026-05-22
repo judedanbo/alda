@@ -186,7 +186,7 @@ const handleLogout = async () => {
                   </DropdownMenuItem>
                   <AppThemeSwitcherMenu />
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem @click="handleLogout" class="text-destructive">
+                  <DropdownMenuItem class="text-destructive" @click="handleLogout">
                     Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>

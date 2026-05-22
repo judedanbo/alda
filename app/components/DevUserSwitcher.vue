@@ -57,7 +57,19 @@ async function switchToUser(user: DevUser) {
   try {
     const res = await $fetch<{
       success: boolean;
-      data: { user: any; tokens: { accessToken: string; refreshToken: string } };
+      data: {
+        user: {
+          id: string;
+          email: string;
+          phone: string | null;
+          emailVerified: boolean;
+          roles: string[];
+          hasProfile?: boolean;
+          fullName?: string;
+          verificationStatus?: string;
+        };
+        tokens: { accessToken: string; refreshToken: string };
+      };
     }>("/api/dev/switch-user", {
       method: "POST",
       body: { email: user.email },
@@ -66,7 +78,7 @@ async function switchToUser(user: DevUser) {
     if (res.success) {
       authStore.user = res.data.user;
       authStore.setTokens(res.data.tokens);
-      const primaryRole = res.data.user.roles[0];
+      const primaryRole = res.data.user.roles[0] ?? "applicant";
       const dashboard = roleDashboards[primaryRole] || "/";
       await router.push(dashboard);
     }

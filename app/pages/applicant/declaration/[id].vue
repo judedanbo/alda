@@ -1,6 +1,34 @@
 <script setup lang="ts">
 import { FORM_SECTION_LABELS } from "~/utils/form-sections";
 
+interface TimelineEvent {
+  status: string;
+  title: string;
+  description: string;
+  date: string;
+}
+
+interface SectionReview {
+  id: string;
+  section: string;
+  isAcceptable: boolean;
+  comments: string | null;
+  resolvedAt: string | null;
+}
+
+interface DeclarationDetail {
+  id: string;
+  uniqueCode: string;
+  status: string;
+  createdAt: string;
+  submittedAt: string | null;
+  timeline: TimelineEvent[];
+  latestReview: { status: string; rejectionReason: string | null } | null;
+  receipt: { receiptNumber: string; pdfUrl: string | null } | null;
+  sectionReviews: SectionReview[];
+  hasPendingReissue: boolean;
+}
+
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
@@ -13,7 +41,7 @@ const id = route.params.id as string;
 // Fetch declaration status
 const { data, pending, error, refresh } = await useAsyncData(
   `declaration-${id}`,
-  () => authFetch<{ data: any }>(`/api/declarations/${id}/status`),
+  () => authFetch<{ data: DeclarationDetail }>(`/api/declarations/${id}/status`),
 );
 
 const declaration = computed(() => data.value?.data);
@@ -67,9 +95,10 @@ const submitReissueRequest = async () => {
     showReissueModal.value = false;
     reissueNote.value = "";
     await refresh();
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const e = err as { data?: { message?: string; statusMessage?: string } };
     reissueError.value =
-      err.data?.message || err.data?.statusMessage || "Failed to submit reissue request";
+      e.data?.message || e.data?.statusMessage || "Failed to submit reissue request";
   } finally {
     submittingReissue.value = false;
   }
@@ -178,7 +207,7 @@ const submitReissueRequest = async () => {
 
       <!-- Section Review Comments -->
       <Card
-        v-if="declaration.sectionReviews?.some((r: any) => !r.isAcceptable)"
+        v-if="declaration.sectionReviews?.some((r: SectionReview) => !r.isAcceptable)"
         data-tour="declaration-review-comments"
         class="mb-6"
       >
@@ -190,7 +219,7 @@ const submitReissueRequest = async () => {
         </CardHeader>
         <CardContent class="space-y-3">
           <div
-            v-for="review in declaration.sectionReviews.filter((r: any) => !r.isAcceptable)"
+            v-for="review in declaration.sectionReviews.filter((r: SectionReview) => !r.isAcceptable)"
             :key="review.id"
             class="rounded-lg border p-4"
             :class="review.resolvedAt

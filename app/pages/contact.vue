@@ -255,16 +255,16 @@ const handleSubmit = async () => {
           <div class="p-4 bg-muted/50 rounded-md">
             <h3 class="font-medium text-foreground mb-2">Office Address</h3>
             <p class="text-muted-foreground">
-              Ghana Audit Service<br />
-              P.O. Box MB 96<br />
+              Ghana Audit Service<br >
+              P.O. Box MB 96<br >
               Accra, Ghana
             </p>
           </div>
           <div class="p-4 bg-muted/50 rounded-md">
             <h3 class="font-medium text-foreground mb-2">Contact Details</h3>
             <p class="text-muted-foreground">
-              Phone: +233 (0) 302 664928<br />
-              Email: info@audit.gov.gh<br />
+              Phone: +233 (0) 302 664928<br >
+              Email: info@audit.gov.gh<br >
               Hours: Mon-Fri, 8:00 AM - 5:00 PM
             </p>
           </div>

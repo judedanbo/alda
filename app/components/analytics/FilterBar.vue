@@ -2,8 +2,9 @@
 import type { AnalyticsFilterState } from "~/composables/useAnalytics";
 import { authFetch } from "~/utils/authFetch";
 
-const props = defineProps<{
-  filters: AnalyticsFilterState;
+const filters = defineModel<AnalyticsFilterState>("filters", { required: true });
+
+defineProps<{
   showOfficerFilter?: boolean;
   showExport?: boolean;
 }>();
@@ -20,12 +21,10 @@ interface SelectOption {
 }
 
 const institutions = ref<SelectOption[]>([]);
-const collectionOffices = ref<SelectOption[]>([]);
-const officers = ref<SelectOption[]>([]);
 
 onMounted(async () => {
   try {
-    const [instRes, officeRes] = await Promise.all([
+    const [instRes] = await Promise.all([
       authFetch<{ success: boolean; data: SelectOption[] }>("/api/institutions"),
       authFetch<{ success: boolean; data: SelectOption[] }>("/api/categories"),
     ]);
@@ -51,38 +50,38 @@ function applyPreset(preset: PresetKey) {
 
   switch (preset) {
     case "today":
-      props.filters.dateFrom = today;
-      props.filters.dateTo = today;
+      filters.value.dateFrom = today;
+      filters.value.dateTo = today;
       break;
     case "week": {
       const weekStart = new Date(now);
       weekStart.setDate(now.getDate() - now.getDay());
-      props.filters.dateFrom = weekStart.toISOString().slice(0, 10);
-      props.filters.dateTo = today;
+      filters.value.dateFrom = weekStart.toISOString().slice(0, 10);
+      filters.value.dateTo = today;
       break;
     }
     case "month": {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      props.filters.dateFrom = monthStart.toISOString().slice(0, 10);
-      props.filters.dateTo = today;
+      filters.value.dateFrom = monthStart.toISOString().slice(0, 10);
+      filters.value.dateTo = today;
       break;
     }
     case "quarter": {
       const qMonth = Math.floor(now.getMonth() / 3) * 3;
       const quarterStart = new Date(now.getFullYear(), qMonth, 1);
-      props.filters.dateFrom = quarterStart.toISOString().slice(0, 10);
-      props.filters.dateTo = today;
+      filters.value.dateFrom = quarterStart.toISOString().slice(0, 10);
+      filters.value.dateTo = today;
       break;
     }
     case "year": {
       const yearStart = new Date(now.getFullYear(), 0, 1);
-      props.filters.dateFrom = yearStart.toISOString().slice(0, 10);
-      props.filters.dateTo = today;
+      filters.value.dateFrom = yearStart.toISOString().slice(0, 10);
+      filters.value.dateTo = today;
       break;
     }
     case "all":
-      props.filters.dateFrom = "";
-      props.filters.dateTo = "";
+      filters.value.dateFrom = "";
+      filters.value.dateTo = "";
       break;
   }
   emit("apply");

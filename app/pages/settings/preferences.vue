@@ -106,8 +106,9 @@ onMounted(async () => {
       applyData(response.data);
       savedSnapshot.value = takeSnapshot();
     }
-  } catch (err: any) {
-    errorMessage.value = err.data?.message || "Failed to load notification preferences.";
+  } catch (err: unknown) {
+    const e = err as { data?: { message?: string } };
+    errorMessage.value = e.data?.message || "Failed to load notification preferences.";
   } finally {
     loading.value = false;
   }
@@ -167,9 +168,10 @@ const savePreferences = async () => {
     successTimer = setTimeout(() => {
       successMessage.value = "";
     }, 3000);
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const e = err as { data?: { message?: string; statusMessage?: string } };
     errorMessage.value =
-      err.data?.message || err.data?.statusMessage || "Failed to save preferences. Please try again.";
+      e.data?.message || e.data?.statusMessage || "Failed to save preferences. Please try again.";
   } finally {
     saving.value = false;
   }

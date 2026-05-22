@@ -61,10 +61,10 @@ const fetchPendingCollections = async () => {
       query.set("search", search.value);
     }
 
-    const response = await authFetch<any>(`/api/form-collections/pending?${query}`);
+    const response = await authFetch<{ success: boolean; data: { declarations: Declaration[]; total: number } }>(`/api/form-collections/pending?${query}`);
 
     if (response.success) {
-      pendingDeclarations.value = response.data.declarations as Declaration[];
+      pendingDeclarations.value = response.data.declarations;
       total.value = response.data.total;
     }
   } catch (error) {
@@ -76,9 +76,9 @@ const fetchPendingCollections = async () => {
 
 const fetchCollectionOffices = async () => {
   try {
-    const response = await authFetch<any>("/api/collection-offices");
+    const response = await authFetch<{ success: boolean; data: CollectionOffice[] }>("/api/collection-offices");
     if (response.success) {
-      collectionOffices.value = response.data as CollectionOffice[];
+      collectionOffices.value = response.data;
     }
   } catch (error) {
     console.error("Failed to fetch collection offices:", error);
@@ -116,8 +116,9 @@ const recordCollection = async () => {
     showRecordModal.value = false;
     selectedDeclaration.value = null;
     await fetchPendingCollections();
-  } catch (error: any) {
-    recordError.value = error.data?.statusMessage || "Failed to record form collection";
+  } catch (error: unknown) {
+    const e = error as { data?: { statusMessage?: string } };
+    recordError.value = e.data?.statusMessage || "Failed to record form collection";
   } finally {
     isRecording.value = false;
   }

@@ -448,7 +448,7 @@ export async function getUnreadCount(userId: string): Promise<number> {
 export async function getUserNotifications(
   userId: string,
   options: { limit?: number; offset?: number; unreadOnly?: boolean } = {}
-): Promise<{ notifications: any[]; total: number; unreadCount: number }> {
+): Promise<{ notifications: Prisma.NotificationGetPayload<object>[]; total: number; unreadCount: number }> {
   const { limit = 20, offset = 0, unreadOnly = false } = options;
 
   const where = {

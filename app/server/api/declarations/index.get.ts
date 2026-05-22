@@ -1,3 +1,4 @@
+import type { DeclarationStatus } from "@prisma/client";
 import prisma from "~/server/utils/prisma";
 
 export default defineEventHandler(async (event) => {
@@ -30,7 +31,7 @@ export default defineEventHandler(async (event) => {
 
   const where = {
     applicantId: profile.id,
-    ...(status ? { status: status as any } : {}),
+    ...(status ? { status: status as DeclarationStatus } : {}),
   };
 
   const [declarations, total] = await Promise.all([

@@ -1,12 +1,8 @@
 <script setup lang="ts">
-import { useAuthStore } from "~/stores/auth";
-
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
 });
-
-const authStore = useAuthStore();
 
 interface Office {
   id: string;
@@ -17,6 +13,18 @@ interface Office {
   endDate: string | null;
   officeCategory: { id: number; name: string } | null;
   institution: { id: string; name: string } | null;
+}
+
+interface ProfileResponse {
+  data: {
+    fullName: string;
+    ghanaCardNumber: string;
+    offices: Office[];
+  };
+}
+
+interface ReferenceDataResponse {
+  data: Array<{ id: string | number; name: string }>;
 }
 
 const readOnly = reactive({
@@ -48,16 +56,16 @@ const [profileRes, institutionsRes, categoriesRes] = await Promise.all([
   $fetch("/api/categories"),
 ]);
 
-const profile = (profileRes as any).data;
-const institutions = (institutionsRes as any).data || [];
-const categories = (categoriesRes as any).data || [];
+const profile = (profileRes as ProfileResponse).data;
+const institutions = (institutionsRes as ReferenceDataResponse).data || [];
+const categories = (categoriesRes as ReferenceDataResponse).data || [];
 
 readOnly.fullName = profile.fullName ?? "";
 readOnly.ghanaCardNumber = profile.ghanaCardNumber ?? "";
-offices.value = (profile.offices || []).map((o: any) => ({
+offices.value = (profile.offices || []).map((o: Office) => ({
   ...o,
-  startDate: o.startDate ? o.startDate.split("T")[0] : "",
-  endDate: o.endDate ? o.endDate.split("T")[0] : null,
+  startDate: o.startDate ? o.startDate.split("T")[0] ?? "" : "",
+  endDate: o.endDate ? o.endDate.split("T")[0] ?? null : null,
 }));
 
 isLoading.value = false;
@@ -123,7 +131,7 @@ async function saveOffice() {
 
   try {
     if (editingOfficeId.value) {
-      const response = await authFetch<{ success: boolean; data: any }>(`/api/profile/offices/${editingOfficeId.value}`, {
+      const response = await authFetch<{ success: boolean; data: Office }>(`/api/profile/offices/${editingOfficeId.value}`, {
         method: "PUT",
         body,
       });
@@ -133,14 +141,14 @@ async function saveOffice() {
         if (idx !== -1) {
           offices.value[idx] = {
             ...response.data,
-            startDate: response.data.startDate.split("T")[0],
-            endDate: response.data.endDate ? response.data.endDate.split("T")[0] : null,
+            startDate: response.data.startDate.split("T")[0] ?? "",
+            endDate: response.data.endDate ? response.data.endDate.split("T")[0] ?? null : null,
           };
         }
         success.value = "Office updated successfully.";
       }
     } else {
-      const response = await authFetch<{ success: boolean; data: any }>("/api/profile/offices", {
+      const response = await authFetch<{ success: boolean; data: Office }>("/api/profile/offices", {
         method: "POST",
         body,
       });
@@ -148,8 +156,8 @@ async function saveOffice() {
       if (response.success) {
         offices.value.push({
           ...response.data,
-          startDate: response.data.startDate.split("T")[0],
-          endDate: response.data.endDate ? response.data.endDate.split("T")[0] : null,
+          startDate: response.data.startDate.split("T")[0] ?? "",
+          endDate: response.data.endDate ? response.data.endDate.split("T")[0] ?? null : null,
         });
         success.value = "Office added successfully.";
       }
@@ -211,7 +219,7 @@ function formatDate(dateStr: string | null): string {
             :value="readOnly.fullName"
             disabled
             class="w-full px-4 py-2 border rounded-md bg-muted text-muted-foreground cursor-not-allowed"
-          />
+          >
         </div>
         <div class="space-y-2">
           <Label>Ghana Card Number</Label>
@@ -220,7 +228,7 @@ function formatDate(dateStr: string | null): string {
             :value="readOnly.ghanaCardNumber"
             disabled
             class="w-full px-4 py-2 border rounded-md bg-muted text-muted-foreground cursor-not-allowed uppercase"
-          />
+          >
         </div>
       </CardContent>
     </Card>

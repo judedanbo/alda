@@ -1,4 +1,51 @@
 <script setup lang="ts">
+interface VerificationUser {
+  id: string;
+  email: string;
+  phone: string | null;
+  emailVerified: boolean;
+  createdAt: string;
+}
+
+interface OfficeCategoryInfo {
+  name: string;
+  articleReference: string | null;
+}
+
+interface InstitutionInfo {
+  id: string;
+  name: string;
+}
+
+interface ApplicantOfficeInfo {
+  id: string;
+  designation: string;
+  officeCategory: OfficeCategoryInfo;
+  institution: InstitutionInfo | null;
+}
+
+interface VerificationReview {
+  id: string;
+  status: string;
+  reason: string;
+  messageToApplicant: string | null;
+  createdAt: string;
+  reviewer: { email: string };
+}
+
+interface VerificationProfile {
+  id: string;
+  fullName: string;
+  ghanaCardNumber: string;
+  ghanaCardFrontUrl: string;
+  ghanaCardBackUrl: string | null;
+  verificationStatus: string;
+  createdAt: string;
+  user: VerificationUser;
+  offices: ApplicantOfficeInfo[];
+  verificationReviews: VerificationReview[];
+}
+
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
@@ -9,7 +56,7 @@ const id = route.params.id as string;
 
 const { data, pending, error, refresh } = await useAsyncData(
   `verification-${id}`,
-  () => authFetch<{ data: any }>(`/api/legal/verifications/${id}`),
+  () => authFetch<{ data: VerificationProfile }>(`/api/legal/verifications/${id}`),
 );
 
 const profile = computed(() => data.value?.data);
@@ -41,8 +88,9 @@ async function submitReview() {
 
     reviewForm.value = { status: "", reason: "", messageToApplicant: "" };
     await refresh();
-  } catch (e: any) {
-    submitError.value = e.data?.message || "Failed to submit review";
+  } catch (e: unknown) {
+    const err = e as { data?: { message?: string } };
+    submitError.value = err.data?.message || "Failed to submit review";
   } finally {
     submitting.value = false;
   }
@@ -155,7 +203,7 @@ const formatDate = (date: string) =>
                       :src="profile.ghanaCardFrontUrl"
                       alt="Ghana Card Front"
                       class="w-full rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
-                    />
+                    >
                   </a>
                 </div>
                 <div v-if="profile.ghanaCardBackUrl">
@@ -165,7 +213,7 @@ const formatDate = (date: string) =>
                       :src="profile.ghanaCardBackUrl"
                       alt="Ghana Card Back"
                       class="w-full rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
-                    />
+                    >
                   </a>
                 </div>
               </div>

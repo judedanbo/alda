@@ -1,4 +1,25 @@
 <script setup lang="ts">
+interface DeclarationReview {
+  status: string;
+  reviewDate: string;
+}
+
+interface DeclarationListItem {
+  id: string;
+  uniqueCode: string;
+  status: string;
+  createdAt: string;
+  submittedAt: string | null;
+  reviews: DeclarationReview[];
+}
+
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
@@ -13,7 +34,7 @@ const statusQuery = computed(() => statusFilter.value === "ALL" ? "" : statusFil
 // Fetch declarations
 const { data, pending, error, refresh } = await useAsyncData(
   "applicant-declarations",
-  () => authFetch<{ data: { declarations: any[]; pagination: any } }>("/api/declarations", {
+  () => authFetch<{ data: { declarations: DeclarationListItem[]; pagination: Pagination } }>("/api/declarations", {
     query: { page: page.value, limit: 10, status: statusQuery.value },
   }),
   { watch: [page, statusQuery] },

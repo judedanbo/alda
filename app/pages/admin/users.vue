@@ -48,7 +48,7 @@ const saving = ref(false);
 
 onMounted(async () => {
   try {
-    const response = await authFetch<any>("/api/admin/roles");
+    const response = await authFetch<{ success: boolean; data: { roles: Role[] } }>("/api/admin/roles");
     if (response.success) roles.value = response.data.roles;
   } catch (error) {
     console.error("Failed to fetch roles:", error);
@@ -82,7 +82,7 @@ const saveUserRoles = async () => {
   if (!editingUser.value) return;
   saving.value = true;
   try {
-    const response = await authFetch<any>(`/api/admin/users/${editingUser.value.id}/roles`, {
+    const response = await authFetch<{ success: boolean }>(`/api/admin/users/${editingUser.value.id}/roles`, {
       method: "PUT",
       body: { roleIds: selectedRoles.value },
     });
@@ -99,7 +99,7 @@ const saveUserRoles = async () => {
 
 const toggleUserStatus = async (user: User) => {
   try {
-    const response = await authFetch<any>(`/api/admin/users/${user.id}/status`, {
+    const response = await authFetch<{ success: boolean }>(`/api/admin/users/${user.id}/status`, {
       method: "PATCH",
       body: { isActive: !user.isActive },
     });
@@ -194,7 +194,8 @@ const toggleUserStatus = async (user: User) => {
           </div>
         </template>
         <template #cell-isActive="{ value }">
-          <Badge :class="(value as boolean)
+          <Badge
+:class="(value as boolean)
             ? 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300'
             : 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300'">
             {{ (value as boolean) ? 'Active' : 'Inactive' }}
@@ -243,7 +244,7 @@ const toggleUserStatus = async (user: User) => {
             :key="role.id"
             class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50"
           >
-            <input v-model="selectedRoles" type="checkbox" :value="role.id" class="w-4 h-4" />
+            <input v-model="selectedRoles" type="checkbox" :value="role.id" class="w-4 h-4" >
             <div>
               <p class="text-sm font-medium text-foreground">{{ role.name }}</p>
               <p v-if="role.description" class="text-xs text-muted-foreground">{{ role.description }}</p>

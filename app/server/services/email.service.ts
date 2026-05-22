@@ -504,7 +504,7 @@ export async function sendVerificationEmail(
 export async function sendContactAcknowledgment(
   to: string,
   name: string,
-  category: string
+  _category: string
 ): Promise<boolean> {
   return sendEmail({
     to,

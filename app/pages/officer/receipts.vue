@@ -46,10 +46,10 @@ const fetchPendingReceipts = async () => {
       offset: String((currentPage.value - 1) * limit),
     });
 
-    const response = await authFetch<any>(`/api/receipts/pending?${query}`);
+    const response = await authFetch<{ success: boolean; data: { declarations: Declaration[]; total: number } }>(`/api/receipts/pending?${query}`);
 
     if (response.success) {
-      pendingDeclarations.value = response.data.declarations as Declaration[];
+      pendingDeclarations.value = response.data.declarations;
       total.value = response.data.total;
     }
   } catch (error) {
@@ -76,21 +76,20 @@ const generateReceipt = async () => {
   generateError.value = "";
 
   try {
-    const response = await authFetch<any>(`/api/receipts/${selectedDeclaration.value.id}`, {
+    const response = await authFetch<{ success: boolean; data: { receipt: { pdfUrl: string | null } } }>(`/api/receipts/${selectedDeclaration.value.id}`, {
       method: "POST",
     });
 
-    type GenerateResponse = { success: boolean; data: { receipt: { pdfUrl: string | null } } };
-    const typed = response as GenerateResponse;
-    if (typed.success && typed.data.receipt.pdfUrl) {
-      window.open(typed.data.receipt.pdfUrl, "_blank");
+    if (response.success && response.data.receipt.pdfUrl) {
+      window.open(response.data.receipt.pdfUrl, "_blank");
     }
 
     showGenerateModal.value = false;
     selectedDeclaration.value = null;
     await fetchPendingReceipts();
-  } catch (error: any) {
-    generateError.value = error.data?.statusMessage || "Failed to generate receipt";
+  } catch (error: unknown) {
+    const e = error as { data?: { statusMessage?: string } };
+    generateError.value = e.data?.statusMessage || "Failed to generate receipt";
   } finally {
     isGenerating.value = false;
   }

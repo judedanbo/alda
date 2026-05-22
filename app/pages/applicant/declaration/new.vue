@@ -1,4 +1,17 @@
 <script setup lang="ts">
+interface ProfileOffice {
+  id: string;
+  designation: string;
+  officeCategory: { name: string } | null;
+  institution: { name: string } | null;
+}
+
+interface ProfileData {
+  fullName: string;
+  ghanaCardNumber: string;
+  offices: ProfileOffice[];
+}
+
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
@@ -23,7 +36,7 @@ if (statsData.value?.data?.activeDeclaration) {
 // Fetch user profile
 const { data: profileData, error: profileError } = await useAsyncData(
   "declaration-new-profile",
-  () => authFetch<{ data: any }>("/api/profile"),
+  () => authFetch<{ data: ProfileData }>("/api/profile"),
 );
 
 const profile = computed(() => profileData.value?.data);
@@ -44,8 +57,9 @@ const handleCreate = async () => {
         uniqueCode: response.data.uniqueCode,
       };
     }
-  } catch (err: any) {
-    error.value = err.data?.message || "Failed to create declaration";
+  } catch (err: unknown) {
+    const e = err as { data?: { message?: string } };
+    error.value = e.data?.message || "Failed to create declaration";
   } finally {
     isLoading.value = false;
   }

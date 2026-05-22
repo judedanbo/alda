@@ -62,13 +62,12 @@ export const useAuthStore = defineStore("auth", () => {
       }
 
       return { success: false, error: "Registration failed" };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const e = error as { data?: { message?: string; data?: { fieldErrors?: Record<string, string[]> } } };
       return {
         success: false,
-        error: error.data?.message || "Registration failed",
-        fieldErrors: error.data?.data?.fieldErrors as
-          | Record<string, string[]>
-          | undefined,
+        error: e.data?.message || "Registration failed",
+        fieldErrors: e.data?.data?.fieldErrors,
       };
     } finally {
       loading.value = false;
@@ -90,13 +89,12 @@ export const useAuthStore = defineStore("auth", () => {
       }
 
       return { success: false, error: "Login failed" };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const e = error as { data?: { message?: string; data?: { fieldErrors?: Record<string, string[]> } } };
       return {
         success: false,
-        error: error.data?.message || "Login failed",
-        fieldErrors: error.data?.data?.fieldErrors as
-          | Record<string, string[]>
-          | undefined,
+        error: e.data?.message || "Login failed",
+        fieldErrors: e.data?.data?.fieldErrors,
       };
     } finally {
       loading.value = false;
@@ -167,8 +165,9 @@ export const useAuthStore = defineStore("auth", () => {
           verificationStatus: response.data.profile?.verificationStatus,
         };
       }
-    } catch (error: any) {
-      if (error.statusCode === 401) {
+    } catch (error: unknown) {
+      const e = error as { statusCode?: number };
+      if (e.statusCode === 401) {
         const refreshed = await refreshTokens();
         if (refreshed) {
           await fetchUser();
@@ -186,10 +185,11 @@ export const useAuthStore = defineStore("auth", () => {
       });
 
       return { success: true, message: response.message };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const e = error as { data?: { message?: string } };
       return {
         success: false,
-        error: error.data?.message || "Failed to send reset email",
+        error: e.data?.message || "Failed to send reset email",
       };
     } finally {
       loading.value = false;
@@ -205,10 +205,11 @@ export const useAuthStore = defineStore("auth", () => {
       });
 
       return { success: true, message: response.message };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const e = error as { data?: { message?: string } };
       return {
         success: false,
-        error: error.data?.message || "Failed to reset password",
+        error: e.data?.message || "Failed to reset password",
       };
     } finally {
       loading.value = false;

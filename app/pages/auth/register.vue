@@ -104,7 +104,7 @@ const handleSubmit = async () => {
       </CardHeader>
 
       <CardContent>
-        <form @submit.prevent="handleSubmit" class="space-y-5">
+        <form class="space-y-5" @submit.prevent="handleSubmit">
           <!-- Error Alert -->
           <Alert v-if="error" variant="destructive">
             <AlertDescription>{{ error }}</AlertDescription>
@@ -212,7 +212,7 @@ const handleSubmit = async () => {
                 required
                 class="mt-1 h-4 w-4 rounded border-input text-primary focus:ring-primary"
                 @change="clearFieldError('acceptTerms')"
-              />
+              >
               <label for="terms" class="text-sm text-muted-foreground">
                 I agree to the
                 <NuxtLink to="/terms" class="text-primary hover:underline">Terms of Service</NuxtLink>

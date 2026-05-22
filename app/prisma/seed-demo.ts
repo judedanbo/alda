@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { type Prisma, type DeclarationStatus, PrismaClient } from "@prisma/client";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
 
@@ -197,7 +197,7 @@ function demoReceiptNumber(date: Date, seq: number): string {
   return `RCP-${y}${m}${d}-${String(seq).padStart(6, "0")}`;
 }
 
-function determineStatus(year: number): string {
+function determineStatus(year: number): DeclarationStatus {
   const r = Math.random();
   if (year <= 2023) return r < 0.93 ? "SEALED" : r < 0.98 ? "REJECTED" : "SEALED";
   if (year === 2024) {
@@ -244,7 +244,7 @@ interface DeclPlan {
   profileId: string;
   userId: string;
   year: number;
-  targetStatus: string;
+  targetStatus: DeclarationStatus;
   previousDeclId: string | null;
 }
 
@@ -389,7 +389,7 @@ async function main() {
   }
 
   // Build office records
-  const officeRecords: any[] = [];
+  const officeRecords: Prisma.ApplicantOfficeCreateManyInput[] = [];
   for (const a of applicants) {
     const officeStart = new Date(a.years[0]! - randomInt(1, 3), randomInt(0, 11), randomInt(1, 28));
 
@@ -491,7 +491,7 @@ async function main() {
         profileId: a.profileId,
         userId: a.userId,
         year: a.years[di]!,
-        targetStatus: isLast ? determineStatus(a.years[di]!) : "SEALED",
+        targetStatus: isLast ? determineStatus(a.years[di]!) : ("SEALED" as DeclarationStatus),
         previousDeclId: null,
       });
     }
@@ -506,7 +506,7 @@ async function main() {
     if (Math.random() < 0.7) {
       const rYear = Math.min(plan.year + randomInt(0, 1), 2026);
       let rStatus = determineStatus(rYear);
-      if (rStatus === "REJECTED") rStatus = "SEALED";
+      if (rStatus === "REJECTED") rStatus = "SEALED" as DeclarationStatus;
       declPlans.push({
         id: randomUUID(),
         profileId: plan.profileId,
@@ -525,13 +525,13 @@ async function main() {
   );
 
   // Build lifecycle records
-  const declarations: any[] = [];
-  const histories: any[] = [];
-  const formCollections: any[] = [];
-  const sectionReviews: any[] = [];
-  const reviewRecords: any[] = [];
-  const receiptRecords: any[] = [];
-  const allAuditLogs: any[] = [];
+  const declarations: Prisma.DeclarationCreateManyInput[] = [];
+  const histories: Prisma.DeclarationStatusHistoryCreateManyInput[] = [];
+  const formCollections: Prisma.FormCollectionCreateManyInput[] = [];
+  const sectionReviews: Prisma.DeclarationSectionReviewCreateManyInput[] = [];
+  const reviewRecords: Prisma.ReviewCreateManyInput[] = [];
+  const receiptRecords: Prisma.ReceiptCreateManyInput[] = [];
+  const allAuditLogs: Prisma.AuditLogCreateManyInput[] = [];
 
   let codeIdx = 1;
   let receiptSeq = 1;
@@ -718,7 +718,7 @@ async function main() {
           id: randomUUID(),
           declarationId: plan.id,
           reviewedBy: reviewer,
-          section: FORM_SECTIONS[si],
+          section: FORM_SECTIONS[si]!,
           isAcceptable: !hasIssue,
           comments: hasIssue ? pickRandom(SECTION_COMMENTS) : null,
           createdAt: decisionDate!,
@@ -822,8 +822,8 @@ async function main() {
 
   // Batch insert (originals first for FK constraint on previousDeclarationId)
   console.log("  Inserting...");
-  const primaryDecls = declarations.filter((d: { previousDeclarationId: string | null }) => !d.previousDeclarationId);
-  const replacementDecls = declarations.filter((d: { previousDeclarationId: string | null }) => d.previousDeclarationId);
+  const primaryDecls = declarations.filter((d) => !d.previousDeclarationId);
+  const replacementDecls = declarations.filter((d) => d.previousDeclarationId);
 
   await prisma.$transaction(
     async (tx) => {
@@ -846,16 +846,16 @@ async function main() {
   // ══════════════════════════════════════════════════════════════
   console.log("\nPhase 4: Creating form reissue requests...");
 
-  const reissueRequests: any[] = [];
-  const reissueHistories: any[] = [];
+  const reissueRequests: Prisma.FormReissueRequestCreateManyInput[] = [];
+  const reissueHistories: Prisma.DeclarationStatusHistoryCreateManyInput[] = [];
 
   // PENDING reissues — from declarations currently stuck in FORM_COLLECTED
   const formCollectedDecls = declPlans.filter((p) => p.targetStatus === "FORM_COLLECTED");
   for (const decl of formCollectedDecls.slice(0, 3)) {
-    const fc = formCollections.find((f: { declarationId: string }) => f.declarationId === decl.id);
+    const fc = formCollections.find((f) => f.declarationId === decl.id);
     if (!fc) continue;
     const reqId = randomUUID();
-    const requestDate = addDays(fc.collectedAt, randomInt(5, 20));
+    const requestDate = addDays(new Date(fc.collectedAt), randomInt(5, 20));
     reissueRequests.push({
       id: reqId,
       declarationId: decl.id,
@@ -890,10 +890,10 @@ async function main() {
     ["SUBMITTED", "UNDER_REVIEW", "APPROVED", "SEALED"].includes(p.targetStatus),
   );
   for (const decl of progressedDecls.slice(0, 5)) {
-    const fc = formCollections.find((f: { declarationId: string }) => f.declarationId === decl.id);
+    const fc = formCollections.find((f) => f.declarationId === decl.id);
     if (!fc) continue;
     const reqId = randomUUID();
-    const requestDate = addDays(fc.collectedAt, randomInt(3, 10));
+    const requestDate = addDays(new Date(fc.collectedAt), randomInt(3, 10));
     const reviewDate = addDays(requestDate, randomInt(3, 14));
     const legal = pickRandom(legalOfficerIds);
     const isAG = Math.random() < 0.6;
@@ -955,10 +955,10 @@ async function main() {
 
   // DECLINED reissues
   for (const decl of progressedDecls.slice(5, 9)) {
-    const fc = formCollections.find((f: { declarationId: string }) => f.declarationId === decl.id);
+    const fc = formCollections.find((f) => f.declarationId === decl.id);
     if (!fc) continue;
     const reqId = randomUUID();
-    const requestDate = addDays(fc.collectedAt, randomInt(3, 10));
+    const requestDate = addDays(new Date(fc.collectedAt), randomInt(3, 10));
     const reviewDate = addDays(requestDate, randomInt(2, 10));
     const legal = pickRandom(legalOfficerIds);
     const reason = pickRandom(DECLINE_REASONS);
