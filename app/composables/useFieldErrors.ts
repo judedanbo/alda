@@ -35,7 +35,7 @@ export function useFieldErrors() {
     if (serverFieldErrors) {
       for (const [field, messages] of Object.entries(serverFieldErrors)) {
         if (Array.isArray(messages) && messages.length > 0) {
-          fieldErrors[field] = messages[0];
+          fieldErrors[field] = messages[0]!;
         }
       }
     }

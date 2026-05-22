@@ -14,7 +14,7 @@ const checkingProfile = ref(true);
 onMounted(async () => {
   try {
     const response = await $fetch("/api/auth/me", {
-      headers: getAuthHeaders(),
+      headers: authStore.getAuthHeaders(),
     });
     if (response.success && response.data.profile) {
       router.replace("/applicant/dashboard");
@@ -48,7 +48,7 @@ const officeForm = reactive<OfficeEntry>({
   designation: "",
   institutionId: null,
   officeCategoryId: null,
-  startDate: new Date().toISOString().split("T")[0],
+  startDate: new Date().toISOString().split("T")[0]!,
   endDate: "",
 });
 
@@ -271,7 +271,7 @@ const addOffice = async () => {
       officeForm.designation = "";
       officeForm.institutionId = null;
       officeForm.officeCategoryId = null;
-      officeForm.startDate = new Date().toISOString().split("T")[0];
+      officeForm.startDate = new Date().toISOString().split("T")[0]!;
       officeForm.endDate = "";
       clearAll();
     }

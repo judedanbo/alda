@@ -62,7 +62,7 @@ const handleSubmit = async () => {
 
   if (!form.email) fieldErrors.email = "Email is required";
   if (!form.password) fieldErrors.password = "Password is required";
-  else if (passwordErrors.value.length > 0) fieldErrors.password = passwordErrors.value[0];
+  else if (passwordErrors.value.length > 0) fieldErrors.password = passwordErrors.value[0]!;
   if (!form.confirmPassword) fieldErrors.confirmPassword = "Please confirm your password";
   else if (!passwordsMatch.value) fieldErrors.confirmPassword = "Passwords do not match";
   if (!form.acceptTerms) fieldErrors.acceptTerms = "You must accept the terms";
@@ -83,7 +83,7 @@ const handleSubmit = async () => {
   } else {
     if (result.fieldErrors) {
       for (const [field, messages] of Object.entries(result.fieldErrors)) {
-        if (messages?.length) fieldErrors[field] = messages[0];
+        if (messages?.length) fieldErrors[field] = messages[0]!;
       }
     }
     if (!result.fieldErrors || Object.keys(result.fieldErrors).length === 0) {

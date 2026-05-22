@@ -144,7 +144,7 @@ export function applyRateLimitHeaders(event: H3Event, result: RateLimitResult): 
   setResponseHeader(event, "RateLimit-Remaining", String(result.remaining));
   setResponseHeader(event, "RateLimit-Reset", String(Math.ceil(result.resetMs / 1000)));
   if (!result.allowed) {
-    setResponseHeader(event, "Retry-After", String(Math.ceil(result.retryAfterMs / 1000)));
+    setResponseHeader(event, "Retry-After", Math.ceil(result.retryAfterMs / 1000));
   }
 }
 

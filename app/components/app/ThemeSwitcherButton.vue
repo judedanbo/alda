@@ -17,7 +17,7 @@ const { current, themes, setTheme } = useTheme();
       <DropdownMenuSeparator />
       <DropdownMenuRadioGroup
         :model-value="current"
-        @update:model-value="(value: string) => setTheme(value)"
+        @update:model-value="(value) => setTheme(String(value))"
       >
         <DropdownMenuRadioItem
           v-for="theme in themes"

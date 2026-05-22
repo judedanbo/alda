@@ -103,7 +103,8 @@ export default defineEventHandler(async (event) => {
   for (const row of timeseriesRows) {
     const i = bucketIndex.get(row.bucket.toISOString());
     if (i === undefined) continue;
-    if (seriesByClass[row.visitor_class]) seriesByClass[row.visitor_class]![i] += num(row.requests);
+    const arr = seriesByClass[row.visitor_class];
+    if (arr) arr[i] = (arr[i] ?? 0) + num(row.requests);
     errorSeries[i]! += num(row.errors);
   }
 

@@ -4,7 +4,7 @@
  * `--color-*` custom properties off `<html>` and re-reads them whenever the
  * theme changes. Client-only — chart components are always inside <ClientOnly>.
  */
-const FALLBACK_PALETTE = ["#006B3F", "#CE1126", "#FCD116", "#0EA5E9", "#A855F7"];
+const FALLBACK_PALETTE = ["#006B3F", "#CE1126", "#FCD116", "#0EA5E9", "#A855F7"] as const;
 
 export function useChartTheme() {
   const colorMode = useColorMode();

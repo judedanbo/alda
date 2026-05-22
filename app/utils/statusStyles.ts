@@ -8,7 +8,7 @@
  */
 
 /** Reusable tinted-chip classes keyed by a colour tone. */
-export const TONE_BADGE: Record<string, string> = {
+export const TONE_BADGE = {
   neutral: "bg-muted text-muted-foreground",
   amber:
     "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-400/30 dark:bg-amber-950/40 dark:text-amber-300",

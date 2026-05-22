@@ -119,13 +119,13 @@ onMounted(() => {
           class="rounded-full px-2.5 py-1 text-[11px] font-medium transition-all disabled:opacity-50"
           :class="[
             devUser.email === authStore.user?.email
-              ? `${roleColors[devUser.roles[0]]} text-white`
+              ? `${roleColors[devUser.roles[0]!] ?? ''} text-white`
               : 'bg-gray-700 text-gray-300 hover:bg-gray-600',
           ]"
           @click="switchToUser(devUser)"
         >
           <span v-if="switching === devUser.email" class="inline-block animate-spin">&#8635;</span>
-          <span v-else>{{ roleLabels[devUser.roles[0]] || devUser.roles[0] }}</span>
+          <span v-else>{{ roleLabels[devUser.roles[0]!] || devUser.roles[0] }}</span>
         </button>
       </div>
 

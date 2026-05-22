@@ -20,7 +20,7 @@ const { current, themes, setTheme } = useTheme();
     <DropdownMenuSubContent class="w-44">
       <DropdownMenuRadioGroup
         :model-value="current"
-        @update:model-value="(value: string) => setTheme(value)"
+        @update:model-value="(value) => setTheme(String(value))"
       >
         <DropdownMenuRadioItem
           v-for="theme in themes"

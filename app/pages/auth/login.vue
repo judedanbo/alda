@@ -44,7 +44,7 @@ const handleSubmit = async () => {
   } else {
     if (result.fieldErrors) {
       for (const [field, messages] of Object.entries(result.fieldErrors)) {
-        if (messages?.length) fieldErrors[field] = messages[0];
+        if (messages?.length) fieldErrors[field] = messages[0]!;
       }
     }
     if (!result.fieldErrors || Object.keys(result.fieldErrors).length === 0) {
