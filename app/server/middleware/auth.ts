@@ -1,4 +1,5 @@
 import { getAuthUser, type JwtPayload } from "../utils/jwt";
+import prisma from "../utils/prisma";
 
 // Extend H3EventContext to include auth user
 declare module "h3" {
@@ -28,7 +29,7 @@ const roleProtectedRoutes: Record<string, string[]> = {
   "/api/legal": ["legal_unit", "admin"],
 };
 
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
   const path = getRequestURL(event).pathname;
 
   // Skip auth for non-API routes
@@ -49,6 +50,20 @@ export default defineEventHandler((event) => {
       statusCode: 401,
       statusMessage: "Unauthorized",
       message: "Authentication required",
+    });
+  }
+
+  // Verify the user still exists and is active in the database
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.userId },
+    select: { id: true, isActive: true },
+  });
+
+  if (!dbUser || !dbUser.isActive) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: "Unauthorized",
+      message: "User account not found or deactivated. Please log in again.",
     });
   }
 
