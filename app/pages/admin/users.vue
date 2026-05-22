@@ -78,6 +78,14 @@ const closeEditModal = () => {
   selectedRoles.value = [];
 };
 
+const toggleRole = (roleId: number, checked: boolean) => {
+  if (checked) {
+    if (!selectedRoles.value.includes(roleId)) selectedRoles.value.push(roleId);
+  } else {
+    selectedRoles.value = selectedRoles.value.filter((id) => id !== roleId);
+  }
+};
+
 const saveUserRoles = async () => {
   if (!editingUser.value) return;
   saving.value = true;
@@ -244,7 +252,10 @@ const toggleUserStatus = async (user: User) => {
             :key="role.id"
             class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50"
           >
-            <input v-model="selectedRoles" type="checkbox" :value="role.id" class="w-4 h-4" >
+            <Checkbox
+              :model-value="selectedRoles.includes(role.id)"
+              @update:model-value="(checked) => toggleRole(role.id, checked === true)"
+            />
             <div>
               <p class="text-sm font-medium text-foreground">{{ role.name }}</p>
               <p v-if="role.description" class="text-xs text-muted-foreground">{{ role.description }}</p>

@@ -129,21 +129,22 @@ const handleSubmit = async () => {
             </Alert>
 
             <!-- New Password Field -->
-            <div class="space-y-2">
-              <Label for="password">New password</Label>
+            <FormField
+              v-slot="{ id, ariaInvalid, ariaDescribedby }"
+              label="New password"
+              :error="fieldErrors.password"
+            >
               <Input
-                id="password"
+                :id="id"
                 v-model="password"
                 type="password"
                 required
                 autocomplete="new-password"
                 placeholder="Enter new password"
-                :class="{ 'border-destructive': fieldErrors.password }"
+                :aria-invalid="ariaInvalid"
+                :aria-describedby="ariaDescribedby"
                 @input="clearFieldError('password')"
               />
-              <p v-if="fieldErrors.password" class="text-xs text-destructive">
-                {{ fieldErrors.password }}
-              </p>
 
               <!-- Strength Indicators -->
               <div v-if="password && !fieldErrors.password" class="space-y-1 mt-2">
@@ -232,28 +233,26 @@ const handleSubmit = async () => {
                   </span>
                 </div>
               </div>
-            </div>
+            </FormField>
 
             <!-- Confirm Password Field -->
-            <div class="space-y-2">
-              <Label for="confirm-password">Confirm new password</Label>
+            <FormField
+              v-slot="{ id, ariaInvalid, ariaDescribedby }"
+              label="Confirm new password"
+              :error="fieldErrors.confirmPassword || (confirmPassword && !passwordsMatch ? 'Passwords do not match' : undefined)"
+            >
               <Input
-                id="confirm-password"
+                :id="id"
                 v-model="confirmPassword"
                 type="password"
                 required
                 autocomplete="new-password"
-                :class="{ 'border-destructive': fieldErrors.confirmPassword || (confirmPassword && !passwordsMatch) }"
                 placeholder="Confirm new password"
+                :aria-invalid="ariaInvalid"
+                :aria-describedby="ariaDescribedby"
                 @input="clearFieldError('confirmPassword')"
               />
-              <p v-if="fieldErrors.confirmPassword" class="text-xs text-destructive">
-                {{ fieldErrors.confirmPassword }}
-              </p>
-              <p v-else-if="confirmPassword && !passwordsMatch" class="text-xs text-destructive">
-                Passwords do not match
-              </p>
-            </div>
+            </FormField>
 
             <!-- Submit Button -->
             <Button type="submit" class="w-full" :disabled="isLoading || !canSubmit">

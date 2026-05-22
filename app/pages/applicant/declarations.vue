@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { FileText } from "lucide-vue-next";
+
 interface DeclarationReview {
   status: string;
   reviewDate: string;
@@ -115,35 +117,29 @@ const formatDate = (date: string) => {
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="text-center py-12">
-      <p class="text-destructive">Failed to load declarations</p>
-      <Button
-        variant="link"
-        class="mt-4"
-        @click="refresh()"
-      >
-        Try again
-      </Button>
-    </div>
+    <EmptyState v-else-if="error" title="Failed to load declarations">
+      <template #action>
+        <Button variant="link" @click="refresh()">
+          Try again
+        </Button>
+      </template>
+    </EmptyState>
 
     <!-- Empty State -->
-    <Card
+    <EmptyState
       v-else-if="declarations.length === 0"
-      class="text-center py-12"
+      :icon="FileText"
+      title="No declarations found"
+      :description="statusFilter !== 'ALL' ? 'No declarations match the selected filter' : 'Create your first asset declaration'"
     >
-      <CardContent>
-        <svg class="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        <h3 class="text-lg font-medium text-foreground mb-2">No declarations found</h3>
-        <p class="text-muted-foreground mb-6">
-          {{ statusFilter !== 'ALL' ? 'No declarations match the selected filter' : 'Create your first asset declaration' }}
-        </p>
-        <Button v-if="statusFilter === 'ALL' && isVerified" as-child>
-          <NuxtLink to="/applicant/declaration/new">Create Declaration</NuxtLink>
+      <template v-if="statusFilter === 'ALL' && isVerified" #action>
+        <Button as-child>
+          <NuxtLink to="/applicant/declaration/new">
+            Create Declaration
+          </NuxtLink>
         </Button>
-      </CardContent>
-    </Card>
+      </template>
+    </EmptyState>
 
     <!-- Declarations List -->
     <div v-else class="space-y-4">

@@ -212,24 +212,23 @@ function formatDate(dateStr: string | null): string {
         </CardDescription>
       </CardHeader>
       <CardContent class="space-y-4">
-        <div class="space-y-2">
-          <Label>Full Name</Label>
-          <input
+        <FormField v-slot="{ id }" label="Full Name">
+          <Input
+            :id="id"
+            :model-value="readOnly.fullName"
             type="text"
-            :value="readOnly.fullName"
             disabled
-            class="w-full px-4 py-2 border rounded-md bg-muted text-muted-foreground cursor-not-allowed"
-          >
-        </div>
-        <div class="space-y-2">
-          <Label>Ghana Card Number</Label>
-          <input
+          />
+        </FormField>
+        <FormField v-slot="{ id }" label="Ghana Card Number">
+          <Input
+            :id="id"
+            :model-value="readOnly.ghanaCardNumber"
             type="text"
-            :value="readOnly.ghanaCardNumber"
             disabled
-            class="w-full px-4 py-2 border rounded-md bg-muted text-muted-foreground cursor-not-allowed uppercase"
-          >
-        </div>
+            class="uppercase"
+          />
+        </FormField>
       </CardContent>
     </Card>
 
@@ -301,15 +300,18 @@ function formatDate(dateStr: string | null): string {
             {{ editingOfficeId ? "Edit Office" : "Add Office" }}
           </h4>
 
-          <div class="space-y-2">
-            <Label for="edit-officeCategoryId">
-              Public Office Category <span class="text-destructive">*</span>
-            </Label>
+          <FormField
+            v-slot="{ id, ariaInvalid, ariaDescribedby }"
+            label="Public Office Category"
+            required
+            :error="fieldErrors.officeCategoryId"
+          >
             <Select v-model="officeForm.officeCategoryId" @update:model-value="clearFieldError('officeCategoryId')">
               <SelectTrigger
-                id="edit-officeCategoryId"
+                :id="id"
+                :aria-invalid="ariaInvalid"
+                :aria-describedby="ariaDescribedby"
                 class="w-full"
-                :class="{ 'border-destructive': fieldErrors.officeCategoryId }"
               >
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
@@ -323,19 +325,17 @@ function formatDate(dateStr: string | null): string {
                 </SelectItem>
               </SelectContent>
             </Select>
-            <p v-if="fieldErrors.officeCategoryId" class="text-xs text-destructive">
-              {{ fieldErrors.officeCategoryId }}
-            </p>
-          </div>
+          </FormField>
 
-          <div class="space-y-2">
-            <Label for="edit-institutionId">Institution</Label>
+          <FormField v-slot="{ id }" label="Institution">
             <Select v-model="officeForm.institutionId">
-              <SelectTrigger id="edit-institutionId" class="w-full">
+              <SelectTrigger :id="id" class="w-full">
                 <SelectValue placeholder="Select institution (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem :value="null">None</SelectItem>
+                <SelectItem :value="null">
+                  None
+                </SelectItem>
                 <SelectItem
                   v-for="inst in institutions"
                   :key="inst.id"
@@ -345,51 +345,55 @@ function formatDate(dateStr: string | null): string {
                 </SelectItem>
               </SelectContent>
             </Select>
-          </div>
+          </FormField>
 
-          <div class="space-y-2">
-            <Label for="edit-designation">
-              Designation / Position <span class="text-destructive">*</span>
-            </Label>
+          <FormField
+            v-slot="{ id, ariaInvalid, ariaDescribedby }"
+            label="Designation / Position"
+            required
+            :error="fieldErrors.designation"
+          >
             <Input
-              id="edit-designation"
+              :id="id"
               v-model="officeForm.designation"
               type="text"
               placeholder="e.g., Deputy Minister, Director, etc."
-              :class="{ 'border-destructive': fieldErrors.designation }"
+              :aria-invalid="ariaInvalid"
+              :aria-describedby="ariaDescribedby"
               @input="clearFieldError('designation')"
             />
-            <p v-if="fieldErrors.designation" class="text-xs text-destructive">
-              {{ fieldErrors.designation }}
-            </p>
-          </div>
+          </FormField>
 
           <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-2">
-              <Label for="edit-startDate">Start Date <span class="text-destructive">*</span></Label>
+            <FormField
+              v-slot="{ id, ariaInvalid, ariaDescribedby }"
+              label="Start Date"
+              required
+              :error="fieldErrors.startDate"
+            >
               <Input
-                id="edit-startDate"
+                :id="id"
                 v-model="officeForm.startDate"
                 type="date"
-                :class="{ 'border-destructive': fieldErrors.startDate }"
+                :aria-invalid="ariaInvalid"
+                :aria-describedby="ariaDescribedby"
                 @input="clearFieldError('startDate')"
               />
-              <p v-if="fieldErrors.startDate" class="text-xs text-destructive">
-                {{ fieldErrors.startDate }}
-              </p>
-            </div>
-            <div class="space-y-2">
-              <Label for="edit-endDate">End Date</Label>
+            </FormField>
+            <FormField
+              v-slot="{ id, ariaInvalid, ariaDescribedby }"
+              label="End Date"
+              hint="Leave blank if current"
+              :error="fieldErrors.endDate"
+            >
               <Input
-                id="edit-endDate"
+                :id="id"
                 v-model="officeForm.endDate"
                 type="date"
+                :aria-invalid="ariaInvalid"
+                :aria-describedby="ariaDescribedby"
               />
-              <p v-if="fieldErrors.endDate" class="text-xs text-destructive">
-                {{ fieldErrors.endDate }}
-              </p>
-              <p v-else class="text-xs text-muted-foreground">Leave blank if current</p>
-            </div>
+            </FormField>
           </div>
 
           <div class="flex gap-2">

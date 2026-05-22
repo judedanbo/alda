@@ -77,12 +77,11 @@ const formatDate = (date: string) =>
     <!-- Filters -->
     <div class="flex flex-col sm:flex-row gap-4">
       <div class="flex-1">
-        <input
+        <Input
           v-model="search"
-          type="text"
+          type="search"
           placeholder="Search by declaration code, name, or Ghana Card..."
-          class="w-full px-4 py-2 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-        >
+        />
       </div>
       <Select v-model="statusFilter">
         <SelectTrigger class="w-[220px]">
@@ -114,17 +113,20 @@ const formatDate = (date: string) =>
     </div>
 
     <!-- Error -->
-    <div v-else-if="error" class="text-center py-12">
-      <p class="text-destructive">Failed to load reissue requests</p>
-      <Button variant="link" class="mt-4" @click="refresh()">Try again</Button>
-    </div>
+    <EmptyState v-else-if="error" title="Failed to load reissue requests">
+      <template #action>
+        <Button variant="link" @click="refresh()">
+          Try again
+        </Button>
+      </template>
+    </EmptyState>
 
     <!-- Empty -->
-    <Card v-else-if="requests.length === 0" class="text-center py-12">
-      <CardContent>
-        <p class="text-muted-foreground">No reissue requests found</p>
-      </CardContent>
-    </Card>
+    <EmptyState
+      v-else-if="requests.length === 0"
+      title="No reissue requests found"
+      description="Lost-form reissue requests awaiting review will appear here."
+    />
 
     <!-- List -->
     <div v-else class="space-y-3">
@@ -138,9 +140,7 @@ const formatDate = (date: string) =>
           <CardContent class="p-6">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                  {{ request.declaration?.applicant?.fullName?.charAt(0).toUpperCase() }}
-                </div>
+                <Avatar :name="request.declaration?.applicant?.fullName" />
                 <div>
                   <p class="font-medium text-foreground">
                     {{ request.declaration?.applicant?.fullName }}
@@ -156,12 +156,9 @@ const formatDate = (date: string) =>
                 </div>
               </div>
               <div class="flex items-center gap-3">
-                <span
-                  class="px-3 py-1 rounded-full text-xs font-medium"
-                  :class="statusColors[request.status] || 'bg-muted text-muted-foreground'"
-                >
+                <Badge :class="statusColors[request.status] || 'bg-muted text-muted-foreground'">
                   {{ statusLabels[request.status] || request.status }}
-                </span>
+                </Badge>
                 <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                 </svg>

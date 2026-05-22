@@ -111,108 +111,102 @@ const handleSubmit = async () => {
           </Alert>
 
           <!-- Email Field -->
-          <div class="space-y-2">
-            <Label for="email">
-              Email address <span class="text-destructive">*</span>
-            </Label>
+          <FormField
+            v-slot="{ id, ariaInvalid, ariaDescribedby }"
+            label="Email address"
+            required
+            :error="fieldErrors.email"
+          >
             <Input
-              id="email"
+              :id="id"
               v-model="form.email"
               type="email"
               required
               autocomplete="email"
               placeholder="you@example.com"
-              :class="{ 'border-destructive': fieldErrors.email }"
+              :aria-invalid="ariaInvalid"
+              :aria-describedby="ariaDescribedby"
               @input="clearFieldError('email')"
             />
-            <p v-if="fieldErrors.email" class="text-xs text-destructive">
-              {{ fieldErrors.email }}
-            </p>
-          </div>
+          </FormField>
 
           <!-- Phone Field -->
-          <div class="space-y-2">
-            <Label for="phone">Phone number</Label>
+          <FormField
+            v-slot="{ id, ariaInvalid, ariaDescribedby }"
+            label="Phone number"
+            hint="Ghana phone number format: +233XXXXXXXXX or 0XXXXXXXXX"
+            :error="fieldErrors.phone"
+          >
             <Input
-              id="phone"
+              :id="id"
               v-model="form.phone"
               type="tel"
               autocomplete="tel"
               placeholder="+233 XX XXX XXXX"
-              :class="{ 'border-destructive': fieldErrors.phone }"
+              :aria-invalid="ariaInvalid"
+              :aria-describedby="ariaDescribedby"
               @input="clearFieldError('phone')"
             />
-            <p v-if="fieldErrors.phone" class="text-xs text-destructive">
-              {{ fieldErrors.phone }}
-            </p>
-            <p v-else class="text-xs text-muted-foreground">
-              Ghana phone number format: +233XXXXXXXXX or 0XXXXXXXXX
-            </p>
-          </div>
+          </FormField>
 
           <!-- Password Field -->
-          <div class="space-y-2">
-            <Label for="password">
-              Password <span class="text-destructive">*</span>
-            </Label>
+          <FormField
+            v-slot="{ id, ariaInvalid, ariaDescribedby }"
+            label="Password"
+            required
+            :error="fieldErrors.password"
+          >
             <Input
-              id="password"
+              :id="id"
               v-model="form.password"
               type="password"
               required
               autocomplete="new-password"
               placeholder="Create a strong password"
-              :class="{ 'border-destructive': fieldErrors.password }"
+              :aria-invalid="ariaInvalid"
+              :aria-describedby="ariaDescribedby"
               @input="clearFieldError('password')"
             />
-            <p v-if="fieldErrors.password" class="text-xs text-destructive">
-              {{ fieldErrors.password }}
-            </p>
-            <ul v-else-if="passwordErrors.length > 0" class="text-xs text-destructive space-y-1 mt-1">
-              <li v-for="err in passwordErrors" :key="err">{{ err }}</li>
+            <ul
+              v-if="!fieldErrors.password && passwordErrors.length > 0"
+              class="mt-1 space-y-1 text-xs text-destructive"
+            >
+              <li v-for="err in passwordErrors" :key="err">
+                {{ err }}
+              </li>
             </ul>
-          </div>
+          </FormField>
 
           <!-- Confirm Password Field -->
-          <div class="space-y-2">
-            <Label for="confirmPassword">
-              Confirm password <span class="text-destructive">*</span>
-            </Label>
+          <FormField
+            v-slot="{ id, ariaInvalid, ariaDescribedby }"
+            label="Confirm password"
+            required
+            :error="fieldErrors.confirmPassword || (form.confirmPassword && !passwordsMatch ? 'Passwords do not match' : undefined)"
+          >
             <Input
-              id="confirmPassword"
+              :id="id"
               v-model="form.confirmPassword"
               type="password"
               required
               autocomplete="new-password"
               placeholder="Confirm your password"
-              :class="{ 'border-destructive': fieldErrors.confirmPassword || (form.confirmPassword && !passwordsMatch) }"
+              :aria-invalid="ariaInvalid"
+              :aria-describedby="ariaDescribedby"
               @input="clearFieldError('confirmPassword')"
             />
-            <p
-              v-if="fieldErrors.confirmPassword"
-              class="text-xs text-destructive"
-            >
-              {{ fieldErrors.confirmPassword }}
-            </p>
-            <p
-              v-else-if="form.confirmPassword && !passwordsMatch"
-              class="text-xs text-destructive"
-            >
-              Passwords do not match
-            </p>
-          </div>
+          </FormField>
 
           <!-- Terms Checkbox -->
           <div>
             <div class="flex items-start gap-3">
-              <input
+              <Checkbox
                 id="terms"
                 v-model="form.acceptTerms"
-                type="checkbox"
                 required
-                class="mt-1 h-4 w-4 rounded border-input text-primary focus:ring-primary"
-                @change="clearFieldError('acceptTerms')"
-              >
+                class="mt-1"
+                @update:model-value="clearFieldError('acceptTerms')"
+              />
               <label for="terms" class="text-sm text-muted-foreground">
                 I agree to the
                 <NuxtLink to="/terms" class="text-primary hover:underline">Terms of Service</NuxtLink>

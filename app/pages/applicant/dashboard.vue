@@ -288,9 +288,10 @@ async function resendVerification() {
               >
                 {{ dashboard.activeDeclaration.uniqueCode }}
               </p>
-              <button
+              <Button
                 type="button"
-                class="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                variant="ghost"
+                size="icon-sm"
                 title="Copy code"
                 @click="copyCode"
               >
@@ -322,7 +323,7 @@ async function resendVerification() {
                     d="M5 13l4 4L19 7"
                   />
                 </svg>
-              </button>
+              </Button>
               <AppCodeBadge
                 :code="dashboard.activeDeclaration.uniqueCode"
                 size="lg"
