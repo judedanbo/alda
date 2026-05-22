@@ -101,6 +101,15 @@ function isSatisfied(dueDate: Date, sealedDates: Date[]): boolean {
   );
 }
 
+async function getScopedApplicantIds(scopeUserId: string): Promise<string[]> {
+  const processed = await prisma.declarationStatusHistory.findMany({
+    where: { changedById: scopeUserId },
+    select: { declaration: { select: { applicantId: true } } },
+    distinct: ["declarationId"],
+  });
+  return [...new Set(processed.map((p) => p.declaration.applicantId))];
+}
+
 export async function computeComplianceObligations(
   scopeUserId?: string,
 ): Promise<ComplianceObligation[]> {
@@ -109,12 +118,7 @@ export async function computeComplianceObligations(
 
   let applicantIdFilter: string[] | undefined;
   if (scopeUserId) {
-    const processed = await prisma.declarationStatusHistory.findMany({
-      where: { changedById: scopeUserId },
-      select: { declaration: { select: { applicantId: true } } },
-      distinct: ["declarationId"],
-    });
-    applicantIdFilter = [...new Set(processed.map((p) => p.declaration.applicantId))];
+    applicantIdFilter = await getScopedApplicantIds(scopeUserId);
     if (applicantIdFilter.length === 0) return [];
   }
 
@@ -137,7 +141,7 @@ export async function computeComplianceObligations(
               statusHistory: {
                 where: { status: "SEALED" },
                 select: { createdAt: true },
-                take: 1,
+                orderBy: { createdAt: "desc" },
               },
             },
           },
@@ -198,8 +202,15 @@ export async function getComplianceSummary(
   return getCached(cacheKey, 300, async () => {
     const obligations = await computeComplianceObligations(scopeUserId);
 
+    const scopedProfileIds = scopeUserId
+      ? await getScopedApplicantIds(scopeUserId)
+      : undefined;
+
     const totalApplicantsWithOffices = await prisma.applicantProfile.count({
-      where: { offices: { some: {} } },
+      where: {
+        offices: { some: {} },
+        ...(scopedProfileIds ? { id: { in: scopedProfileIds } } : {}),
+      },
     });
 
     const upcoming = obligations.filter((o) => o.status === "upcoming").length;

@@ -31,7 +31,8 @@ export default defineEventHandler(async (event) => {
   if (query.pageSize) {
     filters.pageSize = Math.min(100, Math.max(1, parseInt(query.pageSize as string, 10) || 25));
   }
-  if (query.sortBy) {
+  const allowedSortBy = ["dueDate", "applicantName", "institution", "daysPastDue"];
+  if (query.sortBy && allowedSortBy.includes(query.sortBy as string)) {
     filters.sortBy = query.sortBy as string;
   }
   if (query.sortOrder === "asc" || query.sortOrder === "desc") {
