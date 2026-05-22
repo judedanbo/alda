@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ArrowLeftIcon } from "lucide-vue-next";
 import type { HelpArticle, HelpGuide } from "~/help";
-import { getArticleById, getGuideById } from "~/help";
+import { getArticleById, getGuideById, appliesToRole } from "~/help";
+import { useAuthStore } from "~/stores/auth";
 
 definePageMeta({
   layout: "dashboard",
@@ -9,7 +10,15 @@ definePageMeta({
 });
 
 const route = useRoute();
-const article = computed(() => getArticleById(route.params.id as string));
+const authStore = useAuthStore();
+const { currentRole } = useHelp();
+
+const article = computed(() => {
+  const found = getArticleById(route.params.id as string);
+  if (!found) return undefined;
+  if (authStore.isAdmin) return found;
+  return appliesToRole(found.roles, currentRole.value) ? found : undefined;
+});
 
 const relatedGuides = computed<HelpGuide[]>(() =>
   (article.value?.relatedGuideIds ?? [])

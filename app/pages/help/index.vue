@@ -8,6 +8,7 @@ import {
   getGlossaryForRole,
   ROLE_META,
 } from "~/help";
+import { useAuthStore } from "~/stores/auth";
 
 definePageMeta({
   layout: "dashboard",
@@ -16,12 +17,15 @@ definePageMeta({
 
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
 const { currentRole, resolveRole } = useHelp();
 
 const validTabs = ["articles", "guides", "faq", "glossary"];
 
 const selectedRole = ref<HelpRole>(
-  resolveRole(route.query.role, currentRole.value),
+  authStore.isAdmin
+    ? resolveRole(route.query.role, currentRole.value)
+    : currentRole.value,
 );
 const activeTab = ref(
   typeof route.query.tab === "string" && validTabs.includes(route.query.tab)
@@ -42,7 +46,8 @@ const glossaryTerms = computed(() => getGlossaryForRole(selectedRole.value));
 
 useSeoMeta({
   title: "Help Centre - Asset Declaration Portal",
-  description: "Guides, articles, FAQs and a glossary for the Asset Declaration Portal.",
+  description:
+    "Guides, articles, FAQs and a glossary for the Asset Declaration Portal.",
 });
 </script>
 
@@ -67,7 +72,7 @@ useSeoMeta({
               {{ ROLE_META[selectedRole].description }}
             </p>
           </div>
-          <HelpRoleSwitcher v-model="selectedRole" />
+          <HelpRoleSwitcher v-if="authStore.isAdmin" v-model="selectedRole" />
         </div>
         <HelpSearch :role="selectedRole" />
       </CardContent>
@@ -75,11 +80,27 @@ useSeoMeta({
 
     <!-- Content tabs -->
     <Tabs v-model="activeTab" class="space-y-6">
-      <TabsList>
-        <TabsTrigger value="articles">Articles</TabsTrigger>
-        <TabsTrigger value="guides">Guides</TabsTrigger>
-        <TabsTrigger value="faq">FAQ</TabsTrigger>
-        <TabsTrigger value="glossary">Glossary</TabsTrigger>
+      <TabsList class="h-auto gap-1 rounded-xl bg-muted/60 p-1.5">
+        <TabsTrigger
+          value="articles"
+          class="rounded-lg px-5 py-5 text-base font-semibold data-active:bg-primary data-active:text-primary-foreground"
+          >Articles</TabsTrigger
+        >
+        <TabsTrigger
+          value="guides"
+          class="rounded-lg px-5 py-5 text-base font-semibold data-active:bg-primary data-active:text-primary-foreground"
+          >Guides</TabsTrigger
+        >
+        <TabsTrigger
+          value="faq"
+          class="rounded-lg px-5 py-5 text-base font-semibold data-active:bg-primary data-active:text-primary-foreground"
+          >FAQ</TabsTrigger
+        >
+        <TabsTrigger
+          value="glossary"
+          class="rounded-lg px-5 py-5 text-base font-semibold data-active:bg-primary data-active:text-primary-foreground"
+          >Glossary</TabsTrigger
+        >
       </TabsList>
 
       <!-- Articles -->
@@ -167,11 +188,7 @@ useSeoMeta({
               No FAQs for this role yet.
             </p>
             <Accordion v-else type="single" collapsible>
-              <AccordionItem
-                v-for="faq in faqs"
-                :key="faq.id"
-                :value="faq.id"
-              >
+              <AccordionItem v-for="faq in faqs" :key="faq.id" :value="faq.id">
                 <AccordionTrigger>{{ faq.question }}</AccordionTrigger>
                 <AccordionContent>
                   <p class="text-muted-foreground leading-relaxed">

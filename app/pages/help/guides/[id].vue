@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ArrowLeftIcon, ClockIcon, PlayIcon } from "lucide-vue-next";
-import { getGuideById } from "~/help";
+import { getGuideById, appliesToRole } from "~/help";
+import { useAuthStore } from "~/stores/auth";
 
 definePageMeta({
   layout: "dashboard",
@@ -8,7 +9,15 @@ definePageMeta({
 });
 
 const route = useRoute();
-const guide = computed(() => getGuideById(route.params.id as string));
+const authStore = useAuthStore();
+const { currentRole } = useHelp();
+
+const guide = computed(() => {
+  const found = getGuideById(route.params.id as string);
+  if (!found) return undefined;
+  if (authStore.isAdmin) return found;
+  return appliesToRole(found.roles, currentRole.value) ? found : undefined;
+});
 
 const { start } = useTour();
 

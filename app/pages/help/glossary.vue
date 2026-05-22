@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import { ArrowLeftIcon } from "lucide-vue-next";
-import { glossary } from "~/help";
+import { glossary, getGlossaryForRole } from "~/help";
+import { useAuthStore } from "~/stores/auth";
 
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
 });
+
+const authStore = useAuthStore();
+const { currentRole } = useHelp();
+
+const filteredGlossary = computed(() =>
+  authStore.isAdmin ? glossary : getGlossaryForRole(currentRole.value),
+);
 
 useSeoMeta({
   title: "Glossary - Asset Declaration Portal",
@@ -31,7 +39,7 @@ useSeoMeta({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <HelpGlossaryList :terms="glossary" />
+        <HelpGlossaryList :terms="filteredGlossary" />
       </CardContent>
     </Card>
   </div>
