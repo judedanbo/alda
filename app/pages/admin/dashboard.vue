@@ -221,11 +221,11 @@ const auditColumns: DataTableColumn[] = [
 ];
 
 function getActionColor(action: string): string {
-  if (action.includes("CREATE") || action.includes("REGISTER")) return TONE_BADGE.green;
-  if (action.includes("DELETE") || action.includes("REMOVE")) return TONE_BADGE.red;
-  if (action.includes("UPDATE") || action.includes("EDIT")) return TONE_BADGE.blue;
-  if (action.includes("LOGIN") || action.includes("LOGOUT")) return TONE_BADGE.purple;
-  return TONE_BADGE.neutral;
+  if (action.includes("CREATE") || action.includes("REGISTER")) return TONE_BADGE.green!;
+  if (action.includes("DELETE") || action.includes("REMOVE")) return TONE_BADGE.red!;
+  if (action.includes("UPDATE") || action.includes("EDIT")) return TONE_BADGE.blue!;
+  if (action.includes("LOGIN") || action.includes("LOGOUT")) return TONE_BADGE.purple!;
+  return TONE_BADGE.neutral!;
 }
 </script>
 

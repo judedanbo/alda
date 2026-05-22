@@ -125,12 +125,12 @@ const toggleUserStatus = async (user: User) => {
               :model-value="table.search.value"
               type="text"
               placeholder="Search by email or name..."
-              @update:model-value="table.setSearch($event)"
+              @update:model-value="table.setSearch(String($event))"
             />
           </div>
           <Select
             :model-value="table.filters.value.role || 'all'"
-            @update:model-value="table.setFilter('role', $event)"
+            @update:model-value="table.setFilter('role', String($event))"
           >
             <SelectTrigger class="w-[180px]">
               <SelectValue placeholder="All Roles" />
@@ -144,7 +144,7 @@ const toggleUserStatus = async (user: User) => {
           </Select>
           <Select
             :model-value="table.filters.value.status || 'all'"
-            @update:model-value="table.setFilter('status', $event)"
+            @update:model-value="table.setFilter('status', String($event))"
           >
             <SelectTrigger class="w-[180px]">
               <SelectValue placeholder="All Status" />

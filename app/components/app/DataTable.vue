@@ -1,5 +1,5 @@
 <!-- app/components/app/DataTable.vue -->
-<script setup lang="ts" generic="T extends Record<string, unknown>">
+<script setup lang="ts" generic="T extends Record<string, any>">
 import {
   Table,
   TableBody,

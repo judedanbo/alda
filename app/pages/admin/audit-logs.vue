@@ -43,11 +43,11 @@ const columns: DataTableColumn[] = [
 ];
 
 function getActionColor(action: string): string {
-  if (action.includes("CREATE") || action.includes("REGISTER")) return TONE_BADGE.green;
-  if (action.includes("DELETE") || action.includes("REMOVE")) return TONE_BADGE.red;
-  if (action.includes("UPDATE") || action.includes("EDIT")) return TONE_BADGE.blue;
-  if (action.includes("LOGIN") || action.includes("LOGOUT")) return TONE_BADGE.purple;
-  return TONE_BADGE.neutral;
+  if (action.includes("CREATE") || action.includes("REGISTER")) return TONE_BADGE.green!;
+  if (action.includes("DELETE") || action.includes("REMOVE")) return TONE_BADGE.red!;
+  if (action.includes("UPDATE") || action.includes("EDIT")) return TONE_BADGE.blue!;
+  if (action.includes("LOGIN") || action.includes("LOGOUT")) return TONE_BADGE.purple!;
+  return TONE_BADGE.neutral!;
 }
 
 const openDetailModal = (log: AuditLog) => {
@@ -94,11 +94,11 @@ const entityTypes = [
             :model-value="table.search.value"
             type="text"
             placeholder="Search by user email or IP..."
-            @update:model-value="table.setSearch($event)"
+            @update:model-value="table.setSearch(String($event))"
           />
           <Select
             :model-value="table.filters.value.action || 'all'"
-            @update:model-value="table.setFilter('action', $event)"
+            @update:model-value="table.setFilter('action', String($event))"
           >
             <SelectTrigger>
               <SelectValue placeholder="All Actions" />
@@ -112,7 +112,7 @@ const entityTypes = [
           </Select>
           <Select
             :model-value="table.filters.value.entityType || 'all'"
-            @update:model-value="table.setFilter('entityType', $event)"
+            @update:model-value="table.setFilter('entityType', String($event))"
           >
             <SelectTrigger>
               <SelectValue placeholder="All Entities" />
@@ -129,13 +129,13 @@ const entityTypes = [
               :model-value="table.filters.value.dateFrom || ''"
               type="date"
               class="flex-1"
-              @update:model-value="table.setFilter('dateFrom', $event)"
+              @update:model-value="table.setFilter('dateFrom', String($event))"
             />
             <Input
               :model-value="table.filters.value.dateTo || ''"
               type="date"
               class="flex-1"
-              @update:model-value="table.setFilter('dateTo', $event)"
+              @update:model-value="table.setFilter('dateTo', String($event))"
             />
           </div>
         </div>
