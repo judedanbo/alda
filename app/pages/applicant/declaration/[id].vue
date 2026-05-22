@@ -133,7 +133,7 @@ const submitReissueRequest = async () => {
       <Card class="mb-6">
         <CardContent class="p-6">
           <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
+            <div data-tour="declaration-code">
               <p class="text-sm text-muted-foreground mb-1">Declaration Code</p>
               <h1 class="text-3xl font-bold font-mono text-foreground">
                 {{ declaration.uniqueCode }}
@@ -144,6 +144,7 @@ const submitReissueRequest = async () => {
           <div v-if="canRequestReissue" class="mt-4 border-t pt-3">
             <Button
               variant="link"
+              data-tour="declaration-reissue"
               class="h-auto p-0 text-sm text-muted-foreground"
               @click="showReissueModal = true"
             >
@@ -178,6 +179,7 @@ const submitReissueRequest = async () => {
       <!-- Section Review Comments -->
       <Card
         v-if="declaration.sectionReviews?.some((r: any) => !r.isAcceptable)"
+        data-tour="declaration-review-comments"
         class="mb-6"
       >
         <CardHeader>
@@ -218,6 +220,7 @@ const submitReissueRequest = async () => {
       <!-- Receipt Info -->
       <Alert
         v-if="declaration.receipt"
+        data-tour="declaration-receipt"
         class="mb-6 border-success/20 bg-success/10"
       >
         <AlertTitle class="text-success">Receipt Ready</AlertTitle>
@@ -248,7 +251,7 @@ const submitReissueRequest = async () => {
       </Alert>
 
       <!-- Timeline -->
-      <Card>
+      <Card data-tour="declaration-timeline">
         <CardHeader>
           <CardTitle class="text-lg">Declaration Timeline</CardTitle>
         </CardHeader>

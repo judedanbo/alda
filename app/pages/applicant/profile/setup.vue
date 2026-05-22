@@ -320,7 +320,7 @@ const handleSubmit = async () => {
 
       <CardContent class="p-8 pt-0">
         <!-- Progress Bar -->
-        <div class="mb-8">
+        <div data-tour="profile-progress" class="mb-8">
           <div class="flex items-center justify-between mb-2">
             <span
               v-for="step in totalSteps"
@@ -350,7 +350,11 @@ const handleSubmit = async () => {
 
         <form novalidate @submit.prevent="currentStep === totalSteps ? handleSubmit() : nextStep()">
           <!-- Step 1: Personal Information -->
-          <div v-show="currentStep === 1" class="space-y-6">
+          <div
+            v-show="currentStep === 1"
+            data-tour="profile-personal"
+            class="space-y-6"
+          >
             <h3 class="text-lg font-semibold text-foreground">Personal Information</h3>
 
             <div class="space-y-2">
@@ -677,6 +681,7 @@ const handleSubmit = async () => {
             <Button
               v-else
               type="submit"
+              data-tour="profile-continue"
               :disabled="isLoading"
             >
               <span v-if="isLoading">Loading...</span>
