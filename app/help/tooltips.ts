@@ -1,0 +1,76 @@
+import type { FieldTooltip } from "./types";
+
+// Inline hint text for complex form fields. Keyed "<form>.<field>" and looked
+// up by FieldTooltip.vue via getFieldTooltip().
+export const fieldTooltips: FieldTooltip[] = [
+  // Applicant profile
+  {
+    id: "profile.ghanaCardNumber",
+    text: "Enter the personal ID number printed on your Ghana Card, in the format GHA-XXXXXXXXX-X.",
+  },
+  {
+    id: "profile.ghanaCardFront",
+    text: "Upload a clear, well-lit photo of the front of your Ghana Card. The whole card must be visible and readable.",
+  },
+  {
+    id: "profile.ghanaCardBack",
+    text: "Upload a clear photo of the back of your Ghana Card. Blurred or cropped images delay verification.",
+  },
+  {
+    id: "profile.designation",
+    text: "Your official job title in the public office you hold.",
+  },
+  {
+    id: "profile.category",
+    text: "The Article 286(5) public-office category your role falls under. Ask your institution if you are unsure.",
+  },
+  {
+    id: "profile.institution",
+    text: "The public body you work for. Choose the closest match from the list.",
+  },
+  // New declaration
+  {
+    id: "declaration.confirm",
+    text: "Creating a declaration generates a unique code. You can only have one active declaration at a time.",
+  },
+  // Officer section review
+  {
+    id: "review.sectionAcceptable",
+    text: "Mark a section acceptable only when it is complete and correct.",
+  },
+  {
+    id: "review.sectionComment",
+    text: "Describe what needs attention. The applicant sees this comment and must resolve it.",
+  },
+  {
+    id: "review.rejectReason",
+    text: "Rejecting issues a new code to the applicant. Give a clear, specific reason.",
+  },
+  // Legal verification
+  {
+    id: "verification.decision",
+    text: "Verified lets the applicant declare. On Hold pauses without a specific request. More Information Required asks for updates. Rejected stops the registration.",
+  },
+  {
+    id: "verification.reason",
+    text: "The reason is sent to the applicant with the decision. Be clear and specific.",
+  },
+  // Legal reissue
+  {
+    id: "reissue.approverType",
+    text: "Choose who signed the offline approval letter — the Auditor General or a Regional Auditor.",
+  },
+  {
+    id: "reissue.letterScan",
+    text: "Upload the scanned copy of the signed approval letter.",
+  },
+  // Admin
+  {
+    id: "user.roles",
+    text: "Roles control which areas a user can reach. A user may hold more than one role.",
+  },
+  {
+    id: "category.articleReference",
+    text: "The Article 286(5) clause this public-office category corresponds to.",
+  },
+];

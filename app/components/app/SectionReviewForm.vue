@@ -317,7 +317,10 @@ const formatDate = (date: string) =>
     <template v-if="!hasExistingReviews || existingIssues.length === 0">
       <Card>
         <CardHeader>
-          <CardTitle class="text-lg">Section Review</CardTitle>
+          <CardTitle class="text-lg flex items-center gap-1.5">
+            Section Review
+            <HelpTip field-id="review.sectionAcceptable" />
+          </CardTitle>
           <CardDescription>
             Review each section of the declaration form. Select "Acceptable" or "Needs Attention" for every section before submitting.
           </CardDescription>
@@ -369,8 +372,9 @@ const formatDate = (date: string) =>
               </div>
             </div>
             <div v-if="item.isAcceptable === false" class="space-y-1">
-              <Label class="text-sm">
+              <Label class="text-sm inline-flex items-center gap-1.5">
                 Comments <span class="text-destructive">*</span>
+                <HelpTip field-id="review.sectionComment" />
               </Label>
               <Textarea
                 v-model="item.comments"
@@ -420,8 +424,9 @@ const formatDate = (date: string) =>
         </DialogHeader>
         <div class="space-y-4">
           <div class="space-y-2">
-            <Label>
+            <Label class="inline-flex items-center gap-1.5">
               Rejection Reason <span class="text-destructive">*</span>
+              <HelpTip field-id="review.rejectReason" />
             </Label>
             <Textarea
               v-model="rejectionReason"

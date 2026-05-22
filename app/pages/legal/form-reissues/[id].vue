@@ -269,8 +269,9 @@ const formatDate = (date: string) =>
 
                 <template v-if="decisionForm.status === 'APPROVED'">
                   <div>
-                    <label class="text-sm font-medium mb-2 block">
+                    <label class="text-sm font-medium mb-2 flex items-center gap-1.5">
                       Scanned Approved Letter <span class="text-destructive">*</span>
+                      <HelpTip field-id="reissue.letterScan" />
                     </label>
                     <input
                       type="file"
@@ -284,8 +285,9 @@ const formatDate = (date: string) =>
                   </div>
 
                   <div>
-                    <label class="text-sm font-medium mb-2 block">
+                    <label class="text-sm font-medium mb-2 flex items-center gap-1.5">
                       Approved By <span class="text-destructive">*</span>
+                      <HelpTip field-id="reissue.approverType" />
                     </label>
                     <Select v-model="decisionForm.approverType">
                       <SelectTrigger>

@@ -128,7 +128,7 @@ const handleCreate = async () => {
     </Card>
 
     <!-- Create Declaration Form -->
-    <Card v-else>
+    <Card v-else data-tour="new-declaration-form">
       <CardHeader class="text-center">
         <CardTitle class="text-2xl">New Asset Declaration</CardTitle>
         <CardDescription>
@@ -138,7 +138,10 @@ const handleCreate = async () => {
       <CardContent class="p-8 pt-0">
         <!-- Profile Summary -->
         <div class="bg-muted/50 rounded-lg p-6 mb-8">
-          <h3 class="font-medium text-foreground mb-4">Declaration Details</h3>
+          <h3 class="font-medium text-foreground mb-4 flex items-center gap-1.5">
+            Declaration Details
+            <HelpTip field-id="declaration.confirm" />
+          </h3>
           <dl class="space-y-3">
             <div class="flex justify-between">
               <dt class="text-muted-foreground">Full Name</dt>
