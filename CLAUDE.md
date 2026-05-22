@@ -29,6 +29,8 @@ npm run db:studio        # Prisma Studio GUI
 
 npm run test:unit        # vitest (single file: npx vitest run path/to/file)
 npm run test:e2e         # playwright
+
+npm run db:seed:demo     # tsx prisma/seed-demo.ts (richer demo data)
 ```
 
 The full local stack (use this instead of running pieces individually):
@@ -72,18 +74,41 @@ The schema in `app/prisma/schema.prisma` uses `@map`/`@@map` to translate camelC
 
 ### Cross-cutting server concerns
 
-State-changing endpoints follow a consistent pattern: validate auth → mutate via Prisma → write an audit log → trigger a notification. Use the shared utilities rather than reimplementing:
+State-changing endpoints follow a consistent pattern: validate auth → validate body → mutate via Prisma → write an audit log → trigger a notification. Use the shared utilities rather than reimplementing:
 
+- **Request validation**: `app/server/utils/validators.ts` — `validateBody(event, schema)` parses `readBody()` against a Zod schema and throws a 400 with `error.flatten()` on failure. All Zod schemas for the domain live in this file; add new ones here rather than inline in route handlers.
 - `app/server/utils/audit.ts` — `createAuditLog(event, { userId, action, entityType, entityId, oldValues?, newValues? })` plus an `AuditActions` enum. Call it on every state transition; `audit_logs` is a compliance requirement, not a debug aid.
 - `app/server/utils/code-generator.ts` — `generateUniqueCode()` for declaration codes (with collision retry at the call site).
 - `app/server/services/notification.service.ts` — high-level helpers like `notifyUniqueCodeGenerated`. The service fans out to `email.service.ts` / `sms.service.ts` based on `NotificationPreference` and writes `NotificationDeliveryLog` rows. Don't call `email.service` or `sms.service` directly from route handlers.
 - `app/server/services/storage.service.ts` — MinIO uploads (Ghana Card images, receipt PDFs).
 - `app/server/services/pdf.service.ts` — receipt generation via `pdf-lib`.
 
+### Server middleware execution order
+
+Nitro runs middleware in filename-sorted order. The three middleware files are deliberately named to enforce:
+
+1. `00.security.ts` — IP-scoped security: operator blocks, AI crawler policy, per-IP and per-route-group rate limits. Runs first so floods are rejected before any JWT work. Uses Redis-backed analytics storage.
+2. `auth.ts` — JWT authentication + role-based route protection. Sets `event.context.auth`.
+3. `rate-limit-user.ts` — per-authenticated-user rate limit (needs `event.context.auth` from step 2).
+
+All three fail-open on unexpected errors (intentional 403/429 propagate, internal errors are swallowed). When adding middleware, name it to fit this ordering.
+
+### Analytics & traffic subsystem
+
+A self-contained analytics pipeline lives entirely in `app/server/`:
+
+- **Nitro plugin** `plugins/traffic.ts` — hooks `request` (classify visitor, sessionize) and `afterResponse` (capture traffic event, run abuse scorer). Adds zero user-facing latency because the capture runs after the response is sent.
+- **Scheduled Nitro tasks** `tasks/analytics/rollup.ts` and `tasks/analytics/prune.ts` — roll raw events into hourly/daily aggregates (every 10 min) and prune past retention (daily at 03:30). Configured in `nuxt.config.ts` under `nitro.scheduledTasks`.
+- **Storage** — Redis when `REDIS_URL` is set, otherwise in-memory (single-instance only). Accessed via `getAnalyticsStorage()` from `analytics-storage.ts`, never directly.
+- **Configuration** — all thresholds live in `runtimeConfig.analytics` (see `nuxt.config.ts`). Read via `getAnalyticsConfig()` from `analytics-config.ts`, never via `useRuntimeConfig()` directly in analytics code.
+
+The subsystem is toggled by `ANALYTICS_ENABLED`. Individual features (`captureEnabled`, `abuseEnabled`, `aiDetectionEnabled`, `rateLimitEnabled`) can be turned off independently.
+
 ### Frontend
 
 - Pages are organized by role: `pages/applicant/`, `pages/officer/`, `pages/legal/`, `pages/admin/`. Auth pages under `pages/auth/`. Public pages (`index`, `contact`, `privacy`, `terms`) at the top level.
 - Layouts: `default.vue` (public), `auth.vue` (login/register), `dashboard.vue` (post-login app shell).
+- **API calls**: client-side code uses `authFetch()` from `app/utils/authFetch.ts` (or the reactive `useApiFetch()` composable). `authFetch` attaches the Bearer token, transparently retries on 401 with a single token refresh, and redirects to login on failure. Don't use raw `$fetch` or `useFetch` for authenticated endpoints.
 - State: Pinia stores in `app/stores/` — `auth.ts` persists the token pair to `localStorage` under `adla_tokens` and exposes `isApplicant`/`isOfficer`/`isLegalUnit`/`isAdmin` computed flags used by both the client middleware and dashboard redirects.
 - UI: shadcn-vue is configured (`shadcn-nuxt` module, `componentDir: ./components/ui`, `prefix: ""`). The directory is empty until you add components with `npx shadcn-vue@latest add <component>`.
 - Tailwind v4 via `@tailwindcss/vite` plugin (no `tailwind.config.js`); main stylesheet is `app/assets/css/main.css`.
