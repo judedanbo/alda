@@ -3,7 +3,7 @@ import { Mail, Phone, MapPin } from 'lucide-vue-next'
 </script>
 
 <template>
-  <footer class="bg-foreground text-background">
+  <footer class="bg-muted text-foreground">
     <!-- Ghana tricolor accent -->
     <div
       class="h-[3px]"
@@ -143,7 +143,7 @@ import { Mail, Phone, MapPin } from 'lucide-vue-next'
 
       <!-- Bottom bar -->
       <div
-        class="border-t border-background/10 mt-10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs opacity-50"
+        class="border-t border-border mt-10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs opacity-50"
       >
         <span>© {{ new Date().getFullYear() }} Ghana Audit Service. All rights reserved.</span>
         <span>Republic of Ghana</span>

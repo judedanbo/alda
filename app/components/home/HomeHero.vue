@@ -22,7 +22,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section class="relative overflow-hidden bg-primary text-primary-foreground">
+  <section class="relative overflow-hidden bg-primary text-white">
     <!-- Kente pattern with parallax -->
     <div
       class="absolute inset-0 transition-none"
@@ -48,7 +48,7 @@ onUnmounted(() => {
           </div>
           <div>
             <h1 class="text-lg font-semibold">Asset Declaration Portal</h1>
-            <p class="text-primary-foreground/80 text-sm">
+            <p class="text-white/80 text-sm">
               Audit Service — Republic of Ghana
             </p>
           </div>
@@ -58,7 +58,7 @@ onUnmounted(() => {
           <Button
             variant="link"
             as-child
-            class="text-primary-foreground hover:text-primary-foreground/80"
+            class="text-white hover:text-white/80"
           >
             <NuxtLink to="/auth/login">Sign in</NuxtLink>
           </Button>
@@ -81,7 +81,7 @@ onUnmounted(() => {
             Asset Declaration<br>System
           </h2>
           <p
-            class="text-lg text-primary-foreground/75 max-w-lg mb-8 leading-relaxed mx-auto md:mx-0"
+            class="text-lg text-white/75 max-w-lg mb-8 leading-relaxed mx-auto md:mx-0"
           >
             Online portal for public officials to submit their asset
             declarations as required under Article 286(5) of the 1992
@@ -99,7 +99,7 @@ onUnmounted(() => {
               size="lg"
               variant="outline"
               as-child
-              class="border-white/50 text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
+              class="border-white/50 bg-transparent text-white hover:bg-white/10 hover:text-white dark:bg-transparent dark:border-white/50 dark:hover:bg-white/10"
             >
               <a href="#how-it-works">Learn More ↓</a>
             </Button>
