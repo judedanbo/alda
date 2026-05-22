@@ -60,6 +60,7 @@ const navigation = computed<NavItem[]>(() => {
       { name: "Form Returns", href: "/officer/form-returns", icon: "inbox", tour: "nav-form-returns" },
       { name: "Reviews", href: "/officer/reviews", icon: "check-circle", tour: "nav-reviews" },
       { name: "Receipts", href: "/officer/receipts", icon: "receipt", tour: "nav-receipts" },
+      { name: "Compliance", href: "/officer/compliance", icon: "clipboard-check", tour: "nav-compliance" },
       { name: "Analytics", href: "/officer/analytics", icon: "bar-chart", tour: "nav-analytics" },
       helpNavItem,
     ];
@@ -71,6 +72,7 @@ const navigation = computed<NavItem[]>(() => {
       { name: "Applicant Verifications", href: "/legal/verifications", icon: "user-check", tour: "nav-verifications" },
       { name: "Form Reissues", href: "/legal/form-reissues", icon: "file-text", tour: "nav-form-reissues" },
       { name: "Verify Code", href: "/legal/verify", icon: "search", tour: "nav-verify-code" },
+      { name: "Compliance", href: "/legal/compliance", icon: "clipboard-check", tour: "nav-compliance" },
       { name: "Analytics", href: "/legal/analytics", icon: "bar-chart", tour: "nav-analytics" },
       helpNavItem,
     ];
@@ -84,6 +86,7 @@ const navigation = computed<NavItem[]>(() => {
       { name: "Institutions", href: "/admin/institutions", icon: "building", tour: "nav-institutions" },
       { name: "Categories", href: "/admin/categories", icon: "tag", tour: "nav-categories" },
       { name: "Audit Logs", href: "/admin/audit-logs", icon: "shield", tour: "nav-audit-logs" },
+      { name: "Compliance", href: "/admin/compliance", icon: "clipboard-check", tour: "nav-compliance" },
       { name: "Analytics", href: "/admin/analytics", icon: "bar-chart", tour: "nav-analytics" },
       { name: "Web Analytics", href: "/admin/web-analytics", icon: "activity", tour: "nav-web-analytics" },
       { name: "Reports", href: "/admin/reports", icon: "bar-chart", tour: "nav-reports" },

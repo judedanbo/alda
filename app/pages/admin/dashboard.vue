@@ -66,6 +66,15 @@ interface AdminDashboardData {
 
 const { data: dashboard, loading } = useDashboardStats<AdminDashboardData>("/api/admin/stats");
 
+const { data: complianceSummary, loading: complianceLoading } = useDashboardStats<{
+  totalApplicantsWithOffices: number;
+  compliant: number;
+  upcoming: number;
+  dueNow: number;
+  overdue: number;
+  complianceRate: number;
+}>("/api/analytics/compliance/summary");
+
 const stats = computed<AdminStats>(() =>
   dashboard.value?.stats ?? {
     totalUsers: 0,
@@ -273,6 +282,19 @@ function getActionColor(action: string): string {
         icon-path="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
       />
     </div>
+
+    <!-- Declaration Compliance -->
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-foreground">Declaration Compliance</h2>
+      <NuxtLink to="/admin/compliance" class="text-sm text-primary hover:underline">
+        View Details &rarr;
+      </NuxtLink>
+    </div>
+    <ComplianceKpiCards
+      :data="complianceSummary"
+      :loading="complianceLoading"
+      compliance-href="/admin/compliance"
+    />
 
     <!-- Code Lifecycle -->
     <Card>

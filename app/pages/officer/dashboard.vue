@@ -20,6 +20,15 @@ interface OfficerDashboardData {
 
 const { data: dashboard, loading } = useDashboardStats<OfficerDashboardData>("/api/officer/stats");
 
+const { data: complianceSummary, loading: complianceLoading } = useDashboardStats<{
+  totalApplicantsWithOffices: number;
+  compliant: number;
+  upcoming: number;
+  dueNow: number;
+  overdue: number;
+  complianceRate: number;
+}>("/api/analytics/compliance/summary");
+
 const codeLookup = ref("");
 
 function jumpToCode() {
@@ -94,6 +103,19 @@ const quickActions = [
     <PageHeader title="Officer Dashboard" description="Manage asset declarations, reviews, and receipts" />
 
     <AnalyticsSealedSummaryWidget role="officer" />
+
+    <!-- Declaration Compliance -->
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-foreground">Declaration Compliance</h2>
+      <NuxtLink to="/officer/compliance" class="text-sm text-primary hover:underline">
+        View Details &rarr;
+      </NuxtLink>
+    </div>
+    <ComplianceKpiCards
+      :data="complianceSummary"
+      :loading="complianceLoading"
+      compliance-href="/officer/compliance"
+    />
 
     <!-- Code lookup -->
     <Card>

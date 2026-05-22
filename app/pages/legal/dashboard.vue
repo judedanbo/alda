@@ -42,6 +42,15 @@ const verificationStats = computed<VerificationStats>(() => verificationStatsRes
 
 const { data: codeActivity, loading: codeLoading } = useDashboardStats<CodeActivityData>("/api/legal/code-activity");
 
+const { data: complianceSummary, loading: complianceLoading } = useDashboardStats<{
+  totalApplicantsWithOffices: number;
+  compliant: number;
+  upcoming: number;
+  dueNow: number;
+  overdue: number;
+  complianceRate: number;
+}>("/api/analytics/compliance/summary");
+
 const { data: reissueStatsData } = await useAsyncData(
   "form-reissue-stats",
   () => authFetch<{ data: Record<string, number> }>("/api/legal/form-reissues/stats"),
@@ -90,6 +99,19 @@ function formatTimestamp(iso: string) {
     <PageHeader title="Legal Unit Dashboard" description="Verify declaration codes and recall applicant information" />
 
     <AnalyticsSealedSummaryWidget role="legal" />
+
+    <!-- Declaration Compliance -->
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-foreground">Declaration Compliance</h2>
+      <NuxtLink to="/legal/compliance" class="text-sm text-primary hover:underline">
+        View Details &rarr;
+      </NuxtLink>
+    </div>
+    <ComplianceKpiCards
+      :data="complianceSummary"
+      :loading="complianceLoading"
+      compliance-href="/legal/compliance"
+    />
 
     <!-- Quick Code Verification -->
     <Card class="border-primary/30 bg-primary/5">
