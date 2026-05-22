@@ -67,6 +67,20 @@ export const contextualHelp: ContextualHelp[] = [
     ],
     articleIds: ["applicant-declarations", "applicant-reissue"],
     guideIds: ["guide-applicant-reissue"],
+    tourId: "tour-applicant-declaration-detail",
+  },
+  {
+    routePattern: "/applicant/analytics",
+    title: "Your analytics",
+    summary: "Insights into your sealed and completed declarations.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "This page summarises your completed declarations — totals by status, key metrics, a timeline of sealed declarations, and a sortable table.",
+      },
+    ],
+    articleIds: ["applicant-declarations"],
+    tourId: "tour-applicant-analytics",
   },
   {
     routePattern: "/applicant/profile/*",

@@ -35,7 +35,7 @@ const {
       description="Your sealed and completed asset declarations"
     />
 
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div data-tour="analytics-stats" class="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <AppStatCard
         label="Total Declarations"
         :value="stats?.total ?? 0"
@@ -73,20 +73,27 @@ const {
     </div>
 
     <AnalyticsFilterBar
+      data-tour="analytics-filters"
       :filters="filters"
       :show-officer-filter="false"
       @apply="applyFilters"
       @reset="resetFilters"
     />
 
-    <AnalyticsKpiCards :data="summary" :loading="loadingSummary" />
+    <AnalyticsKpiCards
+      data-tour="analytics-kpis"
+      :data="summary"
+      :loading="loadingSummary"
+    />
 
     <AnalyticsSealedTimelineChart
+      data-tour="analytics-timeline"
       :data="charts?.timeline"
       :loading="loadingCharts"
     />
 
     <AnalyticsDeclarationsTable
+      data-tour="analytics-table"
       :data="list"
       :loading="loadingList"
       :sort-by="filters.sortBy"

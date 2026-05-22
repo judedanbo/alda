@@ -43,6 +43,7 @@ export const applicantGuides: HelpGuide[] = [
     roles: ["applicant"],
     category: "getting-started",
     estimatedMinutes: 10,
+    relatedTourId: "tour-applicant-profile-setup",
     steps: [
       {
         title: "Step 1 — Personal details",
@@ -112,6 +113,7 @@ export const applicantGuides: HelpGuide[] = [
     roles: ["applicant"],
     category: "form-handling",
     estimatedMinutes: 5,
+    relatedTourId: "tour-applicant-reissue",
     steps: [
       {
         title: "Open the declaration",

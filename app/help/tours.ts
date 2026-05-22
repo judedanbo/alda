@@ -12,6 +12,14 @@ import type { TourDefinition } from "./types";
 //   help-button   -> the global "?" button in the dashboard header
 //   onboarding    -> the OnboardingChecklist card on dashboards
 //   new-declaration-form -> the main card on pages/applicant/declaration/new.vue
+//   profile-progress, profile-personal, profile-continue
+//        -> pages/applicant/profile/setup.vue
+//   declaration-code, declaration-timeline, declaration-review-comments,
+//   declaration-receipt, declaration-reissue
+//        -> pages/applicant/declaration/[id].vue
+//   analytics-stats, analytics-filters, analytics-kpis, analytics-timeline,
+//   analytics-table
+//        -> pages/applicant/analytics.vue
 //
 // useTour skips any step whose target element is not on the page, so a missing
 // optional target (e.g. a dismissed onboarding card) degrades gracefully.
@@ -81,6 +89,177 @@ export const tours: TourDefinition[] = [
         title: "Save your code",
         description:
           "After creating the declaration, copy the unique code. You will also receive it by email.",
+      },
+    ],
+  },
+  {
+    id: "tour-applicant-profile-setup",
+    title: "Applicant: complete your profile",
+    description: "Walk through the three-step profile setup.",
+    roles: ["applicant"],
+    route: "/applicant/profile/setup",
+    steps: [
+      {
+        title: "Completing your profile",
+        description:
+          "Your profile has three steps. The Legal Unit reviews it to verify your registration before you can declare assets.",
+      },
+      {
+        element: "[data-tour=\"profile-progress\"]",
+        title: "Track your progress",
+        description:
+          "This bar shows which of the three steps you are on. You can move back at any time.",
+      },
+      {
+        element: "[data-tour=\"profile-personal\"]",
+        title: "Step 1 — Personal details",
+        description:
+          "Enter your full name and Ghana Card number exactly as they appear on the card.",
+      },
+      {
+        title: "Step 2 — Ghana Card images",
+        description:
+          "Next you upload a photo of your Ghana Card. Blurred or cropped images are the most common cause of verification delays — use sharp, well-lit shots.",
+      },
+      {
+        title: "Step 3 — Office details",
+        description:
+          "Finally, add at least one public office you hold or have held. You can add several.",
+      },
+      {
+        element: "[data-tour=\"profile-continue\"]",
+        title: "Move through the steps",
+        description:
+          "Use this button to advance. On the last step it submits your profile for verification.",
+      },
+      {
+        title: "That is the profile tour",
+        description:
+          "Once submitted, the Legal Unit reviews your registration and you will be notified of the outcome.",
+      },
+    ],
+  },
+  {
+    id: "tour-applicant-declaration-detail",
+    title: "Applicant: track a declaration",
+    description: "Find your way around the declaration detail page.",
+    roles: ["applicant"],
+    steps: [
+      {
+        title: "Your declaration at a glance",
+        description:
+          "This page shows everything about one declaration — its code, its progress, and any actions you need to take.",
+      },
+      {
+        element: "[data-tour=\"declaration-code\"]",
+        title: "Declaration code",
+        description:
+          "This is the unique code for the declaration. Officers and the Legal Unit use it to find your record.",
+      },
+      {
+        element: "[data-tour=\"declaration-timeline\"]",
+        title: "Status timeline",
+        description:
+          "Follow each step here as officers record it — from form collection through to the sealed receipt.",
+      },
+      {
+        element: "[data-tour=\"declaration-review-comments\"]",
+        title: "Review comments",
+        description:
+          "If a reviewer flags a section, it appears here. Address these points before your next visit to the Audit Service.",
+      },
+      {
+        element: "[data-tour=\"declaration-receipt\"]",
+        title: "Your receipt",
+        description:
+          "Once the declaration is sealed, view or download your receipt PDF from here.",
+      },
+      {
+        element: "[data-tour=\"declaration-reissue\"]",
+        title: "Lost your form?",
+        description:
+          "While the form is collected, you can start a lost-form reissue request from this link.",
+      },
+      {
+        title: "That is the tour",
+        description:
+          "Open any declaration from My Declarations to track it the same way.",
+      },
+    ],
+  },
+  {
+    id: "tour-applicant-reissue",
+    title: "Applicant: request a lost-form reissue",
+    description: "What to do when you lose a collected declaration form.",
+    roles: ["applicant"],
+    steps: [
+      {
+        title: "When you lose a collected form",
+        description:
+          "If you lose your physical form while the declaration is at the Form Collected stage, you can request a reissue.",
+      },
+      {
+        element: "[data-tour=\"declaration-reissue\"]",
+        title: "Start the request",
+        description:
+          "Open the reissue request from this link on the declaration detail page. It records a tracked request and notifies the Legal Unit.",
+      },
+      {
+        title: "Get the offline approval",
+        description:
+          "Take a letter explaining how the form was lost to the Auditor General or a Regional Auditor, and obtain their approval.",
+      },
+      {
+        title: "Bring the letter to the Legal Unit",
+        description:
+          "The Legal Unit records the approval and reissues your form. The declaration stays at Form Collected — return the new form through the normal process.",
+      },
+    ],
+  },
+  {
+    id: "tour-applicant-analytics",
+    title: "Applicant: your analytics",
+    description: "An orientation tour of your completed-declaration insights.",
+    roles: ["applicant"],
+    route: "/applicant/analytics",
+    steps: [
+      {
+        title: "Your declaration analytics",
+        description:
+          "This page summarises your sealed and completed declarations.",
+      },
+      {
+        element: "[data-tour=\"analytics-stats\"]",
+        title: "Totals at a glance",
+        description: "A quick count of your declarations by status.",
+      },
+      {
+        element: "[data-tour=\"analytics-filters\"]",
+        title: "Filter the view",
+        description:
+          "Narrow everything below by date range and other criteria.",
+      },
+      {
+        element: "[data-tour=\"analytics-kpis\"]",
+        title: "Key metrics",
+        description:
+          "Headline figures for your sealed declarations, including processing times.",
+      },
+      {
+        element: "[data-tour=\"analytics-timeline\"]",
+        title: "Sealed over time",
+        description:
+          "How your sealed declarations are distributed across months.",
+      },
+      {
+        element: "[data-tour=\"analytics-table\"]",
+        title: "Completed declarations",
+        description:
+          "Sort and page through your completed declarations in detail.",
+      },
+      {
+        title: "That is the tour",
+        description: "The help centre has more on reading these figures.",
       },
     ],
   },
