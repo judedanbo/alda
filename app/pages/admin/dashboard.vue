@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import type { DataTableColumn } from "~/components/app/DataTable.vue";
+import { TONE_BADGE } from "~/utils/statusStyles";
+
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
@@ -153,6 +156,77 @@ const quickActions = [
     color: "bg-orange-500",
   },
 ];
+
+// --- Tabbed tables: composable instances ---
+
+const codeTable = useDataTable<RecentCode>("/api/admin/declarations", {
+  perPage: 5,
+  defaultSort: "createdAt",
+  defaultDirection: "desc",
+  itemsKey: "declarations",
+});
+
+const userTable = useDataTable<RecentUser>("/api/admin/users", {
+  perPage: 5,
+  defaultSort: "createdAt",
+  defaultDirection: "desc",
+  itemsKey: "users",
+});
+
+const declarationTable = useDataTable<RecentDeclaration>("/api/admin/declarations", {
+  perPage: 5,
+  defaultSort: "createdAt",
+  defaultDirection: "desc",
+  itemsKey: "declarations",
+});
+
+const auditTable = useDataTable<AuditLogEntry>("/api/admin/audit-logs", {
+  perPage: 5,
+  defaultSort: "createdAt",
+  defaultDirection: "desc",
+  itemsKey: "logs",
+});
+
+// --- Column definitions ---
+
+const codeColumns: DataTableColumn[] = [
+  { key: "uniqueCode", label: "Code", sortable: true },
+  { key: "applicantName", label: "Applicant", sortable: true },
+  { key: "status", label: "Status", sortable: true },
+  { key: "verificationCount", label: "Verifications", sortable: true },
+  { key: "isRegenerated", label: "Origin" },
+  { key: "createdAt", label: "Issued", sortable: true },
+];
+
+const userColumns: DataTableColumn[] = [
+  { key: "email", label: "Email", sortable: true },
+  { key: "roles", label: "Roles" },
+  { key: "isActive", label: "Status", sortable: true },
+  { key: "createdAt", label: "Created", sortable: true },
+];
+
+const declarationColumns: DataTableColumn[] = [
+  { key: "uniqueCode", label: "Code", sortable: true },
+  { key: "applicantName", label: "Applicant", sortable: true },
+  { key: "status", label: "Status", sortable: true },
+  { key: "createdAt", label: "Created", sortable: true },
+];
+
+const auditColumns: DataTableColumn[] = [
+  { key: "action", label: "Action", sortable: true },
+  { key: "entityType", label: "Entity", sortable: true },
+  { key: "userEmail", label: "User", sortable: true },
+  { key: "ipAddress", label: "IP Address" },
+  { key: "createdAt", label: "Time", sortable: true },
+];
+
+function getActionColor(action: string): string {
+  if (action.includes("CREATE") || action.includes("REGISTER")) return TONE_BADGE.green;
+  if (action.includes("DELETE") || action.includes("REMOVE")) return TONE_BADGE.red;
+  if (action.includes("UPDATE") || action.includes("EDIT")) return TONE_BADGE.blue;
+  if (action.includes("LOGIN") || action.includes("LOGOUT")) return TONE_BADGE.purple;
+  return TONE_BADGE.neutral;
+}
 </script>
 
 <template>
@@ -296,154 +370,155 @@ const quickActions = [
         <CardContent class="pt-4">
           <!-- Recent Codes -->
           <TabsContent value="codes">
-            <div v-if="loading" class="space-y-2">
-              <Skeleton v-for="i in 5" :key="i" class="h-10 w-full" />
-            </div>
-            <div v-else-if="!dashboard?.recentCodes.length" class="text-center py-8 text-muted-foreground">
-              No codes issued yet.
-            </div>
-            <div v-else class="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Applicant</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Verifications</TableHead>
-                    <TableHead>Origin</TableHead>
-                    <TableHead>Issued</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow v-for="code in dashboard.recentCodes" :key="code.id">
-                    <TableCell class="font-mono text-sm">{{ code.uniqueCode }}</TableCell>
-                    <TableCell class="text-sm">{{ code.applicantName }}</TableCell>
-                    <TableCell><StatusBadge :status="code.status" /></TableCell>
-                    <TableCell class="text-sm">{{ code.verificationCount }}</TableCell>
-                    <TableCell>
-                      <Badge :class="code.isRegenerated
-                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
-                        : 'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300'">
-                        {{ code.isRegenerated ? 'Reissued' : 'Initial' }}
-                      </Badge>
-                    </TableCell>
-                    <TableCell class="text-sm text-muted-foreground">{{ formatDate(code.createdAt) }}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
+            <AppDataTable
+              :columns="codeColumns"
+              :data="codeTable.data.value"
+              :loading="codeTable.loading.value"
+              :meta="codeTable.meta.value"
+              :sort-column="codeTable.sortColumn.value"
+              :sort-direction="codeTable.sortDirection.value"
+              status-border-key="status"
+              empty-message="No codes issued yet."
+              @sort="codeTable.setSort"
+              @page-change="codeTable.setPage"
+            >
+              <template #cell-uniqueCode="{ row }">
+                <AppCodePill :code="(row as RecentCode).uniqueCode" :status="(row as RecentCode).status" />
+              </template>
+              <template #cell-applicantName="{ row }">
+                <AppUserCell :name="(row as RecentCode).applicantName" />
+              </template>
+              <template #cell-status="{ value }">
+                <StatusBadge :status="(value as string)" />
+              </template>
+              <template #cell-verificationCount="{ value }">
+                <AppVerificationDots :count="(value as number) ?? 0" />
+              </template>
+              <template #cell-isRegenerated="{ value }">
+                <Badge :class="(value as boolean)
+                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
+                  : 'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300'">
+                  {{ (value as boolean) ? 'Reissued' : 'Initial' }}
+                </Badge>
+              </template>
+              <template #cell-createdAt="{ value }">
+                <AppDateCell :date="(value as string)" relative />
+              </template>
+            </AppDataTable>
           </TabsContent>
 
           <!-- Recent Users -->
           <TabsContent value="users">
-            <div v-if="loading" class="space-y-2">
-              <Skeleton v-for="i in 5" :key="i" class="h-10 w-full" />
-            </div>
-            <div v-else-if="!dashboard?.recentUsers.length" class="text-center py-8 text-muted-foreground">
-              No users found
-            </div>
-            <div v-else class="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Roles</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow v-for="user in dashboard.recentUsers" :key="user.id">
-                    <TableCell class="text-sm">{{ user.email }}</TableCell>
-                    <TableCell>
-                      <div class="flex gap-1">
-                        <Badge v-for="role in user.roles" :key="role" variant="secondary">{{ role }}</Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge :class="user.isActive
-                        ? 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300'
-                        : 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300'">
-                        {{ user.isActive ? 'Active' : 'Inactive' }}
-                      </Badge>
-                    </TableCell>
-                    <TableCell class="text-sm text-muted-foreground">{{ formatDate(user.createdAt) }}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-            <div class="mt-4 pt-4 border-t">
-              <Button variant="link" as-child class="px-0">
-                <NuxtLink to="/admin/users">View all users &rarr;</NuxtLink>
-              </Button>
-            </div>
+            <AppDataTable
+              :columns="userColumns"
+              :data="userTable.data.value"
+              :loading="userTable.loading.value"
+              :meta="userTable.meta.value"
+              :sort-column="userTable.sortColumn.value"
+              :sort-direction="userTable.sortDirection.value"
+              status-border-key="isActive"
+              empty-message="No users found."
+              @sort="userTable.setSort"
+              @page-change="userTable.setPage"
+            >
+              <template #cell-email="{ row }">
+                <AppUserCell :name="(row as RecentUser).email" />
+              </template>
+              <template #cell-roles="{ value }">
+                <div class="flex gap-1">
+                  <Badge v-for="role in (value as string[])" :key="role" variant="secondary">
+                    {{ role }}
+                  </Badge>
+                </div>
+              </template>
+              <template #cell-isActive="{ value }">
+                <Badge :class="(value as boolean)
+                  ? 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300'
+                  : 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300'">
+                  {{ (value as boolean) ? 'Active' : 'Inactive' }}
+                </Badge>
+              </template>
+              <template #cell-createdAt="{ value }">
+                <AppDateCell :date="(value as string)" relative />
+              </template>
+              <template #footer>
+                <div class="px-4 py-3 border-t">
+                  <NuxtLink to="/admin/users" class="text-sm text-primary hover:underline">
+                    View all users &rarr;
+                  </NuxtLink>
+                </div>
+              </template>
+            </AppDataTable>
           </TabsContent>
 
           <!-- Recent Declarations -->
           <TabsContent value="declarations">
-            <div v-if="loading" class="space-y-2">
-              <Skeleton v-for="i in 5" :key="i" class="h-10 w-full" />
-            </div>
-            <div v-else-if="!dashboard?.recentDeclarations.length" class="text-center py-8 text-muted-foreground">
-              No declarations found
-            </div>
-            <div v-else class="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Applicant</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow v-for="declaration in dashboard.recentDeclarations" :key="declaration.id">
-                    <TableCell class="font-mono text-sm">{{ declaration.uniqueCode }}</TableCell>
-                    <TableCell class="text-sm">{{ declaration.applicantName }}</TableCell>
-                    <TableCell><StatusBadge :status="declaration.status" /></TableCell>
-                    <TableCell class="text-sm text-muted-foreground">{{ formatDate(declaration.createdAt) }}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
+            <AppDataTable
+              :columns="declarationColumns"
+              :data="declarationTable.data.value"
+              :loading="declarationTable.loading.value"
+              :meta="declarationTable.meta.value"
+              :sort-column="declarationTable.sortColumn.value"
+              :sort-direction="declarationTable.sortDirection.value"
+              status-border-key="status"
+              empty-message="No declarations found."
+              @sort="declarationTable.setSort"
+              @page-change="declarationTable.setPage"
+            >
+              <template #cell-uniqueCode="{ row }">
+                <AppCodePill :code="(row as RecentDeclaration).uniqueCode" :status="(row as RecentDeclaration).status" />
+              </template>
+              <template #cell-applicantName="{ row }">
+                <AppUserCell :name="(row as RecentDeclaration).applicantName" />
+              </template>
+              <template #cell-status="{ value }">
+                <StatusBadge :status="(value as string)" />
+              </template>
+              <template #cell-createdAt="{ value }">
+                <AppDateCell :date="(value as string)" relative />
+              </template>
+            </AppDataTable>
           </TabsContent>
 
           <!-- Audit Logs -->
           <TabsContent value="audit">
-            <div v-if="loading" class="space-y-2">
-              <Skeleton v-for="i in 5" :key="i" class="h-10 w-full" />
-            </div>
-            <div v-else-if="!dashboard?.recentAuditLogs.length" class="text-center py-8 text-muted-foreground">
-              No audit logs found
-            </div>
-            <div v-else class="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Entity</TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>IP Address</TableHead>
-                    <TableHead>Time</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow v-for="log in dashboard.recentAuditLogs" :key="log.id">
-                    <TableCell class="text-sm">{{ log.action }}</TableCell>
-                    <TableCell class="text-sm text-muted-foreground">{{ log.entityType || '-' }}</TableCell>
-                    <TableCell class="text-sm">{{ log.userEmail || 'System' }}</TableCell>
-                    <TableCell class="text-sm font-mono text-muted-foreground">{{ log.ipAddress || '-' }}</TableCell>
-                    <TableCell class="text-sm text-muted-foreground">{{ formatDate(log.createdAt) }}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-            <div class="mt-4 pt-4 border-t">
-              <Button variant="link" as-child class="px-0">
-                <NuxtLink to="/admin/audit-logs">View all audit logs &rarr;</NuxtLink>
-              </Button>
-            </div>
+            <AppDataTable
+              :columns="auditColumns"
+              :data="auditTable.data.value"
+              :loading="auditTable.loading.value"
+              :meta="auditTable.meta.value"
+              :sort-column="auditTable.sortColumn.value"
+              :sort-direction="auditTable.sortDirection.value"
+              status-border-key="action"
+              empty-message="No audit logs found."
+              @sort="auditTable.setSort"
+              @page-change="auditTable.setPage"
+            >
+              <template #cell-action="{ value }">
+                <Badge :class="getActionColor((value as string))">
+                  {{ value }}
+                </Badge>
+              </template>
+              <template #cell-entityType="{ value }">
+                <span class="text-sm text-muted-foreground">{{ (value as string) || '-' }}</span>
+              </template>
+              <template #cell-userEmail="{ value }">
+                <span class="text-sm">{{ (value as string) || 'System' }}</span>
+              </template>
+              <template #cell-ipAddress="{ value }">
+                <span class="text-sm font-mono text-muted-foreground">{{ (value as string) || '-' }}</span>
+              </template>
+              <template #cell-createdAt="{ value }">
+                <AppDateCell :date="(value as string)" relative />
+              </template>
+              <template #footer>
+                <div class="px-4 py-3 border-t">
+                  <NuxtLink to="/admin/audit-logs" class="text-sm text-primary hover:underline">
+                    View all audit logs &rarr;
+                  </NuxtLink>
+                </div>
+              </template>
+            </AppDataTable>
           </TabsContent>
         </CardContent>
       </Tabs>
