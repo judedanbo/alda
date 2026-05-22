@@ -79,7 +79,7 @@ export default defineEventHandler(async (event) => {
   // Check authorization - applicant can only see their own declarations
   const isApplicant = auth.roles.includes("applicant");
   const isOwner = profile && declaration.applicantId === profile.id;
-  const isStaff = auth.roles.some((r) =>
+  const isStaff = auth.roles.some((r: string) =>
     ["schedule_officer", "legal_unit", "admin"].includes(r)
   );
 

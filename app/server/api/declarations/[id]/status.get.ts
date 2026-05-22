@@ -67,7 +67,7 @@ export default defineEventHandler(async (event) => {
 
   // Check authorization
   const isOwner = declaration.applicant.userId === auth.userId;
-  const isStaff = auth.roles.some((r) =>
+  const isStaff = auth.roles.some((r: string) =>
     ["schedule_officer", "legal_unit", "admin"].includes(r)
   );
 
