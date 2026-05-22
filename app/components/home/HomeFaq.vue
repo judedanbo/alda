@@ -29,7 +29,7 @@ const faqs = [
 </script>
 
 <template>
-  <section class="py-20 bg-muted/50">
+  <section id="faq" class="py-20 bg-muted/50">
     <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-12">
         <h2 class="text-3xl font-bold text-foreground mb-4">

@@ -95,7 +95,7 @@ const branches: BranchTab[] = [
 </script>
 
 <template>
-  <section class="py-20">
+  <section id="who-must-declare" class="py-20">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-12">
         <h2 class="text-3xl font-bold text-foreground mb-4">
