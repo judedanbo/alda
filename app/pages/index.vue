@@ -22,7 +22,8 @@
               </p>
             </div>
           </div>
-          <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <AppThemeSwitcherButton />
             <Button variant="link" as-child class="text-primary-foreground hover:text-primary-foreground/80">
               <NuxtLink to="/auth/login">Sign in</NuxtLink>
             </Button>

@@ -19,6 +19,9 @@
           <p class="text-muted-foreground">Audit Service</p>
           <p class="text-sm text-muted-foreground">Republic of Ghana</p>
         </div>
+        <div class="ml-auto">
+          <AppThemeSwitcherButton />
+        </div>
       </div>
     </header>
 

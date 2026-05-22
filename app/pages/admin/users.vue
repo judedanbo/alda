@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { DataTableColumn } from "~/components/app/DataTable.vue";
+
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
@@ -30,62 +32,37 @@ interface Role {
   description: string | null;
 }
 
-const users = ref<User[]>([]);
+const table = useDataTable<User>("/api/admin/users", {
+  perPage: 20,
+  defaultSort: "createdAt",
+  defaultDirection: "desc",
+  itemsKey: "users",
+});
+
+// Roles for edit modal
 const roles = ref<Role[]>([]);
-const loading = ref(true);
-const totalUsers = ref(0);
-const currentPage = ref(1);
-const perPage = 20;
-
-const searchQuery = ref("");
-const selectedRole = ref("");
-const selectedStatus = ref("");
-
 const showEditModal = ref(false);
 const editingUser = ref<User | null>(null);
 const selectedRoles = ref<number[]>([]);
 const saving = ref(false);
 
-const fetchUsers = async () => {
-  loading.value = true;
-  try {
-    const params = new URLSearchParams({
-      limit: perPage.toString(),
-      offset: ((currentPage.value - 1) * perPage).toString(),
-    });
-
-    if (searchQuery.value) params.append("search", searchQuery.value);
-    if (selectedRole.value) params.append("role", selectedRole.value);
-    if (selectedStatus.value) params.append("status", selectedStatus.value);
-
-    const response = await authFetch<any>(`/api/admin/users?${params}`);
-
-    if (response.success) {
-      users.value = response.data.users;
-      totalUsers.value = response.data.total;
-    }
-  } catch (error) {
-    console.error("Failed to fetch users:", error);
-  } finally {
-    loading.value = false;
-  }
-};
-
-const fetchRoles = async () => {
+onMounted(async () => {
   try {
     const response = await authFetch<any>("/api/admin/roles");
-
-    if (response.success) {
-      roles.value = response.data.roles;
-    }
+    if (response.success) roles.value = response.data.roles;
   } catch (error) {
     console.error("Failed to fetch roles:", error);
   }
-};
+});
 
-await Promise.all([fetchUsers(), fetchRoles()]);
-
-const totalPages = computed(() => Math.ceil(totalUsers.value / perPage));
+const columns: DataTableColumn[] = [
+  { key: "email", label: "User", sortable: true },
+  { key: "roles", label: "Roles" },
+  { key: "isActive", label: "Status", sortable: true },
+  { key: "lastLoginAt", label: "Last Login", sortable: true },
+  { key: "createdAt", label: "Created", sortable: true },
+  { key: "actions", label: "Actions" },
+];
 
 const openEditModal = (user: User) => {
   editingUser.value = user;
@@ -103,16 +80,14 @@ const closeEditModal = () => {
 
 const saveUserRoles = async () => {
   if (!editingUser.value) return;
-
   saving.value = true;
   try {
     const response = await authFetch<any>(`/api/admin/users/${editingUser.value.id}/roles`, {
       method: "PUT",
       body: { roleIds: selectedRoles.value },
     });
-
     if (response.success) {
-      await fetchUsers();
+      table.refresh();
       closeEditModal();
     }
   } catch (error) {
@@ -128,34 +103,12 @@ const toggleUserStatus = async (user: User) => {
       method: "PATCH",
       body: { isActive: !user.isActive },
     });
-
     if (response.success) {
-      user.isActive = !user.isActive;
+      table.refresh();
     }
   } catch (error) {
     console.error("Failed to toggle user status:", error);
   }
-};
-
-const formatDate = (dateString: string | null) => {
-  if (!dateString) return "Never";
-  return new Date(dateString).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
-const handleSearch = () => {
-  currentPage.value = 1;
-  fetchUsers();
-};
-
-const handlePageChange = (page: number) => {
-  currentPage.value = page;
-  fetchUsers();
 };
 </script>
 
@@ -169,13 +122,16 @@ const handlePageChange = (page: number) => {
         <div class="flex flex-col md:flex-row gap-4">
           <div class="flex-1">
             <Input
-              v-model="searchQuery"
+              :model-value="table.search.value"
               type="text"
               placeholder="Search by email or name..."
-              @keyup.enter="handleSearch"
+              @update:model-value="table.setSearch(String($event))"
             />
           </div>
-          <Select v-model="selectedRole" @update:model-value="handleSearch">
+          <Select
+            :model-value="table.filters.value.role || 'all'"
+            @update:model-value="table.setFilter('role', String($event))"
+          >
             <SelectTrigger class="w-[180px]">
               <SelectValue placeholder="All Roles" />
             </SelectTrigger>
@@ -186,7 +142,10 @@ const handlePageChange = (page: number) => {
               </SelectItem>
             </SelectContent>
           </Select>
-          <Select v-model="selectedStatus" @update:model-value="handleSearch">
+          <Select
+            :model-value="table.filters.value.status || 'all'"
+            @update:model-value="table.setFilter('status', String($event))"
+          >
             <SelectTrigger class="w-[180px]">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
@@ -196,109 +155,76 @@ const handlePageChange = (page: number) => {
               <SelectItem value="inactive">Inactive</SelectItem>
             </SelectContent>
           </Select>
-          <Button @click="handleSearch">Search</Button>
+          <Button
+            v-if="table.hasActiveFilters.value"
+            variant="outline"
+            @click="table.clearFilters()"
+          >
+            Clear
+          </Button>
         </div>
       </CardContent>
     </Card>
 
-    <!-- Loading -->
-    <div v-if="loading" class="space-y-3">
-      <Skeleton v-for="i in 5" :key="i" class="h-12 w-full rounded-lg" />
-    </div>
-
     <!-- Users Table -->
-    <Card v-else>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>User</TableHead>
-            <TableHead>Roles</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Last Login</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableRow v-if="users.length === 0">
-            <TableCell colspan="6" class="text-center py-8 text-muted-foreground">
-              No users found
-            </TableCell>
-          </TableRow>
-          <TableRow v-for="user in users" :key="user.id">
-            <TableCell>
-              <div>
-                <p class="text-sm font-medium text-foreground">{{ user.email }}</p>
-                <p v-if="user.profile" class="text-xs text-muted-foreground">
-                  {{ user.profile.fullName }}
-                </p>
-              </div>
-            </TableCell>
-            <TableCell>
-              <div class="flex flex-wrap gap-1">
-                <Badge v-for="role in user.roles" :key="role" variant="secondary">
-                  {{ role }}
-                </Badge>
-              </div>
-            </TableCell>
-            <TableCell>
-              <Badge :class="user.isActive
-                ? 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300'
-                : 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300'">
-                {{ user.isActive ? 'Active' : 'Inactive' }}
-              </Badge>
-            </TableCell>
-            <TableCell class="text-sm text-muted-foreground">
-              {{ formatDate(user.lastLoginAt) }}
-            </TableCell>
-            <TableCell class="text-sm text-muted-foreground">
-              {{ formatDate(user.createdAt) }}
-            </TableCell>
-            <TableCell>
-              <div class="flex items-center gap-2">
-                <Button variant="outline" size="sm" @click="openEditModal(user)">
-                  Edit Roles
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  :class="user.isActive
-                    ? 'text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300'
-                    : 'text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300'"
-                  @click="toggleUserStatus(user)"
-                >
-                  {{ user.isActive ? 'Deactivate' : 'Activate' }}
-                </Button>
-              </div>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-
-      <!-- Pagination -->
-      <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t">
-        <p class="text-sm text-muted-foreground">
-          Showing {{ (currentPage - 1) * perPage + 1 }} to {{ Math.min(currentPage * perPage, totalUsers) }} of {{ totalUsers }} users
-        </p>
-        <div class="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            :disabled="currentPage === 1"
-            @click="handlePageChange(currentPage - 1)"
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            :disabled="currentPage === totalPages"
-            @click="handlePageChange(currentPage + 1)"
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+    <Card>
+      <AppDataTable
+        :columns="columns"
+        :data="table.data.value"
+        :loading="table.loading.value"
+        :meta="table.meta.value"
+        :sort-column="table.sortColumn.value"
+        :sort-direction="table.sortDirection.value"
+        status-border-key="isActive"
+        empty-message="No users found"
+        @sort="table.setSort"
+        @page-change="table.setPage"
+      >
+        <template #cell-email="{ row }">
+          <AppUserCell
+            :name="(row as User).profile?.fullName || (row as User).email"
+            :email="(row as User).email"
+          />
+        </template>
+        <template #cell-roles="{ value }">
+          <div class="flex flex-wrap gap-1">
+            <Badge v-for="role in (value as string[])" :key="role" variant="secondary">
+              {{ role }}
+            </Badge>
+          </div>
+        </template>
+        <template #cell-isActive="{ value }">
+          <Badge :class="(value as boolean)
+            ? 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300'
+            : 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300'">
+            {{ (value as boolean) ? 'Active' : 'Inactive' }}
+          </Badge>
+        </template>
+        <template #cell-lastLoginAt="{ value }">
+          <AppDateCell v-if="value" :date="(value as string)" />
+          <span v-else class="text-sm text-muted-foreground">Never</span>
+        </template>
+        <template #cell-createdAt="{ value }">
+          <AppDateCell :date="(value as string)" />
+        </template>
+        <template #cell-actions="{ row }">
+          <div class="flex items-center gap-2">
+            <Button variant="outline" size="sm" @click.stop="openEditModal(row as User)">
+              Edit Roles
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              :class="(row as User).isActive
+                ? 'text-red-600 hover:text-red-700 dark:text-red-400'
+                : 'text-green-600 hover:text-green-700 dark:text-green-400'"
+              @click.stop="toggleUserStatus(row as User)"
+            >
+              {{ (row as User).isActive ? 'Deactivate' : 'Activate' }}
+            </Button>
+          </div>
+        </template>
+      </AppDataTable>
     </Card>
 
     <!-- Edit Roles Modal -->
@@ -311,28 +237,19 @@ const handlePageChange = (page: number) => {
           </DialogTitle>
           <DialogDescription>{{ editingUser?.email }}</DialogDescription>
         </DialogHeader>
-
         <div class="space-y-3">
           <label
             v-for="role in roles"
             :key="role.id"
             class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50"
           >
-            <input
-              v-model="selectedRoles"
-              type="checkbox"
-              :value="role.id"
-              class="w-4 h-4"
-            />
+            <input v-model="selectedRoles" type="checkbox" :value="role.id" class="w-4 h-4" />
             <div>
               <p class="text-sm font-medium text-foreground">{{ role.name }}</p>
-              <p v-if="role.description" class="text-xs text-muted-foreground">
-                {{ role.description }}
-              </p>
+              <p v-if="role.description" class="text-xs text-muted-foreground">{{ role.description }}</p>
             </div>
           </label>
         </div>
-
         <DialogFooter>
           <Button variant="outline" @click="closeEditModal">Cancel</Button>
           <Button :disabled="saving" @click="saveUserRoles">
