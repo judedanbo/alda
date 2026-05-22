@@ -144,8 +144,10 @@ export default defineNuxtConfig({
   },
 
   nitro: {
-    // asyncContext is now stable in Nuxt 4
     storage: analyticsStorage,
+    esbuild: {
+      options: { target: "es2022" },
+    },
     experimental: {
       tasks: true,
     },
