@@ -205,8 +205,8 @@ export async function getComplianceSummary(
     const upcoming = obligations.filter((o) => o.status === "upcoming").length;
     const dueNow = obligations.filter((o) => o.status === "due_now").length;
     const overdue = obligations.filter((o) => o.status === "overdue").length;
-    const nonCompliant = upcoming + dueNow + overdue;
-    const compliant = Math.max(0, totalApplicantsWithOffices - nonCompliant);
+    const nonCompliantApplicants = new Set(obligations.map((o) => o.applicantId)).size;
+    const compliant = Math.max(0, totalApplicantsWithOffices - nonCompliantApplicants);
     const complianceRate = totalApplicantsWithOffices > 0
       ? Math.round((compliant / totalApplicantsWithOffices) * 1000) / 10
       : 0;
