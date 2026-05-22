@@ -232,7 +232,11 @@ const handleLogout = async () => {
     </header>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main
+      id="main-content"
+      tabindex="-1"
+      class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+    >
       <ClientOnly>
         <HelpOnboarding v-if="isDashboardRoute" />
       </ClientOnly>

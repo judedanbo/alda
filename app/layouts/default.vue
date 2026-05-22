@@ -4,6 +4,8 @@
 
 <template>
   <div class="min-h-screen bg-background">
-    <slot />
+    <main id="main-content" tabindex="-1">
+      <slot />
+    </main>
   </div>
 </template>

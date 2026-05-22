@@ -106,6 +106,14 @@ import { Mail, Phone, MapPin } from 'lucide-vue-next'
                 Contact Us
               </NuxtLink>
             </li>
+            <li>
+              <NuxtLink
+                to="/accessibility"
+                class="opacity-70 hover:opacity-100 transition-opacity"
+              >
+                Accessibility
+              </NuxtLink>
+            </li>
           </ul>
         </div>
 
