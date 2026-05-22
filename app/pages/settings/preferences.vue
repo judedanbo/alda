@@ -22,7 +22,7 @@ interface ApiGroup {
   key: string;
   label: string;
   description: string;
-  types: { type: string; label: string }[];
+  types: { type: string; label: string; emailMode?: string }[];
 }
 
 interface PreferencesData {
@@ -35,6 +35,7 @@ interface PreferencesData {
 interface TypeRow extends ChannelFlags {
   type: string;
   label: string;
+  emailMode?: string;
 }
 
 interface GroupState {
@@ -89,6 +90,7 @@ function applyData(data: PreferencesData) {
       return {
         type: item.type,
         label: item.label,
+        emailMode: item.emailMode,
         emailEnabled: flags.emailEnabled,
         smsEnabled: flags.smsEnabled,
         inAppEnabled: flags.inAppEnabled,
@@ -320,7 +322,14 @@ onUnmounted(() => {
                 :key="item.type"
                 class="grid grid-cols-[1fr_3.5rem_3.5rem_3.5rem] items-center gap-2 border-b py-3 last:border-b-0"
               >
-                <span class="text-sm">{{ item.label }}</span>
+                <span class="text-sm">
+                  {{ item.label }}
+                  <span
+                    v-if="item.emailMode === 'digest'"
+                    class="ml-1 text-xs text-muted-foreground"
+                    title="Email for this type is batched into a periodic digest instead of sent immediately."
+                  >· email batched</span>
+                </span>
                 <div class="flex justify-center">
                   <Switch v-model="item.emailEnabled" />
                 </div>

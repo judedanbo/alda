@@ -41,7 +41,8 @@ export type EmailTemplate =
   | "verification-approved"
   | "verification-rejected"
   | "verification-on-hold"
-  | "verification-more-info";
+  | "verification-more-info"
+  | "notification-digest";
 
 /**
  * Email data for templates
@@ -68,6 +69,20 @@ function generateEmailHtml(template: EmailTemplate, data: Record<string, unknown
       .code { font-size: 24px; font-weight: bold; color: #006B3F; letter-spacing: 2px; padding: 20px; background: #e8f5e9; text-align: center; margin: 20px 0; }
     </style>
   `;
+
+  const digestItems = Array.isArray(data.items)
+    ? (data.items as Array<{ title?: string; message?: string; createdAt?: string }>)
+    : [];
+  const digestItemsHtml = digestItems
+    .map(
+      (item) => `
+          <div style="padding: 14px 16px; margin: 10px 0; background: #ffffff; border-left: 4px solid #006B3F; border-radius: 4px;">
+            <p style="margin: 0 0 4px; font-weight: bold; color: #006B3F;">${item.title ?? ""}</p>
+            <p style="margin: 0; color: #444;">${item.message ?? ""}</p>
+            ${item.createdAt ? `<p style="margin: 6px 0 0; font-size: 12px; color: #888;">${item.createdAt}</p>` : ""}
+          </div>`,
+    )
+    .join("");
 
   const templates: Record<EmailTemplate, string> = {
     welcome: `
@@ -353,6 +368,25 @@ function generateEmailHtml(template: EmailTemplate, data: Record<string, unknown
         </div>
         <div class="footer">
           <p>Republic of Ghana - Asset Declaration System</p>
+        </div>
+      </div>
+    `,
+
+    "notification-digest": `
+      ${baseStyle}
+      <div class="container">
+        <div class="header">
+          <h1>Your Activity Summary</h1>
+        </div>
+        <div class="content">
+          <p>Dear ${data.name || "User"},</p>
+          <p>Here is a summary of recent updates on your asset declaration account:</p>
+          ${digestItemsHtml}
+          <p>Log in to your account to see full details.</p>
+        </div>
+        <div class="footer">
+          <p>Republic of Ghana - Asset Declaration System</p>
+          <p>Article 286(5) of the 1992 Constitution</p>
         </div>
       </div>
     `,

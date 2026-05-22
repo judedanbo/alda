@@ -90,6 +90,104 @@ interface ChannelFlags {
   inAppEnabled: boolean;
 }
 
+// ============================================
+// Default channel policy
+// ============================================
+
+/**
+ * How a notification type uses the email channel by default:
+ *  - `off`       — no email unless the user explicitly opts in
+ *  - `immediate` — email sent as soon as the notification fires
+ *  - `digest`    — email batched into the periodic summary (see
+ *                  `server/tasks/notifications/digest.ts`)
+ */
+export type EmailMode = "off" | "immediate" | "digest";
+
+export interface ChannelPolicy {
+  email: EmailMode;
+  /** Whether SMS is on by default. In-app is always on. */
+  sms: boolean;
+}
+
+/**
+ * Per-type default channel policy — the single source of truth for which
+ * channels a notification uses when the user has not overridden it. SMS is
+ * reserved for the few time-critical, action-required events; low-urgency
+ * confirmations are batched into the email digest.
+ */
+export const DEFAULT_CHANNEL_POLICY: Record<NotificationType, ChannelPolicy> = {
+  UNIQUE_CODE_GENERATED: { email: "immediate", sms: true },
+  FORM_COLLECTED: { email: "immediate", sms: false },
+  FORM_RETURNED: { email: "digest", sms: false },
+  SECTION_REVIEW_COMMENTS: { email: "immediate", sms: false },
+  REVIEW_APPROVED: { email: "immediate", sms: false },
+  REVIEW_REJECTED: { email: "immediate", sms: true },
+  RECEIPT_READY: { email: "immediate", sms: true },
+  FORM_REISSUE_REQUESTED: { email: "off", sms: false },
+  FORM_REISSUE_APPROVED: { email: "immediate", sms: false },
+  FORM_REISSUE_DECLINED: { email: "immediate", sms: false },
+  VERIFICATION_SUBMITTED: { email: "digest", sms: false },
+  VERIFICATION_APPROVED: { email: "immediate", sms: false },
+  VERIFICATION_REJECTED: { email: "immediate", sms: false },
+  VERIFICATION_ON_HOLD: { email: "immediate", sms: false },
+  VERIFICATION_MORE_INFO_REQUIRED: { email: "immediate", sms: false },
+  // Transactional/security types bypass sendNotification(); listed for completeness.
+  PASSWORD_RESET: { email: "immediate", sms: false },
+  EMAIL_VERIFICATION: { email: "immediate", sms: false },
+};
+
+const FALLBACK_POLICY: ChannelPolicy = { email: "immediate", sms: false };
+
+/** The default channel policy for a type, with a safe fallback. */
+export function getChannelPolicy(type: NotificationType): ChannelPolicy {
+  return DEFAULT_CHANNEL_POLICY[type] ?? FALLBACK_POLICY;
+}
+
+/** The channel flags a user has for a type when they have never customised it. */
+export function defaultFlagsForType(type: NotificationType): ChannelFlags {
+  const policy = getChannelPolicy(type);
+  return {
+    emailEnabled: policy.email !== "off",
+    smsEnabled: policy.sms,
+    inAppEnabled: true,
+  };
+}
+
+export interface ResolvedDelivery {
+  inApp: boolean;
+  email: boolean;
+  emailMode: "immediate" | "digest";
+  sms: boolean;
+}
+
+/**
+ * Resolve which channels a notification should actually use, combining the
+ * catalog default with the user's global and per-type preferences. A missing
+ * global or per-type row falls back to the catalog default, never to "all on".
+ */
+export function resolveDelivery(
+  type: NotificationType,
+  globalPrefs: Partial<ChannelFlags> | null | undefined,
+  typePref: Partial<ChannelFlags> | null | undefined,
+): ResolvedDelivery {
+  const policy = getChannelPolicy(type);
+
+  const inApp =
+    (globalPrefs?.inAppEnabled ?? true) && (typePref?.inAppEnabled ?? true);
+  const email =
+    (globalPrefs?.emailEnabled ?? true) &&
+    (typePref?.emailEnabled ?? policy.email !== "off");
+  const sms =
+    (globalPrefs?.smsEnabled ?? true) && (typePref?.smsEnabled ?? policy.sms);
+
+  return {
+    inApp,
+    email,
+    emailMode: policy.email === "digest" ? "digest" : "immediate",
+    sms,
+  };
+}
+
 interface TypeRow extends ChannelFlags {
   type: NotificationType;
 }
@@ -108,10 +206,11 @@ export function buildPreferencesPayload(
   const typePreferences: Record<string, ChannelFlags> = {};
   for (const type of CONTROLLABLE_TYPES) {
     const row = rowByType.get(type);
+    const defaults = defaultFlagsForType(type);
     typePreferences[type] = {
-      emailEnabled: row?.emailEnabled ?? true,
-      smsEnabled: row?.smsEnabled ?? true,
-      inAppEnabled: row?.inAppEnabled ?? true,
+      emailEnabled: row?.emailEnabled ?? defaults.emailEnabled,
+      smsEnabled: row?.smsEnabled ?? defaults.smsEnabled,
+      inAppEnabled: row?.inAppEnabled ?? defaults.inAppEnabled,
     };
   }
 
@@ -126,7 +225,11 @@ export function buildPreferencesPayload(
       key: category.key,
       label: category.label,
       description: category.description,
-      types: category.types.map((type) => ({ type, label: TYPE_LABELS[type] ?? type })),
+      types: category.types.map((type) => ({
+        type,
+        label: TYPE_LABELS[type] ?? type,
+        emailMode: getChannelPolicy(type).email,
+      })),
     })),
     typePreferences,
   };

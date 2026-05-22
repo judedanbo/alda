@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import prisma from "~/server/utils/prisma";
 import { sendEmail, type EmailTemplate } from "./email.service";
 import { sendSms } from "./sms.service";
+import { resolveDelivery } from "~/server/utils/notifications-catalog";
 import type { NotificationType, NotificationChannel } from "@prisma/client";
 
 /**
@@ -13,7 +14,6 @@ export interface NotificationPayload {
   title: string;
   message: string;
   metadata?: Record<string, unknown>;
-  channels?: NotificationChannel[];
 }
 
 /**
@@ -35,17 +35,16 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
     return;
   }
 
-  const prefs = user.notificationPrefs;
-  // Per-type preference for this notification (missing row => all channels on)
-  const typePref = user.notificationTypePrefs[0];
-  const channels = payload.channels || ["EMAIL", "SMS", "IN_APP"] as NotificationChannel[];
+  // Resolve channels from the catalog default policy + the user's global and
+  // per-type preferences (a missing row falls back to the catalog default).
+  const delivery = resolveDelivery(
+    payload.type,
+    user.notificationPrefs,
+    user.notificationTypePrefs[0],
+  );
 
   // Create in-app notification if enabled
-  if (
-    channels.includes("IN_APP") &&
-    (prefs?.inAppEnabled ?? true) &&
-    (typePref?.inAppEnabled ?? true)
-  ) {
+  if (delivery.inApp) {
     await prisma.notification.create({
       data: {
         userId: payload.userId,
@@ -58,12 +57,8 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
     });
   }
 
-  // Send email if enabled
-  if (
-    channels.includes("EMAIL") &&
-    (prefs?.emailEnabled ?? true) &&
-    (typePref?.emailEnabled ?? true)
-  ) {
+  // Send (or queue for digest) email if enabled
+  if (delivery.email) {
     const notification = await prisma.notification.create({
       data: {
         userId: payload.userId,
@@ -75,52 +70,59 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
       },
     });
 
-    // Create delivery log and attempt delivery
-    const deliveryLog = await prisma.notificationDeliveryLog.create({
-      data: {
-        notificationId: notification.id,
-        channel: "EMAIL",
-        status: "PENDING",
-      },
-    });
-
-    try {
-      const success = await sendEmail({
-        to: user.email,
-        subject: payload.title,
-        template: mapNotificationTypeToEmailTemplate(payload.type),
+    if (delivery.emailMode === "digest") {
+      // Low-priority email: queued for the periodic digest task instead of
+      // being sent immediately (server/tasks/notifications/digest.ts).
+      await prisma.notificationDeliveryLog.create({
         data: {
-          name: user.applicantProfile?.fullName || user.email,
-          ...payload.metadata,
+          notificationId: notification.id,
+          channel: "EMAIL",
+          status: "QUEUED",
+        },
+      });
+    } else {
+      // Create delivery log and attempt immediate delivery
+      const deliveryLog = await prisma.notificationDeliveryLog.create({
+        data: {
+          notificationId: notification.id,
+          channel: "EMAIL",
+          status: "PENDING",
         },
       });
 
-      await prisma.notificationDeliveryLog.update({
-        where: { id: deliveryLog.id },
-        data: {
-          status: success ? "DELIVERED" : "FAILED",
-          sentAt: new Date(),
-          deliveredAt: success ? new Date() : null,
-        },
-      });
-    } catch (error) {
-      await prisma.notificationDeliveryLog.update({
-        where: { id: deliveryLog.id },
-        data: {
-          status: "FAILED",
-          providerResponse: { error: String(error) },
-        },
-      });
+      try {
+        const success = await sendEmail({
+          to: user.email,
+          subject: payload.title,
+          template: mapNotificationTypeToEmailTemplate(payload.type),
+          data: {
+            name: user.applicantProfile?.fullName || user.email,
+            ...payload.metadata,
+          },
+        });
+
+        await prisma.notificationDeliveryLog.update({
+          where: { id: deliveryLog.id },
+          data: {
+            status: success ? "DELIVERED" : "FAILED",
+            sentAt: new Date(),
+            deliveredAt: success ? new Date() : null,
+          },
+        });
+      } catch (error) {
+        await prisma.notificationDeliveryLog.update({
+          where: { id: deliveryLog.id },
+          data: {
+            status: "FAILED",
+            providerResponse: { error: String(error) },
+          },
+        });
+      }
     }
   }
 
   // Send SMS if enabled and user has phone
-  if (
-    channels.includes("SMS") &&
-    (prefs?.smsEnabled ?? true) &&
-    (typePref?.smsEnabled ?? true) &&
-    user.phone
-  ) {
+  if (delivery.sms && user.phone) {
     const notification = await prisma.notification.create({
       data: {
         userId: payload.userId,
@@ -291,7 +293,6 @@ export async function notifyFormReissueRequested(
       name,
       requestedAt: new Date().toISOString(),
     },
-    channels: ["IN_APP"],
   });
 }
 
@@ -335,7 +336,6 @@ export async function notifyFormReissueDeclined(
       name,
       decisionReason: reason,
     },
-    channels: ["EMAIL", "IN_APP"],
   });
 }
 
@@ -395,20 +395,12 @@ export async function notifyVerificationStatusChanged(
     REJECTED: `Your registration was not approved. Reason: ${reason}`,
   };
 
-  const channelMap: Record<string, NotificationChannel[]> = {
-    VERIFIED: ["EMAIL", "SMS", "IN_APP"],
-    ON_HOLD: ["EMAIL", "IN_APP"],
-    MORE_INFO_REQUIRED: ["EMAIL", "SMS", "IN_APP"],
-    REJECTED: ["EMAIL", "IN_APP"],
-  };
-
   await sendNotification({
     userId,
     type: typeMap[status]!,
     title: titleMap[status]!,
     message: messageMap[status]!,
     metadata: { name, reason, messageToApplicant, dashboardUrl },
-    channels: channelMap[status],
   });
 }
 
@@ -425,7 +417,6 @@ export async function notifyVerificationSubmitted(
     title: "Registration Under Review",
     message: "Your registration is now being reviewed by the legal office.",
     metadata: { name },
-    channels: ["EMAIL", "IN_APP"],
   });
 }
 

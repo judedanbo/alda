@@ -542,6 +542,7 @@ model NotificationTypePreference {
 
 enum DeliveryStatus {
   PENDING
+  QUEUED
   SENT
   DELIVERED
   FAILED

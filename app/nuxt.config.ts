@@ -136,6 +136,11 @@ export default defineNuxtConfig({
       },
     },
 
+    // Notification delivery (server-only)
+    notifications: {
+      digestEnabled: envBool(process.env.NOTIFICATIONS_DIGEST_ENABLED, true),
+    },
+
     // Public runtime config (exposed to client)
     public: {
       appName: "Asset Declaration Portal",
@@ -157,6 +162,8 @@ export default defineNuxtConfig({
       "*/10 * * * *": ["analytics:rollup"],
       // Prune raw events past the retention window, daily at 03:30.
       "30 3 * * *": ["analytics:prune"],
+      // Send batched low-priority email notifications, daily at 18:00.
+      "0 18 * * *": ["notifications:digest"],
     },
   },
 
