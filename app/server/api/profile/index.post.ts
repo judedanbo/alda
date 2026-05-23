@@ -84,8 +84,10 @@ export default defineEventHandler(async (event) => {
     },
   });
 
-  // Notify applicant that verification is in progress
-  await notifyVerificationSubmitted(auth.userId, data.fullName);
+  // Notify applicant that verification is in progress. profile.id is
+  // a natural per-profile key — re-clicks dedupe; a future resubmit
+  // uses a different key (see resubmit endpoint).
+  await notifyVerificationSubmitted(auth.userId, data.fullName, profile.id);
 
   return {
     success: true,

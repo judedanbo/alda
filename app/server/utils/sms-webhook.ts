@@ -9,14 +9,29 @@
  * Authenticated via a shared secret in either the `x-webhook-secret`
  * header or a `secret` query string — kept simple because both
  * providers' webhook configs offer one of these but not a full HMAC.
- * Set NOTIFICATIONS_SMS_WEBHOOK_SECRET in production.
+ * Set NOTIFICATIONS_SMS_WEBHOOK_SECRET in production. Comparison is
+ * done with `timingSafeEqual` so an attacker can't byte-by-byte guess
+ * the secret from response timing.
  */
+import { timingSafeEqual } from "node:crypto";
 import type { H3Event } from "h3";
 import prisma from "~/server/utils/prisma";
 import type { DeliveryStatus } from "@prisma/client";
 
 export function getWebhookSecret(): string | null {
   return process.env.NOTIFICATIONS_SMS_WEBHOOK_SECRET || null;
+}
+
+/**
+ * Constant-time string comparison. Returns false on length mismatch
+ * without leaking length difference through timing.
+ */
+function safeEqual(a: string | undefined, b: string): boolean {
+  if (!a) return false;
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) return false;
+  return timingSafeEqual(ab, bb);
 }
 
 /**
@@ -29,7 +44,7 @@ export function verifyWebhookSecret(event: H3Event): boolean {
   const headerSecret = getHeader(event, "x-webhook-secret");
   const query = getQuery(event);
   const querySecret = typeof query.secret === "string" ? query.secret : undefined;
-  return headerSecret === configured || querySecret === configured;
+  return safeEqual(headerSecret, configured) || safeEqual(querySecret, configured);
 }
 
 /**

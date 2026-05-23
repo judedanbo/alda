@@ -528,17 +528,23 @@ export async function notifyVerificationStatusChanged(
 }
 
 /**
- * Send notification that verification was submitted
+ * Send notification that verification was submitted.
+ *
+ * `dedupeKey` should be a per-submission identifier (e.g. `profile.id`
+ * for initial submit, or `${profile.id}:${updatedAt}` for resubmits) so
+ * double-clicks dedupe but legitimate re-submissions don't.
  */
 export async function notifyVerificationSubmitted(
   userId: string,
   name: string,
+  dedupeKey?: string,
 ): Promise<void> {
   await sendNotification({
     userId,
     type: "VERIFICATION_SUBMITTED",
     ...payloads.verificationSubmitted({ name }),
     channels: ["EMAIL", "IN_APP"],
+    dedupeKey,
   });
 }
 
