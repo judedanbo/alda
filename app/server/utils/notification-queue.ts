@@ -154,7 +154,7 @@ export async function processEmailJob(job: Job<EmailJobData>): Promise<void> {
  */
 export async function processSmsJob(job: Job<SmsJobData>): Promise<void> {
   const { deliveryLogId, to, message } = job.data;
-  let result: { success: boolean; messageId?: string; error?: string };
+  let result: Awaited<ReturnType<typeof sendSms>>;
   try {
     result = await sendSms(to, message);
   } catch (err) {
@@ -169,7 +169,7 @@ export async function processSmsJob(job: Job<SmsJobData>): Promise<void> {
       deliveredAt: result.success ? new Date() : null,
       retryCount: job.attemptsMade,
       providerResponse: result.success
-        ? { messageId: result.messageId }
+        ? { messageId: result.messageId, provider: result.provider }
         : { error: result.error },
     },
   });

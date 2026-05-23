@@ -261,7 +261,7 @@ async function sendSmsInline(
         sentAt: new Date(),
         deliveredAt: result.success ? new Date() : null,
         providerResponse: result.success
-          ? { messageId: result.messageId }
+          ? { messageId: result.messageId, provider: result.provider }
           : { error: result.error },
       },
     });

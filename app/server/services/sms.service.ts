@@ -22,6 +22,8 @@ interface SmsResult {
   success: boolean;
   messageId?: string;
   error?: string;
+  /** Which provider actually delivered the message (set on success). */
+  provider?: SmsProvider;
 }
 
 /**
@@ -159,7 +161,10 @@ async function sendViaArkesel(
 }
 
 /**
- * Send SMS message
+ * Send SMS message. Tries the configured primary provider, and on
+ * failure falls back to the other once. The result includes which
+ * provider actually delivered so it can be recorded in
+ * NotificationDeliveryLog.providerResponse.
  */
 export async function sendSms(to: string, message: string): Promise<SmsResult> {
   if (!isValidGhanaPhone(to)) {
@@ -167,16 +172,45 @@ export async function sendSms(to: string, message: string): Promise<SmsResult> {
   }
 
   const config = getSmsConfig();
+  const order = providerOrder(config.provider);
 
-  switch (config.provider) {
-    case "hubtel":
-      return sendViaHubtel(to, message, config.hubtel);
-    case "arkesel":
-      return sendViaArkesel(to, message, config.arkesel);
-    default:
-      console.log("[SMS-DEV] No provider, message:", message, "to:", to);
-      return { success: true, messageId: "dev-" + Date.now() };
+  let lastError: string | undefined;
+  for (const provider of order) {
+    const result = await sendVia(provider, to, message, config);
+    if (result.success) {
+      return { ...result, provider };
+    }
+    lastError = result.error;
+    // Only attempt a fallback if the other provider is actually
+    // configured — otherwise we'd just hit the dev-mode mock and report
+    // a misleading success.
+    if (!isConfigured(otherProvider(provider), config)) break;
   }
+
+  return { success: false, error: lastError ?? "All SMS providers failed" };
+}
+
+function providerOrder(primary: SmsProvider): SmsProvider[] {
+  return primary === "hubtel" ? ["hubtel", "arkesel"] : ["arkesel", "hubtel"];
+}
+
+function otherProvider(p: SmsProvider): SmsProvider {
+  return p === "hubtel" ? "arkesel" : "hubtel";
+}
+
+function isConfigured(p: SmsProvider, config: SmsConfig): boolean {
+  if (p === "hubtel") return !!(config.hubtel?.clientId && config.hubtel?.clientSecret);
+  return !!config.arkesel?.apiKey;
+}
+
+function sendVia(
+  provider: SmsProvider,
+  to: string,
+  message: string,
+  config: SmsConfig,
+): Promise<SmsResult> {
+  if (provider === "hubtel") return sendViaHubtel(to, message, config.hubtel);
+  return sendViaArkesel(to, message, config.arkesel);
 }
 
 /**
