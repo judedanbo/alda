@@ -84,3 +84,69 @@ describe("generateEmailHtml", () => {
     expect(html).not.toMatch(/Dear undefined/);
   });
 });
+
+describe("generateEmailHtml — HTML escaping", () => {
+  it("escapes script-injection attempts in user-typed rejection reasons", () => {
+    const html = generateEmailHtml("declaration-rejected", {
+      name: "Jane",
+      uniqueCode: "ADLA-1",
+      rejectionReason: "<script>alert('xss')</script>",
+    });
+    expect(html).not.toContain("<script>alert");
+    expect(html).toContain("&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;");
+  });
+
+  it("escapes HTML in the applicant name", () => {
+    const html = generateEmailHtml("welcome", {
+      name: "<img src=x onerror=alert(1)>",
+      loginUrl: "https://example.com/login",
+    });
+    expect(html).not.toContain("<img src=x");
+    expect(html).toContain("&lt;img src=x onerror=alert(1)&gt;");
+  });
+
+  it("escapes officer messageToApplicant in more-info email", () => {
+    const html = generateEmailHtml("verification-more-info", {
+      name: "Jane",
+      dashboardUrl: "https://example.com/dash",
+      messageToApplicant: 'evil "quote" & <b>bold</b>',
+    });
+    expect(html).not.toContain("<b>bold</b>");
+    expect(html).toContain("evil &quot;quote&quot; &amp; &lt;b&gt;bold&lt;/b&gt;");
+  });
+
+  it("escapes & in URLs so href stays single-attribute", () => {
+    // A URL with an unescaped & could be misparsed by strict HTML
+    // parsers. esc() turns & into &amp;.
+    const html = generateEmailHtml("welcome", {
+      name: "Jane",
+      loginUrl: "https://example.com/?a=1&b=2",
+    });
+    expect(html).toContain('href="https://example.com/?a=1&amp;b=2"');
+  });
+
+  it("escapes verification-rejected reason and messageToApplicant", () => {
+    const html = generateEmailHtml("verification-rejected", {
+      name: "Jane",
+      reason: '"><script>1</script>',
+      messageToApplicant: "<svg onload=alert(1)>",
+    });
+    expect(html).not.toContain("<script>1</script>");
+    expect(html).not.toContain("<svg onload=alert(1)>");
+    expect(html).toContain("&quot;&gt;&lt;script&gt;");
+    expect(html).toContain("&lt;svg onload=alert(1)&gt;");
+  });
+
+  it("escapes pickup notification authorized person fields", () => {
+    const html = generateEmailHtml("pickup-notification", {
+      name: "Jane",
+      uniqueCode: "ADLA-1",
+      receiptNumber: "R-1",
+      authorizedPerson: "<b>Bob</b>",
+      authorizedPhone: "<img>",
+    });
+    expect(html).not.toContain("<b>Bob</b>");
+    expect(html).toContain("&lt;b&gt;Bob&lt;/b&gt;");
+    expect(html).toContain("&lt;img&gt;");
+  });
+});

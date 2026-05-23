@@ -4,8 +4,30 @@
  * Templates compose a body fragment and pass it to `layout()` along with
  * an optional header colour (defaulting to Ghana green from BRAND_COLORS).
  * The footer is added automatically.
+ *
+ * **Always interpolate user-derived data through `esc()`.** Rejection
+ * reasons, reviewer messages, applicant names, and office names all
+ * originate from typed-in user input and would otherwise inject HTML
+ * straight into the rendered email body.
  */
 import { BRAND, BRAND_COLORS } from "~/server/utils/branding";
+
+/**
+ * HTML-escape a value for safe interpolation in both element text and
+ * attribute contexts (escaping `&`, `<`, `>`, `"`, `'`).
+ *
+ * `null` / `undefined` render as the empty string so missing optional
+ * fields don't show as literal "undefined".
+ */
+export function esc(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 export const BASE_STYLES = `
   <style>
@@ -28,6 +50,10 @@ export interface LayoutOptions {
 }
 
 export function layout({ title, body, headerColor, includeConstitutionRef = false }: LayoutOptions): string {
+  // headerColor is template-controlled (not user input) and only ever
+  // sourced from BRAND_COLORS — no escape needed. title is template-
+  // controlled too but we escape it defensively in case a future
+  // template threads user input into it.
   const headerStyle = headerColor ? ` style="background-color: ${headerColor};"` : "";
   const constitutionLine = includeConstitutionRef
     ? `<p>${BRAND.constitutionalAuthority}</p>`
@@ -36,7 +62,7 @@ export function layout({ title, body, headerColor, includeConstitutionRef = fals
     ${BASE_STYLES}
     <div class="container">
       <div class="header"${headerStyle}>
-        <h1>${title}</h1>
+        <h1>${esc(title)}</h1>
       </div>
       <div class="content">
         ${body}
