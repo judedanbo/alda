@@ -147,6 +147,7 @@ export default defineEventHandler(async (event) => {
         uniqueCode: declaration.uniqueCode,
         collectionOffice: collectionOffice.name,
       },
+      dedupeKey: formCollection.id,
     });
   }
 

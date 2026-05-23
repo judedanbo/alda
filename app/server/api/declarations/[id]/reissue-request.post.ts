@@ -105,7 +105,8 @@ export default defineEventHandler(async (event) => {
     await notifyFormReissueRequested(
       declaration.applicant.user.id,
       declaration.uniqueCode,
-      declaration.applicant.fullName
+      declaration.applicant.fullName,
+      reissueRequest.id,
     );
   }
 

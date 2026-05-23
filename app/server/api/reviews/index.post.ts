@@ -121,6 +121,7 @@ export default defineEventHandler(async (event) => {
           declarationId: declaration.id,
           uniqueCode: declaration.uniqueCode,
         },
+        dedupeKey: declaration.uniqueCode,
       });
     }
 
@@ -189,6 +190,7 @@ export default defineEventHandler(async (event) => {
         declarationId: declaration.id,
         uniqueCode: declaration.uniqueCode,
       },
+      dedupeKey: `${declaration.uniqueCode}:sections`,
     });
   }
 

@@ -14,13 +14,64 @@ export interface NotificationPayload {
   message: string;
   metadata?: Record<string, unknown>;
   channels?: NotificationChannel[];
+  /**
+   * Optional dedupe key. If a notification with the same
+   * (userId, type, dedupeKey) was created within DEDUPE_WINDOW_MS, the
+   * send is skipped. Use the natural entity id of whatever triggered the
+   * notification (declaration code, receipt number, reissue request id).
+   */
+  dedupeKey?: string;
 }
 
 /**
- * Send notification through specified channels
+ * Window during which a repeated (userId, type, dedupeKey) is treated as a
+ * duplicate and skipped. Short enough to allow legitimate re-sends (e.g.
+ * an applicant who later resubmits) but long enough to absorb double
+ * clicks and handler retries.
+ */
+const DEDUPE_WINDOW_MS = 5 * 60 * 1000;
+
+/**
+ * Send a notification across the configured channels. This function is
+ * intentionally swallow-all: it never throws, so callers do not need to
+ * wrap it in try/catch. Notification failures must not break the state
+ * transition that triggered them.
  */
 export async function sendNotification(payload: NotificationPayload): Promise<void> {
-  // Get user with their notification preferences
+  try {
+    await sendNotificationInternal(payload);
+  } catch (error) {
+    console.error("[notification.service] sendNotification failed", {
+      userId: payload.userId,
+      type: payload.type,
+      dedupeKey: payload.dedupeKey,
+      error: error instanceof Error ? { message: error.message, stack: error.stack } : String(error),
+    });
+  }
+}
+
+async function sendNotificationInternal(payload: NotificationPayload): Promise<void> {
+  if (payload.dedupeKey) {
+    const cutoff = new Date(Date.now() - DEDUPE_WINDOW_MS);
+    const existing = await prisma.notification.findFirst({
+      where: {
+        userId: payload.userId,
+        type: payload.type,
+        dedupeKey: payload.dedupeKey,
+        createdAt: { gte: cutoff },
+      },
+      select: { id: true },
+    });
+    if (existing) {
+      console.info("[notification.service] dedupe hit, skipping", {
+        userId: payload.userId,
+        type: payload.type,
+        dedupeKey: payload.dedupeKey,
+      });
+      return;
+    }
+  }
+
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
     include: {
@@ -54,6 +105,7 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
         title: payload.title,
         message: payload.message,
         metadata: (payload.metadata ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        dedupeKey: payload.dedupeKey,
       },
     });
   }
@@ -72,6 +124,7 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
         title: payload.title,
         message: payload.message,
         metadata: (payload.metadata ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        dedupeKey: payload.dedupeKey,
       },
     });
 
@@ -129,6 +182,7 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
         title: payload.title,
         message: payload.message,
         metadata: (payload.metadata ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        dedupeKey: payload.dedupeKey,
       },
     });
 
@@ -206,6 +260,7 @@ export async function notifyUniqueCodeGenerated(
     title: `Your Declaration Code: ${uniqueCode}`,
     message: `Your unique declaration code is ${uniqueCode}. Keep this code safe for tracking your declaration.`,
     metadata: { uniqueCode, name },
+    dedupeKey: uniqueCode,
   });
 }
 
@@ -227,6 +282,7 @@ export async function notifyDeclarationSubmitted(
       name,
       submittedAt: new Date().toISOString(),
     },
+    dedupeKey: uniqueCode,
   });
 }
 
@@ -248,6 +304,7 @@ export async function notifyDeclarationApproved(
       name,
       approvedAt: new Date().toISOString(),
     },
+    dedupeKey: uniqueCode,
   });
 }
 
@@ -270,6 +327,7 @@ export async function notifyDeclarationRejected(
       name,
       rejectionReason: reason,
     },
+    dedupeKey: uniqueCode,
   });
 }
 
@@ -279,7 +337,8 @@ export async function notifyDeclarationRejected(
 export async function notifyFormReissueRequested(
   userId: string,
   uniqueCode: string,
-  name: string
+  name: string,
+  reissueRequestId?: string,
 ): Promise<void> {
   await sendNotification({
     userId,
@@ -292,6 +351,7 @@ export async function notifyFormReissueRequested(
       requestedAt: new Date().toISOString(),
     },
     channels: ["IN_APP"],
+    dedupeKey: reissueRequestId ?? uniqueCode,
   });
 }
 
@@ -301,7 +361,8 @@ export async function notifyFormReissueRequested(
 export async function notifyFormReissueApproved(
   userId: string,
   uniqueCode: string,
-  name: string
+  name: string,
+  reissueRequestId?: string,
 ): Promise<void> {
   await sendNotification({
     userId,
@@ -313,6 +374,7 @@ export async function notifyFormReissueApproved(
       name,
       approvedAt: new Date().toISOString(),
     },
+    dedupeKey: reissueRequestId ?? uniqueCode,
   });
 }
 
@@ -323,7 +385,8 @@ export async function notifyFormReissueDeclined(
   userId: string,
   uniqueCode: string,
   name: string,
-  reason: string
+  reason: string,
+  reissueRequestId?: string,
 ): Promise<void> {
   await sendNotification({
     userId,
@@ -336,6 +399,7 @@ export async function notifyFormReissueDeclined(
       decisionReason: reason,
     },
     channels: ["EMAIL", "IN_APP"],
+    dedupeKey: reissueRequestId ?? uniqueCode,
   });
 }
 
@@ -358,6 +422,7 @@ export async function notifyReceiptReady(
       receiptNumber,
       name,
     },
+    dedupeKey: receiptNumber,
   });
 }
 
@@ -409,6 +474,7 @@ export async function notifyVerificationStatusChanged(
     message: messageMap[status]!,
     metadata: { name, reason, messageToApplicant, dashboardUrl },
     channels: channelMap[status],
+    dedupeKey: `${status}:${userId}`,
   });
 }
 

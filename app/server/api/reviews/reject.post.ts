@@ -172,6 +172,7 @@ export default defineEventHandler(async (event) => {
         ...(result.newCode ? { newCode: result.newCode } : {}),
         rejectionReason: data.rejectionReason,
       },
+      dedupeKey: declaration.uniqueCode,
     });
   }
 

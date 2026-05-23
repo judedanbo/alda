@@ -168,6 +168,7 @@ export default defineEventHandler(async (event) => {
         receiptNumber,
         pdfUrl,
       },
+      dedupeKey: receiptNumber,
     });
   }
 

@@ -496,6 +496,7 @@ model Notification {
   title     String              @db.VarChar(255)
   message   String              @db.Text
   metadata  Json?
+  dedupeKey String?             @map("dedupe_key") @db.VarChar(255)
   readAt    DateTime?           @map("read_at")
   createdAt DateTime            @default(now()) @map("created_at")
 
@@ -505,6 +506,7 @@ model Notification {
 
   @@index([userId])
   @@index([readAt])
+  @@index([userId, type, dedupeKey, createdAt])
   @@map("notifications")
 }
 
