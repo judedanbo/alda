@@ -2,6 +2,7 @@ import prisma from "~/server/utils/prisma";
 import { validateBody, formCollectionRecordSchema } from "~/server/utils/validators";
 import { logAction, AuditActions } from "~/server/utils/audit";
 import { sendNotification } from "~/server/services/notification.service";
+import { payloads } from "~/server/notifications/payloads";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -140,13 +141,11 @@ export default defineEventHandler(async (event) => {
     await sendNotification({
       userId: declaration.applicant.user.id,
       type: "FORM_COLLECTED",
-      title: "Declaration Form Collected",
-      message: `Your asset declaration form (${declaration.uniqueCode}) has been collected from ${collectionOffice.name}. Please complete and return it.`,
-      metadata: {
-        declarationId: declaration.id,
+      ...payloads.formCollected({
         uniqueCode: declaration.uniqueCode,
         collectionOffice: collectionOffice.name,
-      },
+        declarationId: declaration.id,
+      }),
       dedupeKey: formCollection.id,
     });
   }

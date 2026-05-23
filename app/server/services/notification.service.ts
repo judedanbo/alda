@@ -7,6 +7,7 @@ import {
   enqueueSmsJob,
   isQueueEnabled,
 } from "~/server/utils/notification-queue";
+import { payloads } from "~/server/notifications/payloads";
 import type { NotificationType, NotificationChannel } from "@prisma/client";
 
 /**
@@ -313,9 +314,7 @@ export async function notifyUniqueCodeGenerated(
   await sendNotification({
     userId,
     type: "UNIQUE_CODE_GENERATED",
-    title: `Your Declaration Code: ${uniqueCode}`,
-    message: `Your unique declaration code is ${uniqueCode}. Keep this code safe for tracking your declaration.`,
-    metadata: { uniqueCode, name },
+    ...payloads.uniqueCodeGenerated({ uniqueCode, name }),
     dedupeKey: uniqueCode,
   });
 }
@@ -331,13 +330,7 @@ export async function notifyDeclarationSubmitted(
   await sendNotification({
     userId,
     type: "FORM_RETURNED",
-    title: "Declaration Submitted",
-    message: `Your declaration (${uniqueCode}) has been submitted for review.`,
-    metadata: {
-      uniqueCode,
-      name,
-      submittedAt: new Date().toISOString(),
-    },
+    ...payloads.declarationSubmitted({ uniqueCode, name }),
     dedupeKey: uniqueCode,
   });
 }
@@ -353,13 +346,7 @@ export async function notifyDeclarationApproved(
   await sendNotification({
     userId,
     type: "REVIEW_APPROVED",
-    title: "Declaration Approved",
-    message: `Congratulations! Your declaration (${uniqueCode}) has been approved.`,
-    metadata: {
-      uniqueCode,
-      name,
-      approvedAt: new Date().toISOString(),
-    },
+    ...payloads.declarationApproved({ uniqueCode, name }),
     dedupeKey: uniqueCode,
   });
 }
@@ -376,13 +363,7 @@ export async function notifyDeclarationRejected(
   await sendNotification({
     userId,
     type: "REVIEW_REJECTED",
-    title: "Declaration Requires Attention",
-    message: `Your declaration (${uniqueCode}) requires attention. Reason: ${reason}`,
-    metadata: {
-      uniqueCode,
-      name,
-      rejectionReason: reason,
-    },
+    ...payloads.declarationRejected({ uniqueCode, name, reason }),
     dedupeKey: uniqueCode,
   });
 }
@@ -399,13 +380,7 @@ export async function notifyFormReissueRequested(
   await sendNotification({
     userId,
     type: "FORM_REISSUE_REQUESTED",
-    title: "Reissue Request Received",
-    message: `We received your request to reissue the lost form for declaration (${uniqueCode}). The Legal Unit will process it once the Auditor General's approval letter is received.`,
-    metadata: {
-      uniqueCode,
-      name,
-      requestedAt: new Date().toISOString(),
-    },
+    ...payloads.formReissueRequested({ uniqueCode, name }),
     channels: ["IN_APP"],
     dedupeKey: reissueRequestId ?? uniqueCode,
   });
@@ -423,13 +398,7 @@ export async function notifyFormReissueApproved(
   await sendNotification({
     userId,
     type: "FORM_REISSUE_APPROVED",
-    title: "Form Reissue Approved",
-    message: `Your request to reissue the lost form for declaration (${uniqueCode}) has been approved. Collect the reissued form and return it through the normal process.`,
-    metadata: {
-      uniqueCode,
-      name,
-      approvedAt: new Date().toISOString(),
-    },
+    ...payloads.formReissueApproved({ uniqueCode, name }),
     dedupeKey: reissueRequestId ?? uniqueCode,
   });
 }
@@ -447,13 +416,7 @@ export async function notifyFormReissueDeclined(
   await sendNotification({
     userId,
     type: "FORM_REISSUE_DECLINED",
-    title: "Form Reissue Declined",
-    message: `Your request to reissue the lost form for declaration (${uniqueCode}) was declined. Reason: ${reason}`,
-    metadata: {
-      uniqueCode,
-      name,
-      decisionReason: reason,
-    },
+    ...payloads.formReissueDeclined({ uniqueCode, name, reason }),
     channels: ["EMAIL", "IN_APP"],
     dedupeKey: reissueRequestId ?? uniqueCode,
   });
@@ -471,13 +434,7 @@ export async function notifyReceiptReady(
   await sendNotification({
     userId,
     type: "RECEIPT_READY",
-    title: "Receipt Ready",
-    message: `Your receipt (${receiptNumber}) for declaration ${uniqueCode} is ready.`,
-    metadata: {
-      uniqueCode,
-      receiptNumber,
-      name,
-    },
+    ...payloads.receiptReady({ uniqueCode, receiptNumber, name }),
     dedupeKey: receiptNumber,
   });
 }
@@ -502,20 +459,6 @@ export async function notifyVerificationStatusChanged(
     REJECTED: "VERIFICATION_REJECTED",
   };
 
-  const titleMap: Record<string, string> = {
-    VERIFIED: "Registration Verified",
-    ON_HOLD: "Registration Under Investigation",
-    MORE_INFO_REQUIRED: "Additional Information Required",
-    REJECTED: "Registration Not Approved",
-  };
-
-  const messageMap: Record<string, string> = {
-    VERIFIED: "Your registration has been verified. You can now create asset declarations.",
-    ON_HOLD: `Your registration is under investigation. Reason: ${reason}`,
-    MORE_INFO_REQUIRED: `Additional information required: ${messageToApplicant || reason}`,
-    REJECTED: `Your registration was not approved. Reason: ${reason}`,
-  };
-
   const channelMap: Record<string, NotificationChannel[]> = {
     VERIFIED: ["EMAIL", "SMS", "IN_APP"],
     ON_HOLD: ["EMAIL", "IN_APP"],
@@ -526,9 +469,7 @@ export async function notifyVerificationStatusChanged(
   await sendNotification({
     userId,
     type: typeMap[status]!,
-    title: titleMap[status]!,
-    message: messageMap[status]!,
-    metadata: { name, reason, messageToApplicant, dashboardUrl },
+    ...payloads.verificationStatus({ status, name, reason, messageToApplicant, dashboardUrl }),
     channels: channelMap[status],
     dedupeKey: `${status}:${userId}`,
   });
@@ -544,9 +485,7 @@ export async function notifyVerificationSubmitted(
   await sendNotification({
     userId,
     type: "VERIFICATION_SUBMITTED",
-    title: "Registration Under Review",
-    message: "Your registration is now being reviewed by the legal office.",
-    metadata: { name },
+    ...payloads.verificationSubmitted({ name }),
     channels: ["EMAIL", "IN_APP"],
   });
 }

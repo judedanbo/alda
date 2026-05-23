@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
 import { renderEmail, type EmailTemplate } from "~/server/emails";
+import { BRAND } from "~/server/utils/branding";
 
 export type { EmailTemplate };
 
@@ -56,7 +57,7 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
 
   try {
     await transport.sendMail({
-      from: `"Asset Declaration Portal" <${config.smtpFrom}>`,
+      from: `"${BRAND.fullName}" <${config.smtpFrom}>`,
       to: emailData.to,
       subject: emailData.subject,
       html,
@@ -75,7 +76,7 @@ export async function sendWelcomeEmail(to: string, name: string): Promise<boolea
   const config = useRuntimeConfig();
   return sendEmail({
     to,
-    subject: "Welcome to Asset Declaration Portal",
+    subject: `Welcome to ${BRAND.fullName}`,
     template: "welcome",
     data: {
       name,

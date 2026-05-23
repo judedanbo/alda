@@ -2,6 +2,7 @@
  * SMS Service for Ghana
  * Supports Hubtel and Arkesel SMS providers
  */
+import { BRAND, DEFAULT_SMS_SENDER_ID } from "~/server/utils/branding";
 
 export type SmsProvider = "hubtel" | "arkesel";
 
@@ -40,11 +41,11 @@ function getSmsConfig(): SmsConfig {
     hubtel: {
       clientId: process.env.HUBTEL_CLIENT_ID || "",
       clientSecret: process.env.HUBTEL_CLIENT_SECRET || "",
-      senderId: process.env.HUBTEL_SENDER_ID || "ADLA",
+      senderId: process.env.HUBTEL_SENDER_ID || DEFAULT_SMS_SENDER_ID,
     },
     arkesel: {
       apiKey: process.env.ARKESEL_API_KEY || "",
-      senderId: process.env.ARKESEL_SENDER_ID || "ADLA",
+      senderId: process.env.ARKESEL_SENDER_ID || DEFAULT_SMS_SENDER_ID,
     },
   };
 }
@@ -218,7 +219,7 @@ function sendVia(
  */
 export const SmsTemplates = {
   uniqueCode: (code: string) =>
-    `Your ADLA Declaration Code is: ${code}. Keep this code safe for tracking your declaration status.`,
+    `Your ${BRAND.shortName} Declaration Code is: ${code}. Keep this code safe for tracking your declaration status.`,
 
   declarationSubmitted: (code: string) =>
     `Your asset declaration (${code}) has been submitted for review. You will be notified when a decision is made.`,
@@ -233,7 +234,7 @@ export const SmsTemplates = {
     `Your sealed declaration document (${code}) is ready for pickup. Bring your Ghana Card for identification.`,
 
   otp: (otp: string) =>
-    `Your ADLA verification code is: ${otp}. Valid for 10 minutes. Do not share this code.`,
+    `Your ${BRAND.shortName} verification code is: ${otp}. Valid for 10 minutes. Do not share this code.`,
 };
 
 /**

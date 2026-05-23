@@ -2,6 +2,7 @@ import prisma from "~/server/utils/prisma";
 import { logAction } from "~/server/utils/audit";
 import { generateReceiptPDF, generateReceiptNumber } from "~/server/services/pdf.service";
 import { sendNotification } from "~/server/services/notification.service";
+import { payloads } from "~/server/notifications/payloads";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -161,13 +162,13 @@ export default defineEventHandler(async (event) => {
     await sendNotification({
       userId: user.id,
       type: "RECEIPT_READY",
-      title: "Receipt Ready",
-      message: `Your receipt (${receiptNumber}) for asset declaration ${declaration.uniqueCode} is ready. You can view and download it from your declaration page.`,
-      metadata: {
-        declarationId,
+      ...payloads.receiptReady({
+        uniqueCode: declaration.uniqueCode,
         receiptNumber,
+        name: declaration.applicant.fullName,
+        declarationId,
         pdfUrl,
-      },
+      }),
       dedupeKey: receiptNumber,
     });
   }

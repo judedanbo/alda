@@ -2,6 +2,7 @@ import prisma from "~/server/utils/prisma";
 import { validateBody, approveReviewSchema } from "~/server/utils/validators";
 import { logAction, AuditActions } from "~/server/utils/audit";
 import { sendNotification } from "~/server/services/notification.service";
+import { payloads } from "~/server/notifications/payloads";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -101,12 +102,11 @@ export default defineEventHandler(async (event) => {
     await sendNotification({
       userId: declaration.applicant.user.id,
       type: "REVIEW_APPROVED",
-      title: "Declaration Approved",
-      message: `Your asset declaration (${declaration.uniqueCode}) has been approved. A receipt will be generated shortly.`,
-      metadata: {
-        declarationId: declaration.id,
+      ...payloads.declarationApproved({
         uniqueCode: declaration.uniqueCode,
-      },
+        name: declaration.applicant.fullName,
+        declarationId: declaration.id,
+      }),
       dedupeKey: declaration.uniqueCode,
     });
   }

@@ -2,6 +2,7 @@ import prisma from "~/server/utils/prisma";
 import { validateBody, rejectReviewSchema } from "~/server/utils/validators";
 import { logAction, AuditActions } from "~/server/utils/audit";
 import { sendNotification } from "~/server/services/notification.service";
+import { payloads } from "~/server/notifications/payloads";
 import { generateUniqueCode } from "~/server/utils/code-generator";
 
 export default defineEventHandler(async (event) => {
@@ -154,24 +155,25 @@ export default defineEventHandler(async (event) => {
   });
 
   if (declaration.applicant.user) {
-    const stageLabel = result.newDeclarationStatus === "FORM_COLLECTED"
-      ? " Your replacement form is ready to be collected."
-      : "";
-    const message = result.newCode
-      ? `Your asset declaration (${declaration.uniqueCode}) requires revision. Reason: ${data.rejectionReason}. A new code has been issued: ${result.newCode}.${stageLabel}`
-      : `Your asset declaration (${declaration.uniqueCode}) has been rejected. Reason: ${data.rejectionReason}`;
+    const copy = payloads.declarationRejected({
+      uniqueCode: declaration.uniqueCode,
+      name: declaration.applicant.fullName,
+      reason: data.rejectionReason,
+      newCode: result.newCode ?? undefined,
+      declarationId: declaration.id,
+    });
+
+    // Append the stage hint to the message only when a replacement form
+    // is already waiting to be collected. The base copy lives in the
+    // shared payload builder; this is the one workflow-specific addition.
+    if (result.newCode && result.newDeclarationStatus === "FORM_COLLECTED") {
+      copy.message += " Your replacement form is ready to be collected.";
+    }
 
     await sendNotification({
       userId: declaration.applicant.user.id,
       type: "REVIEW_REJECTED",
-      title: result.newCode ? "Declaration Requires Revision" : "Declaration Rejected",
-      message,
-      metadata: {
-        declarationId: declaration.id,
-        uniqueCode: declaration.uniqueCode,
-        ...(result.newCode ? { newCode: result.newCode } : {}),
-        rejectionReason: data.rejectionReason,
-      },
+      ...copy,
       dedupeKey: declaration.uniqueCode,
     });
   }

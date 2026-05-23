@@ -2,6 +2,7 @@ import prisma from "~/server/utils/prisma";
 import { validateBody, sectionReviewSchema } from "~/server/utils/validators";
 import { logAction, AuditActions } from "~/server/utils/audit";
 import { sendNotification } from "~/server/services/notification.service";
+import { payloads } from "~/server/notifications/payloads";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -115,12 +116,11 @@ export default defineEventHandler(async (event) => {
       await sendNotification({
         userId: declaration.applicant.user.id,
         type: "REVIEW_APPROVED",
-        title: "Declaration Approved",
-        message: `Your asset declaration (${declaration.uniqueCode}) has been approved. A receipt will be generated shortly.`,
-        metadata: {
-          declarationId: declaration.id,
+        ...payloads.declarationApproved({
           uniqueCode: declaration.uniqueCode,
-        },
+          name: declaration.applicant.fullName,
+          declarationId: declaration.id,
+        }),
         dedupeKey: declaration.uniqueCode,
       });
     }
@@ -184,12 +184,11 @@ export default defineEventHandler(async (event) => {
     await sendNotification({
       userId: declaration.applicant.user.id,
       type: "SECTION_REVIEW_COMMENTS",
-      title: "Declaration Review — Issues Found",
-      message: `Your asset declaration (${declaration.uniqueCode}) has been reviewed. ${issueCount} section(s) require attention. Please visit your declaration page for details.`,
-      metadata: {
-        declarationId: declaration.id,
+      ...payloads.sectionReviewComments({
         uniqueCode: declaration.uniqueCode,
-      },
+        declarationId: declaration.id,
+        issueCount,
+      }),
       dedupeKey: `${declaration.uniqueCode}:sections`,
     });
   }
