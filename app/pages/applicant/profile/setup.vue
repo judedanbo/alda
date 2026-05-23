@@ -75,6 +75,14 @@ const error = ref("");
 const isLoading = ref(false);
 const currentStep = ref(1);
 const totalSteps = 3;
+const stepTitles = [
+  "Personal Information",
+  "Upload Ghana Card",
+  "Office Details",
+] as const;
+const stepAnnouncement = computed(
+  () => `Step ${currentStep.value} of ${totalSteps}: ${stepTitles[currentStep.value - 1]}`,
+);
 const { fieldErrors, clearFieldError, clearAll, handleServerError } = useFieldErrors();
 
 // Fetch reference data
@@ -114,14 +122,6 @@ const uploadGhanaCard = async (file: File, side: "front" | "back") => {
   } finally {
     if (side === "front") uploadingFront.value = false;
     else uploadingBack.value = false;
-  }
-};
-
-// Handle file selection
-const handleFileSelect = (event: Event, side: "front" | "back") => {
-  const input = event.target as HTMLInputElement;
-  if (input.files && input.files[0]) {
-    uploadGhanaCard(input.files[0], side);
   }
 };
 
@@ -331,9 +331,22 @@ const handleSubmit = async () => {
       </CardHeader>
 
       <CardContent class="p-8 pt-0">
+        <!-- SR-only live region announcing step changes. -->
+        <p class="sr-only" role="status" aria-live="polite">
+          {{ stepAnnouncement }}
+        </p>
+
         <!-- Progress Bar -->
-        <div data-tour="profile-progress" class="mb-8">
-          <div class="flex items-center justify-between mb-2">
+        <div
+          data-tour="profile-progress"
+          class="mb-8"
+          role="progressbar"
+          :aria-valuenow="currentStep"
+          :aria-valuemin="1"
+          :aria-valuemax="totalSteps"
+          :aria-valuetext="stepAnnouncement"
+        >
+          <div class="flex items-center justify-between mb-2" aria-hidden="true">
             <span
               v-for="step in totalSteps"
               :key="step"
@@ -347,7 +360,7 @@ const handleSubmit = async () => {
               {{ step }}
             </span>
           </div>
-          <div class="h-2 bg-muted rounded-full">
+          <div class="h-2 bg-muted rounded-full" aria-hidden="true">
             <div
               class="h-full bg-primary rounded-full transition-all duration-300"
               :style="{ width: `${(currentStep / totalSteps) * 100}%` }"
@@ -416,108 +429,37 @@ const handleSubmit = async () => {
           <div v-show="currentStep === 2" class="space-y-6">
             <h3 class="text-lg font-semibold text-foreground">Upload Ghana Card</h3>
 
-            <!-- Front -->
-            <div class="space-y-2">
-              <Label class="inline-flex items-center gap-1.5">
-                Ghana Card Front <span class="text-destructive">*</span>
+            <AppFileUploadDropzone
+              label="Ghana Card Front"
+              required
+              :uploading="uploadingFront"
+              :image-url="form.ghanaCardFrontUrl"
+              image-alt="Ghana Card Front"
+              :error="fieldErrors.ghanaCardFront"
+              help-text="JPG or PNG. Click, press Enter, or drop a file."
+              success-text="Front uploaded successfully"
+              placeholder-text="Upload front of Ghana Card"
+              @file-selected="(file) => uploadGhanaCard(file, 'front')"
+            >
+              <template #label-suffix>
                 <HelpTip field-id="profile.ghanaCardFront" />
-              </Label>
-              <div
-                class="border-2 border-dashed rounded-lg p-6 text-center transition-colors"
-                :class="form.ghanaCardFrontUrl ? 'border-primary bg-primary/5' : fieldErrors.ghanaCardFront ? 'border-destructive' : 'border-muted-foreground/30'"
-              >
-                <div v-if="uploadingFront" class="text-muted-foreground">
-                  Uploading...
-                </div>
-                <div v-else-if="form.ghanaCardFrontUrl">
-                  <img
-                    :src="form.ghanaCardFrontUrl"
-                    alt="Ghana Card Front"
-                    class="max-h-40 mx-auto rounded-md mb-2"
-                  >
-                  <p class="text-sm text-success">Front uploaded successfully</p>
-                </div>
-                <div v-else>
-                  <svg class="w-12 h-12 mx-auto text-muted-foreground/50 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p class="text-sm text-muted-foreground mb-2">Upload front of Ghana Card</p>
-                </div>
-                <input
-                  id="front-upload"
-                  type="file"
-                  accept="image/*"
-                  class="hidden"
-                  @change="(e) => handleFileSelect(e, 'front')"
-                >
-                <label
-                  for="front-upload"
-                  class="inline-block cursor-pointer"
-                >
-                  <Button
-                    type="button"
-                    size="sm"
-                    :variant="form.ghanaCardFrontUrl ? 'outline' : 'default'"
-                    as="span"
-                  >
-                    {{ form.ghanaCardFrontUrl ? 'Change Image' : 'Select Image' }}
-                  </Button>
-                </label>
-              </div>
-              <p v-if="fieldErrors.ghanaCardFront" class="text-xs text-destructive">
-                {{ fieldErrors.ghanaCardFront }}
-              </p>
-            </div>
+              </template>
+            </AppFileUploadDropzone>
 
-            <!-- Back (Optional) -->
-            <div class="space-y-2">
-              <Label class="inline-flex items-center gap-1.5">
-                Ghana Card Back (Optional)
+            <AppFileUploadDropzone
+              label="Ghana Card Back (Optional)"
+              :uploading="uploadingBack"
+              :image-url="form.ghanaCardBackUrl"
+              image-alt="Ghana Card Back"
+              help-text="JPG or PNG. Click, press Enter, or drop a file."
+              success-text="Back uploaded successfully"
+              placeholder-text="Upload back of Ghana Card"
+              @file-selected="(file) => uploadGhanaCard(file, 'back')"
+            >
+              <template #label-suffix>
                 <HelpTip field-id="profile.ghanaCardBack" />
-              </Label>
-              <div
-                class="border-2 border-dashed rounded-lg p-6 text-center transition-colors"
-                :class="form.ghanaCardBackUrl ? 'border-primary bg-primary/5' : 'border-muted-foreground/30'"
-              >
-                <div v-if="uploadingBack" class="text-muted-foreground">
-                  Uploading...
-                </div>
-                <div v-else-if="form.ghanaCardBackUrl">
-                  <img
-                    :src="form.ghanaCardBackUrl"
-                    alt="Ghana Card Back"
-                    class="max-h-40 mx-auto rounded-md mb-2"
-                  >
-                  <p class="text-sm text-success">Back uploaded successfully</p>
-                </div>
-                <div v-else>
-                  <svg class="w-12 h-12 mx-auto text-muted-foreground/50 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p class="text-sm text-muted-foreground mb-2">Upload back of Ghana Card</p>
-                </div>
-                <input
-                  id="back-upload"
-                  type="file"
-                  accept="image/*"
-                  class="hidden"
-                  @change="(e) => handleFileSelect(e, 'back')"
-                >
-                <label
-                  for="back-upload"
-                  class="inline-block cursor-pointer"
-                >
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    as="span"
-                  >
-                    {{ form.ghanaCardBackUrl ? 'Change Image' : 'Select Image' }}
-                  </Button>
-                </label>
-              </div>
-            </div>
+              </template>
+            </AppFileUploadDropzone>
           </div>
 
           <!-- Step 3: Office Details -->
