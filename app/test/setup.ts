@@ -75,3 +75,22 @@ vi.stubGlobal("getQuery", getQuery);
 vi.stubGlobal("useRuntimeConfig", () => ({ analytics: TEST_ANALYTICS_CONFIG }));
 // Nitro task helper — a passthrough is enough to import a task module's exports.
 vi.stubGlobal("defineTask", <T>(definition: T): T => definition);
+
+// Minimal in-memory storage shim. The notification service and a few
+// other modules reach for `useStorage("analytics")`; tests don't need
+// real Nitro storage, just a Map-backed key/value store.
+const __testStorage = new Map<string, unknown>();
+vi.stubGlobal("useStorage", () => ({
+  async getItem<T>(key: string): Promise<T | null> {
+    return (__testStorage.get(key) as T) ?? null;
+  },
+  async setItem(key: string, value: unknown): Promise<void> {
+    __testStorage.set(key, value);
+  },
+  async removeItem(key: string): Promise<void> {
+    __testStorage.delete(key);
+  },
+  async getKeys(): Promise<string[]> {
+    return [...__testStorage.keys()];
+  },
+}));

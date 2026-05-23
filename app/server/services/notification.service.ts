@@ -8,6 +8,8 @@ import {
   isQueueEnabled,
 } from "~/server/utils/notification-queue";
 import { payloads } from "~/server/notifications/payloads";
+import { checkRateLimit } from "~/server/utils/rate-limit";
+import { getAnalyticsStorage } from "~/server/utils/analytics-storage";
 import type { NotificationType, NotificationChannel } from "@prisma/client";
 
 /**
@@ -38,6 +40,27 @@ export interface NotificationPayload {
 const DEDUPE_WINDOW_MS = 5 * 60 * 1000;
 
 /**
+ * Per-user-per-type ceiling. Default is generous (10 of the same type
+ * per hour) — meant as a runaway-bug fuse, not a feature limit.
+ * Security/transactional types (password reset, email verification)
+ * are exempt: see ALWAYS_SEND.
+ */
+const NOTIFICATION_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+function getNotificationRateLimitPerHour(): number {
+  const v = Number(process.env.NOTIFICATIONS_RATE_LIMIT_PER_HOUR);
+  return Number.isFinite(v) && v > 0 ? Math.floor(v) : 10;
+}
+
+/**
+ * Types that bypass dedupe and rate-limiting. Anything users can't
+ * disable in their preferences (security/transactional) should go here.
+ */
+const ALWAYS_SEND: ReadonlySet<NotificationType> = new Set<NotificationType>([
+  "PASSWORD_RESET",
+  "EMAIL_VERIFICATION",
+]);
+
+/**
  * Send a notification across the configured channels. This function is
  * intentionally swallow-all: it never throws, so callers do not need to
  * wrap it in try/catch. Notification failures must not break the state
@@ -57,7 +80,9 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
 }
 
 async function sendNotificationInternal(payload: NotificationPayload): Promise<void> {
-  if (payload.dedupeKey) {
+  const bypass = ALWAYS_SEND.has(payload.type);
+
+  if (!bypass && payload.dedupeKey) {
     const cutoff = new Date(Date.now() - DEDUPE_WINDOW_MS);
     const existing = await prisma.notification.findFirst({
       where: {
@@ -73,6 +98,22 @@ async function sendNotificationInternal(payload: NotificationPayload): Promise<v
         userId: payload.userId,
         type: payload.type,
         dedupeKey: payload.dedupeKey,
+      });
+      return;
+    }
+  }
+
+  if (!bypass) {
+    const rl = await checkRateLimit(getAnalyticsStorage(), {
+      key: `notif:${payload.userId}:${payload.type}`,
+      limit: getNotificationRateLimitPerHour(),
+      windowMs: NOTIFICATION_RATE_LIMIT_WINDOW_MS,
+    });
+    if (!rl.allowed) {
+      console.warn("[notification.service] per-user-per-type rate limit hit, skipping", {
+        userId: payload.userId,
+        type: payload.type,
+        retryAfterMs: rl.retryAfterMs,
       });
       return;
     }

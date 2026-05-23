@@ -5,7 +5,7 @@
  *   2. The dedupe window suppresses repeats of the same (user, type, key).
  *   3. Channel + per-type preferences are honoured.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const prismaMock = vi.hoisted(() => ({
   notification: {
@@ -169,6 +169,71 @@ describe("sendNotification — dedupe", () => {
 
     expect(prismaMock.notification.findFirst).not.toHaveBeenCalled();
     expect(prismaMock.notification.create).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("sendNotification — per-user-per-type rate limit", () => {
+  const ORIGINAL_ENV = { ...process.env };
+
+  beforeEach(() => {
+    process.env.NOTIFICATIONS_RATE_LIMIT_PER_HOUR = "1";
+  });
+
+  afterEach(() => {
+    for (const k of Object.keys(process.env)) {
+      if (!(k in ORIGINAL_ENV)) {
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+        delete process.env[k];
+      }
+    }
+    Object.assign(process.env, ORIGINAL_ENV);
+  });
+
+  it("skips the second send for the same (user, type) within the window", async () => {
+    // First call should go through.
+    await sendNotification({
+      userId: "rate-user-A",
+      type: "REVIEW_APPROVED",
+      title: "first",
+      message: "first",
+      channels: ["IN_APP"],
+    });
+    const firstCreateCount = prismaMock.notification.create.mock.calls.length;
+    expect(firstCreateCount).toBeGreaterThan(0);
+
+    // Second call same user+type should be dropped before user fetch.
+    prismaMock.user.findUnique.mockClear();
+    prismaMock.notification.create.mockClear();
+    await sendNotification({
+      userId: "rate-user-A",
+      type: "REVIEW_APPROVED",
+      title: "second",
+      message: "second",
+      channels: ["IN_APP"],
+    });
+    expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
+    expect(prismaMock.notification.create).not.toHaveBeenCalled();
+  });
+
+  it("does not rate-limit security/transactional types", async () => {
+    await sendNotification({
+      userId: "rate-user-B",
+      type: "PASSWORD_RESET",
+      title: "first",
+      message: "first",
+      channels: ["IN_APP"],
+    });
+    prismaMock.user.findUnique.mockClear();
+    prismaMock.notification.create.mockClear();
+    await sendNotification({
+      userId: "rate-user-B",
+      type: "PASSWORD_RESET",
+      title: "second",
+      message: "second",
+      channels: ["IN_APP"],
+    });
+    expect(prismaMock.user.findUnique).toHaveBeenCalled();
+    expect(prismaMock.notification.create).toHaveBeenCalled();
   });
 });
 
