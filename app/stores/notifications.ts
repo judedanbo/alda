@@ -95,6 +95,18 @@ export const useNotificationStore = defineStore("notifications", () => {
     }
   }
 
+  /**
+   * Prepend a newly-arrived notification (pushed over SSE) into the
+   * local store and bump unreadCount. No-op if it's already present —
+   * dedupes against concurrent fetches.
+   */
+  function pushNotification(n: Notification) {
+    if (notifications.value.some((existing) => existing.id === n.id)) return;
+    notifications.value = [n, ...notifications.value];
+    if (!n.readAt) unreadCount.value += 1;
+    total.value += 1;
+  }
+
   return {
     // State
     notifications,
@@ -109,5 +121,6 @@ export const useNotificationStore = defineStore("notifications", () => {
     markAsRead,
     markAllAsRead,
     refreshUnreadCount,
+    pushNotification,
   };
 });

@@ -10,6 +10,7 @@ import {
 import { payloads } from "~/server/notifications/payloads";
 import { checkRateLimit } from "~/server/utils/rate-limit";
 import { getAnalyticsStorage } from "~/server/utils/analytics-storage";
+import { publishToUser } from "~/server/utils/notification-stream";
 import type { NotificationType, NotificationChannel } from "@prisma/client";
 
 /**
@@ -138,13 +139,14 @@ async function sendNotificationInternal(payload: NotificationPayload): Promise<v
   const typePref = user.notificationTypePrefs[0];
   const channels = payload.channels || ["EMAIL", "SMS", "IN_APP"] as NotificationChannel[];
 
-  // Create in-app notification if enabled
+  // Create in-app notification if enabled, and publish to any open
+  // SSE streams so the bell badge updates without a page reload.
   if (
     channels.includes("IN_APP") &&
     (prefs?.inAppEnabled ?? true) &&
     (typePref?.inAppEnabled ?? true)
   ) {
-    await prisma.notification.create({
+    const created = await prisma.notification.create({
       data: {
         userId: payload.userId,
         type: payload.type,
@@ -154,6 +156,15 @@ async function sendNotificationInternal(payload: NotificationPayload): Promise<v
         metadata: (payload.metadata ?? Prisma.JsonNull) as Prisma.InputJsonValue,
         dedupeKey: payload.dedupeKey,
       },
+    });
+    await publishToUser(payload.userId, {
+      type: "notification.created",
+      notificationId: created.id,
+      title: created.title,
+      message: created.message,
+      notificationType: created.type,
+      createdAt: created.createdAt.toISOString(),
+      metadata: (payload.metadata ?? undefined),
     });
   }
 

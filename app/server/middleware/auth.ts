@@ -22,6 +22,9 @@ const publicRoutes = [
   // SMS provider delivery callbacks — authenticated via a shared
   // webhook secret in the handler, not via the user JWT.
   "/api/webhooks/sms/",
+  // SSE stream — authenticated via `?token=` query in the handler
+  // because EventSource can't set custom headers.
+  "/api/notifications/stream",
   ...(process.env.NODE_ENV !== "production" ? ["/api/dev"] : []),
 ];
 
