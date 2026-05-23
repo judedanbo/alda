@@ -2,6 +2,11 @@ import { Prisma } from "@prisma/client";
 import prisma from "~/server/utils/prisma";
 import { sendEmail, type EmailTemplate } from "./email.service";
 import { sendSms } from "./sms.service";
+import {
+  enqueueEmailJob,
+  enqueueSmsJob,
+  isQueueEnabled,
+} from "~/server/utils/notification-queue";
 import type { NotificationType, NotificationChannel } from "@prisma/client";
 
 /**
@@ -128,7 +133,8 @@ async function sendNotificationInternal(payload: NotificationPayload): Promise<v
       },
     });
 
-    // Create delivery log and attempt delivery
+    // Create delivery log; the queue worker (or inline fallback) will
+    // flip its status to DELIVERED/FAILED.
     const deliveryLog = await prisma.notificationDeliveryLog.create({
       data: {
         notificationId: notification.id,
@@ -137,33 +143,28 @@ async function sendNotificationInternal(payload: NotificationPayload): Promise<v
       },
     });
 
-    try {
-      const success = await sendEmail({
-        to: user.email,
-        subject: payload.title,
-        template: mapNotificationTypeToEmailTemplate(payload.type),
-        data: {
-          name: user.applicantProfile?.fullName || user.email,
-          ...payload.metadata,
-        },
-      });
+    const jobData = {
+      deliveryLogId: deliveryLog.id,
+      to: user.email,
+      subject: payload.title,
+      template: mapNotificationTypeToEmailTemplate(payload.type),
+      data: {
+        name: user.applicantProfile?.fullName || user.email,
+        ...payload.metadata,
+      } as Record<string, unknown>,
+    };
 
-      await prisma.notificationDeliveryLog.update({
-        where: { id: deliveryLog.id },
-        data: {
-          status: success ? "DELIVERED" : "FAILED",
-          sentAt: new Date(),
-          deliveredAt: success ? new Date() : null,
-        },
-      });
-    } catch (error) {
-      await prisma.notificationDeliveryLog.update({
-        where: { id: deliveryLog.id },
-        data: {
-          status: "FAILED",
-          providerResponse: { error: String(error) },
-        },
-      });
+    if (isQueueEnabled()) {
+      try {
+        await enqueueEmailJob(jobData);
+      } catch (error) {
+        // Queue unreachable — fall back to inline send so the
+        // notification still goes out (best-effort).
+        console.warn("[notification.service] email enqueue failed, falling back to inline send", error);
+        await sendEmailInline(deliveryLog.id, jobData);
+      }
+    } else {
+      await sendEmailInline(deliveryLog.id, jobData);
     }
   }
 
@@ -194,29 +195,84 @@ async function sendNotificationInternal(payload: NotificationPayload): Promise<v
       },
     });
 
-    try {
-      const result = await sendSms(user.phone, payload.message);
+    const jobData = {
+      deliveryLogId: deliveryLog.id,
+      to: user.phone,
+      message: payload.message,
+    };
 
-      await prisma.notificationDeliveryLog.update({
-        where: { id: deliveryLog.id },
-        data: {
-          status: result.success ? "DELIVERED" : "FAILED",
-          sentAt: new Date(),
-          deliveredAt: result.success ? new Date() : null,
-          providerResponse: result.success
-            ? { messageId: result.messageId }
-            : { error: result.error },
-        },
-      });
-    } catch (error) {
-      await prisma.notificationDeliveryLog.update({
-        where: { id: deliveryLog.id },
-        data: {
-          status: "FAILED",
-          providerResponse: { error: String(error) },
-        },
-      });
+    if (isQueueEnabled()) {
+      try {
+        await enqueueSmsJob(jobData);
+      } catch (error) {
+        console.warn("[notification.service] sms enqueue failed, falling back to inline send", error);
+        await sendSmsInline(deliveryLog.id, jobData);
+      }
+    } else {
+      await sendSmsInline(deliveryLog.id, jobData);
     }
+  }
+}
+
+/**
+ * Inline email send — used when the queue is disabled or unreachable.
+ * Mirrors what the BullMQ worker does, minus the retry mechanism.
+ */
+async function sendEmailInline(
+  deliveryLogId: string,
+  data: { to: string; subject: string; template: EmailTemplate; data: Record<string, unknown> },
+): Promise<void> {
+  try {
+    const success = await sendEmail({
+      to: data.to,
+      subject: data.subject,
+      template: data.template,
+      data: data.data,
+    });
+    await prisma.notificationDeliveryLog.update({
+      where: { id: deliveryLogId },
+      data: {
+        status: success ? "DELIVERED" : "FAILED",
+        sentAt: new Date(),
+        deliveredAt: success ? new Date() : null,
+      },
+    });
+  } catch (error) {
+    await prisma.notificationDeliveryLog.update({
+      where: { id: deliveryLogId },
+      data: {
+        status: "FAILED",
+        providerResponse: { error: String(error) },
+      },
+    });
+  }
+}
+
+async function sendSmsInline(
+  deliveryLogId: string,
+  data: { to: string; message: string },
+): Promise<void> {
+  try {
+    const result = await sendSms(data.to, data.message);
+    await prisma.notificationDeliveryLog.update({
+      where: { id: deliveryLogId },
+      data: {
+        status: result.success ? "DELIVERED" : "FAILED",
+        sentAt: new Date(),
+        deliveredAt: result.success ? new Date() : null,
+        providerResponse: result.success
+          ? { messageId: result.messageId }
+          : { error: result.error },
+      },
+    });
+  } catch (error) {
+    await prisma.notificationDeliveryLog.update({
+      where: { id: deliveryLogId },
+      data: {
+        status: "FAILED",
+        providerResponse: { error: String(error) },
+      },
+    });
   }
 }
 

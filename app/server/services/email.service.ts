@@ -54,9 +54,9 @@ export interface EmailData {
 }
 
 /**
- * Generate HTML content for email templates
+ * Generate HTML content for email templates. Exported for testing.
  */
-function generateEmailHtml(template: EmailTemplate, data: Record<string, unknown>): string {
+export function generateEmailHtml(template: EmailTemplate, data: Record<string, unknown>): string {
   const baseStyle = `
     <style>
       body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
