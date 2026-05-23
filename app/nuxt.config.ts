@@ -170,6 +170,8 @@ export default defineNuxtConfig({
       "*/10 * * * *": ["analytics:rollup"],
       // Prune raw events past the retention window, daily at 03:30.
       "30 3 * * *": ["analytics:prune"],
+      // Prune old notifications, daily at 03:45.
+      "45 3 * * *": ["notifications:prune"],
     },
   },
 
