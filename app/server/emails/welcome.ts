@@ -1,0 +1,16 @@
+import { layout, type TemplateRenderer } from "./layout";
+
+export const welcome: TemplateRenderer = (data) =>
+  layout({
+    title: "Welcome to Asset Declaration Portal",
+    includeConstitutionRef: true,
+    body: `
+      <p>Dear ${data.name || "User"},</p>
+      <p>Welcome to the Ghana Asset Declaration Portal. Your account has been successfully created.</p>
+      <p>You can now log in and complete your profile to start submitting your asset declarations.</p>
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="${data.loginUrl}" class="button">Login to Your Account</a>
+      </p>
+      <p>If you have any questions, please contact our support team.</p>
+    `,
+  });
