@@ -125,45 +125,6 @@ export async function sendUniqueCodeEmail(
 }
 
 /**
- * Send declaration status email
- */
-export async function sendDeclarationStatusEmail(
-  to: string,
-  name: string,
-  status: "submitted" | "approved" | "rejected",
-  uniqueCode: string,
-  additionalData?: Record<string, unknown>
-): Promise<boolean> {
-  const templates: Record<"submitted" | "approved" | "rejected", { subject: string; template: EmailTemplate }> = {
-    submitted: {
-      subject: "Declaration Submitted Successfully",
-      template: "declaration-submitted",
-    },
-    approved: {
-      subject: "Declaration Approved",
-      template: "declaration-approved",
-    },
-    rejected: {
-      subject: "Declaration Requires Attention",
-      template: "declaration-rejected",
-    },
-  };
-
-  const { subject, template } = templates[status];
-
-  return sendEmail({
-    to,
-    subject,
-    template,
-    data: {
-      name,
-      uniqueCode,
-      ...additionalData,
-    },
-  });
-}
-
-/**
  * Send email verification email
  */
 export async function sendVerificationEmail(

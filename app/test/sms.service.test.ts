@@ -4,7 +4,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { formatGhanaPhone, isValidGhanaPhone, SmsTemplates, sendSms } = await import(
+const { formatGhanaPhone, isValidGhanaPhone, sendSms } = await import(
   "~/server/services/sms.service"
 );
 
@@ -161,21 +161,3 @@ describe("sendSms — provider failover", () => {
   });
 });
 
-describe("SmsTemplates", () => {
-  it("formats the unique-code SMS", () => {
-    expect(SmsTemplates.uniqueCode("ADLA-123")).toContain("ADLA-123");
-    expect(SmsTemplates.uniqueCode("ADLA-123")).toMatch(/Keep this code safe/);
-  });
-
-  it("formats the OTP SMS without leaking the code into a URL", () => {
-    const msg = SmsTemplates.otp("482915");
-    expect(msg).toContain("482915");
-    expect(msg).not.toContain("http");
-  });
-
-  it("references the declaration code in approved/rejected SMS", () => {
-    expect(SmsTemplates.declarationApproved("XYZ-1")).toContain("XYZ-1");
-    expect(SmsTemplates.declarationRejected("XYZ-1")).toContain("XYZ-1");
-    expect(SmsTemplates.pickupReady("XYZ-1")).toContain("XYZ-1");
-  });
-});

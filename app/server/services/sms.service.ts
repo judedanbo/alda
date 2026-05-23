@@ -2,7 +2,7 @@
  * SMS Service for Ghana
  * Supports Hubtel and Arkesel SMS providers
  */
-import { BRAND, DEFAULT_SMS_SENDER_ID } from "~/server/utils/branding";
+import { DEFAULT_SMS_SENDER_ID } from "~/server/utils/branding";
 
 export type SmsProvider = "hubtel" | "arkesel";
 
@@ -214,56 +214,3 @@ function sendVia(
   return sendViaArkesel(to, message, config.arkesel);
 }
 
-/**
- * SMS Templates
- */
-export const SmsTemplates = {
-  uniqueCode: (code: string) =>
-    `Your ${BRAND.shortName} Declaration Code is: ${code}. Keep this code safe for tracking your declaration status.`,
-
-  declarationSubmitted: (code: string) =>
-    `Your asset declaration (${code}) has been submitted for review. You will be notified when a decision is made.`,
-
-  declarationApproved: (code: string) =>
-    `Congratulations! Your declaration (${code}) has been approved. Your receipt is ready for collection.`,
-
-  declarationRejected: (code: string) =>
-    `Your declaration (${code}) requires attention. Please log in to your account for details.`,
-
-  pickupReady: (code: string) =>
-    `Your sealed declaration document (${code}) is ready for pickup. Bring your Ghana Card for identification.`,
-
-  otp: (otp: string) =>
-    `Your ${BRAND.shortName} verification code is: ${otp}. Valid for 10 minutes. Do not share this code.`,
-};
-
-/**
- * Send unique code SMS
- */
-export async function sendUniqueCodeSms(phone: string, code: string): Promise<SmsResult> {
-  return sendSms(phone, SmsTemplates.uniqueCode(code));
-}
-
-/**
- * Send declaration status SMS
- */
-export async function sendDeclarationStatusSms(
-  phone: string,
-  status: "submitted" | "approved" | "rejected",
-  code: string
-): Promise<SmsResult> {
-  const templates = {
-    submitted: SmsTemplates.declarationSubmitted,
-    approved: SmsTemplates.declarationApproved,
-    rejected: SmsTemplates.declarationRejected,
-  };
-
-  return sendSms(phone, templates[status](code));
-}
-
-/**
- * Send pickup notification SMS
- */
-export async function sendPickupSms(phone: string, code: string): Promise<SmsResult> {
-  return sendSms(phone, SmsTemplates.pickupReady(code));
-}
