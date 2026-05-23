@@ -120,7 +120,7 @@ const handleLogout = async () => {
           </div>
 
           <!-- Navigation Links -->
-          <nav class="hidden md:flex items-center gap-1">
+          <nav class="hidden md:flex items-center gap-1" aria-label="Primary">
             <template v-for="item in navigation" :key="item.name">
               <NuxtLink
                 v-if="!item.disabled"
@@ -135,16 +135,20 @@ const handleLogout = async () => {
               >
                 {{ item.name }}
               </NuxtLink>
-              <span
+              <a
                 v-else
+                href="#"
+                role="link"
+                aria-disabled="true"
                 :data-tour="item.tour"
                 class="px-3 py-2 text-sm font-medium rounded-md text-muted-foreground/50 cursor-not-allowed"
                 :title="hasActiveDeclaration && item.href === '/applicant/declaration/new'
                   ? 'You have an active declaration in progress'
                   : 'Registration verification required'"
+                @click.prevent
               >
                 {{ item.name }}
-              </span>
+              </a>
             </template>
           </nav>
 
@@ -204,7 +208,10 @@ const handleLogout = async () => {
       </div>
 
       <!-- Mobile Navigation -->
-      <nav class="md:hidden border-t px-4 py-2 flex gap-1 overflow-x-auto">
+      <nav
+        class="md:hidden border-t px-4 py-2 flex gap-1 overflow-x-auto"
+        aria-label="Primary mobile"
+      >
         <template v-for="item in navigation" :key="item.name">
           <NuxtLink
             v-if="!item.disabled"
@@ -218,15 +225,19 @@ const handleLogout = async () => {
           >
             {{ item.name }}
           </NuxtLink>
-          <span
+          <a
             v-else
+            href="#"
+            role="link"
+            aria-disabled="true"
             class="px-3 py-2 text-sm font-medium rounded-md whitespace-nowrap text-muted-foreground/50 cursor-not-allowed"
             :title="hasActiveDeclaration && item.href === '/applicant/declaration/new'
               ? 'You have an active declaration in progress'
               : 'Registration verification required'"
+            @click.prevent
           >
             {{ item.name }}
-          </span>
+          </a>
         </template>
       </nav>
     </header>

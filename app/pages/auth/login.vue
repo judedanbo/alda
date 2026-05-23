@@ -91,30 +91,32 @@ const handleSubmit = async () => {
           </FormField>
 
           <!-- Password Field -->
-          <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <Label for="password">Password</Label>
-              <NuxtLink
-                to="/auth/forgot-password"
-                class="text-sm text-primary hover:underline"
-              >
-                Forgot password?
-              </NuxtLink>
-            </div>
-            <Input
-              id="password"
-              v-model="form.password"
-              type="password"
-              required
-              autocomplete="current-password"
-              placeholder="Enter your password"
-              :aria-invalid="fieldErrors.password ? true : undefined"
-              @input="clearFieldError('password')"
-            />
-            <p v-if="fieldErrors.password" class="text-xs text-destructive">
-              {{ fieldErrors.password }}
-            </p>
-          </div>
+          <FormField for="password" :error="fieldErrors.password">
+            <template #label>
+              <div class="flex items-center justify-between w-full">
+                <span>Password</span>
+                <NuxtLink
+                  to="/auth/forgot-password"
+                  class="text-sm text-primary hover:underline font-normal"
+                >
+                  Forgot password?
+                </NuxtLink>
+              </div>
+            </template>
+            <template #default="{ id, ariaInvalid, ariaDescribedby }">
+              <Input
+                :id="id"
+                v-model="form.password"
+                type="password"
+                required
+                autocomplete="current-password"
+                placeholder="Enter your password"
+                :aria-invalid="ariaInvalid"
+                :aria-describedby="ariaDescribedby"
+                @input="clearFieldError('password')"
+              />
+            </template>
+          </FormField>
 
           <!-- Submit Button -->
           <Button type="submit" class="w-full" :disabled="isLoading">

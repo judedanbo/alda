@@ -3,6 +3,7 @@
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -34,6 +35,10 @@ const props = withDefaults(
     sortDirection?: "asc" | "desc";
     meta?: PaginationMeta;
     skeletonRows?: number;
+    /** Accessible description of the table. Rendered as <caption class="sr-only">. */
+    caption?: string;
+    /** Whether rows are interactive. When true rows are focusable and Enter/Space activates row-click. */
+    rowClickable?: boolean;
   }>(),
   {
     loading: false,
@@ -45,6 +50,8 @@ const props = withDefaults(
     sortDirection: "desc",
     meta: undefined,
     skeletonRows: 5,
+    caption: undefined,
+    rowClickable: true,
   },
 );
 
@@ -73,6 +80,20 @@ const alignClass = (align?: "left" | "center" | "right") => {
   return "text-left";
 };
 
+function ariaSortFor(col: DataTableColumn): "ascending" | "descending" | "none" | undefined {
+  if (!col.sortable) return undefined;
+  if (props.sortColumn !== col.key) return "none";
+  return props.sortDirection === "asc" ? "ascending" : "descending";
+}
+
+function onRowKeydown(event: KeyboardEvent, row: T) {
+  if (!props.rowClickable) return;
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    emit("row-click", row);
+  }
+}
+
 const showPagination = computed(
   () => props.meta && props.meta.lastPage > 1,
 );
@@ -98,26 +119,31 @@ const pageNumbers = computed(() => {
   <div>
     <div class="overflow-x-auto">
       <Table>
+        <TableCaption v-if="caption" class="sr-only">
+          {{ caption }}
+        </TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead
               v-for="col in columns"
               :key="col.key"
-              :class="[
-                alignClass(col.align),
-                col.headerClass,
-                col.sortable ? 'cursor-pointer select-none hover:text-foreground transition-colors' : '',
-              ]"
-              @click="col.sortable ? emit('sort', col.key) : undefined"
+              :class="[alignClass(col.align), col.headerClass]"
+              :aria-sort="ariaSortFor(col)"
             >
-              <span class="inline-flex items-center gap-1">
+              <button
+                v-if="col.sortable"
+                type="button"
+                class="inline-flex items-center gap-1 font-medium hover:text-foreground transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring rounded-sm"
+                @click="emit('sort', col.key)"
+              >
                 {{ col.label }}
-                <template v-if="col.sortable && sortColumn === col.key">
+                <template v-if="sortColumn === col.key">
                   <svg
                     class="w-3.5 h-3.5 text-foreground"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    aria-hidden="true"
                   >
                     <path
                       v-if="sortDirection === 'asc'"
@@ -135,17 +161,19 @@ const pageNumbers = computed(() => {
                     />
                   </svg>
                 </template>
-                <template v-else-if="col.sortable">
+                <template v-else>
                   <svg
                     class="w-3.5 h-3.5 text-muted-foreground/40"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    aria-hidden="true"
                   >
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
                   </svg>
                 </template>
-              </span>
+              </button>
+              <span v-else>{{ col.label }}</span>
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -164,7 +192,13 @@ const pageNumbers = computed(() => {
             <TableCell :colspan="columns.length" class="text-center py-12">
               <slot name="empty">
                 <div class="text-muted-foreground">
-                  <svg class="w-10 h-10 mx-auto mb-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    class="w-10 h-10 mx-auto mb-3 opacity-40"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                   </svg>
                   <p class="text-sm">{{ emptyMessage }}</p>
@@ -178,13 +212,16 @@ const pageNumbers = computed(() => {
             <TableRow
               v-for="(row, idx) in data"
               :key="idx"
+              :tabindex="rowClickable ? 0 : undefined"
+              :role="rowClickable ? 'button' : undefined"
               :class="[
                 statusBorderKey ? ['border-l-3', getRowBorderClass(row)] : '',
                 striped && idx % 2 === 1 ? 'bg-muted/30' : '',
                 hoverable ? 'hover:bg-muted/50 transition-colors' : '',
-                'cursor-pointer',
+                rowClickable ? 'cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring' : '',
               ]"
-              @click="emit('row-click', row)"
+              @click="rowClickable && emit('row-click', row)"
+              @keydown="(e: KeyboardEvent) => onRowKeydown(e, row)"
             >
               <TableCell
                 v-for="col in columns"
@@ -202,7 +239,11 @@ const pageNumbers = computed(() => {
     </div>
 
     <!-- Pagination -->
-    <div v-if="showPagination && meta" class="flex items-center justify-between px-4 py-3 border-t">
+    <nav
+      v-if="showPagination && meta"
+      class="flex items-center justify-between px-4 py-3 border-t"
+      aria-label="Pagination"
+    >
       <p class="text-sm text-muted-foreground">
         Showing {{ (meta.page - 1) * meta.perPage + 1 }} to
         {{ Math.min(meta.page * meta.perPage, meta.total) }} of
@@ -210,6 +251,8 @@ const pageNumbers = computed(() => {
       </p>
       <div class="flex items-center gap-1">
         <button
+          type="button"
+          aria-label="Previous page"
           class="px-2.5 py-1.5 text-sm rounded-md border border-input hover:bg-muted disabled:opacity-40 disabled:pointer-events-none transition-colors"
           :disabled="meta.page <= 1"
           @click="emit('page-change', meta.page - 1)"
@@ -217,9 +260,12 @@ const pageNumbers = computed(() => {
           Previous
         </button>
         <template v-for="p in pageNumbers" :key="p">
-          <span v-if="p === 'ellipsis'" class="px-1.5 text-muted-foreground">…</span>
+          <span v-if="p === 'ellipsis'" class="px-1.5 text-muted-foreground" aria-hidden="true">…</span>
           <button
             v-else
+            type="button"
+            :aria-label="`Page ${p}`"
+            :aria-current="p === meta.page ? 'page' : undefined"
             class="w-8 h-8 text-sm rounded-md transition-colors"
             :class="p === meta.page
               ? 'bg-primary text-primary-foreground font-medium'
@@ -230,6 +276,8 @@ const pageNumbers = computed(() => {
           </button>
         </template>
         <button
+          type="button"
+          aria-label="Next page"
           class="px-2.5 py-1.5 text-sm rounded-md border border-input hover:bg-muted disabled:opacity-40 disabled:pointer-events-none transition-colors"
           :disabled="meta.page >= meta.lastPage"
           @click="emit('page-change', meta.page + 1)"
@@ -237,7 +285,7 @@ const pageNumbers = computed(() => {
           Next
         </button>
       </div>
-    </div>
+    </nav>
 
     <!-- Footer slot -->
     <slot name="footer" />
