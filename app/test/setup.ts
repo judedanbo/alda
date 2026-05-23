@@ -6,6 +6,7 @@
 import { vi } from "vitest";
 import {
   createError,
+  defineEventHandler,
   getHeader,
   getCookie,
   setCookie,
@@ -64,6 +65,7 @@ export const TEST_ANALYTICS_CONFIG = {
 };
 
 vi.stubGlobal("createError", createError);
+vi.stubGlobal("defineEventHandler", defineEventHandler);
 vi.stubGlobal("getHeader", getHeader);
 vi.stubGlobal("getCookie", getCookie);
 vi.stubGlobal("setCookie", setCookie);

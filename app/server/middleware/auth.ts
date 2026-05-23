@@ -19,6 +19,9 @@ const publicRoutes = [
   "/api/health",
   "/api/categories",
   "/api/institutions",
+  // SMS provider delivery callbacks — authenticated via a shared
+  // webhook secret in the handler, not via the user JWT.
+  "/api/webhooks/sms/",
   ...(process.env.NODE_ENV !== "production" ? ["/api/dev"] : []),
 ];
 
