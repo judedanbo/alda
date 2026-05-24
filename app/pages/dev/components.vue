@@ -45,6 +45,20 @@ const rangeFrom = ref<string | null>(null);
 const rangeTo = ref<string | null>(null);
 const popoverDate = ref<string | null>(null);
 
+// NativeSelect / RadioGroup / Combobox / TagsInput state
+const nativeSelectValue = ref("greater-accra");
+const radioValue = ref("schedule_officer");
+const comboboxValue = ref<string>("");
+const comboboxOptions = [
+  { value: "ministry-of-finance", label: "Ministry of Finance" },
+  { value: "ministry-of-health", label: "Ministry of Health" },
+  { value: "ministry-of-education", label: "Ministry of Education" },
+  { value: "ghana-revenue-authority", label: "Ghana Revenue Authority" },
+  { value: "auditor-general", label: "Auditor General Department" },
+  { value: "bank-of-ghana", label: "Bank of Ghana" },
+];
+const tagsValue = ref<string[]>(["ghana", "compliance"]);
+
 // Compound component state
 const tabValue = ref("overview");
 const dialogOpen = ref(false);
@@ -311,6 +325,132 @@ const avatarImage
       </Select>
       <p class="text-xs text-muted-foreground">
         Selected: {{ selectValue || "(none)" }}
+      </p>
+    </section>
+
+    <!-- NativeSelect -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold text-foreground">
+        NativeSelect
+      </h2>
+      <p class="text-sm text-muted-foreground">
+        Styled wrapper around the native <code>&lt;select&gt;</code>. The
+        closed-state trigger matches our other inputs across browsers; the
+        open menu uses each browser's native picker (good for very long
+        lists and mobile UX).
+      </p>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div class="space-y-1">
+          <Label>Region</Label>
+          <NativeSelect v-model="nativeSelectValue">
+            <option value="greater-accra">
+              Greater Accra
+            </option>
+            <option value="ashanti">
+              Ashanti
+            </option>
+            <option value="northern">
+              Northern
+            </option>
+            <option value="volta">
+              Volta
+            </option>
+          </NativeSelect>
+        </div>
+        <div class="space-y-1">
+          <Label>Small + disabled</Label>
+          <NativeSelect size="sm" disabled>
+            <option>Disabled</option>
+          </NativeSelect>
+        </div>
+      </div>
+      <p class="text-xs text-muted-foreground">
+        Selected: {{ nativeSelectValue }}
+      </p>
+    </section>
+
+    <!-- RadioGroup -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold text-foreground">
+        RadioGroup
+      </h2>
+      <p class="text-sm text-muted-foreground">
+        Mutually-exclusive choices with consistent styling across browsers.
+      </p>
+      <RadioGroup v-model="radioValue">
+        <div class="flex items-center gap-2">
+          <RadioGroupItem id="role-applicant" value="applicant" />
+          <Label for="role-applicant">Applicant</Label>
+        </div>
+        <div class="flex items-center gap-2">
+          <RadioGroupItem id="role-officer" value="schedule_officer" />
+          <Label for="role-officer">Schedule Officer</Label>
+        </div>
+        <div class="flex items-center gap-2">
+          <RadioGroupItem id="role-legal" value="legal_unit" />
+          <Label for="role-legal">Legal Unit</Label>
+        </div>
+        <div class="flex items-center gap-2">
+          <RadioGroupItem id="role-admin" value="admin" />
+          <Label for="role-admin">Admin</Label>
+        </div>
+      </RadioGroup>
+      <p class="text-xs text-muted-foreground">
+        Selected: {{ radioValue }}
+      </p>
+    </section>
+
+    <!-- Combobox -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold text-foreground">
+        Combobox
+      </h2>
+      <p class="text-sm text-muted-foreground">
+        Searchable select with keyboard navigation. Use for long lists like
+        institutions, where typing-to-filter is more usable than scrolling.
+      </p>
+      <Combobox v-model="comboboxValue" :ignore-filter="false" class="w-64">
+        <ComboboxAnchor>
+          <ComboboxInput placeholder="Search institutions..." />
+          <ComboboxTrigger />
+        </ComboboxAnchor>
+        <ComboboxContent>
+          <ComboboxEmpty />
+          <ComboboxGroup>
+            <ComboboxLabel>Institutions</ComboboxLabel>
+            <ComboboxItem
+              v-for="opt in comboboxOptions"
+              :key="opt.value"
+              :value="opt.value"
+            >
+              {{ opt.label }}
+            </ComboboxItem>
+          </ComboboxGroup>
+        </ComboboxContent>
+      </Combobox>
+      <p class="text-xs text-muted-foreground">
+        Selected: {{ comboboxValue || "(none)" }}
+      </p>
+    </section>
+
+    <!-- TagsInput / MultiSelect -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold text-foreground">
+        TagsInput (MultiSelect)
+      </h2>
+      <p class="text-sm text-muted-foreground">
+        Chip-style tag input. Type a value and press Enter to add; click
+        the X (or press Backspace) to remove.
+      </p>
+      <TagsInput v-model="tagsValue" class="max-w-md">
+        <TagsInputItem v-for="tag in tagsValue" :key="tag" :value="tag">
+          <TagsInputItemText />
+          <TagsInputItemDelete />
+        </TagsInputItem>
+        <TagsInputInput placeholder="Add a tag..." />
+      </TagsInput>
+      <p class="text-xs text-muted-foreground">
+        Tags: {{ tagsValue.length ? tagsValue.join(", ") : "(none)" }}
       </p>
     </section>
 
