@@ -124,20 +124,14 @@ const entityTypes = [
               </SelectItem>
             </SelectContent>
           </Select>
-          <div class="flex gap-2">
-            <Input
-              :model-value="table.filters.value.dateFrom || ''"
-              type="date"
-              class="flex-1"
-              @update:model-value="table.setFilter('dateFrom', String($event))"
-            />
-            <Input
-              :model-value="table.filters.value.dateTo || ''"
-              type="date"
-              class="flex-1"
-              @update:model-value="table.setFilter('dateTo', String($event))"
-            />
-          </div>
+          <DateRangePicker
+            :from="(table.filters.value.dateFrom as string) || null"
+            :to="(table.filters.value.dateTo as string) || null"
+            placeholder="Filter by date"
+            block
+            @update:from="(v) => table.setFilter('dateFrom', v ?? '')"
+            @update:to="(v) => table.setFilter('dateTo', v ?? '')"
+          />
         </div>
         <div class="flex justify-end mt-4 gap-2">
           <Button

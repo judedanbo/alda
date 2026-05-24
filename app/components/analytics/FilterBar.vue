@@ -104,6 +104,17 @@ function handleReset() {
   activePreset.value = "all";
   emit("reset");
 }
+
+// SelectItem cannot be an empty string, so the "All Institutions" option
+// maps to a sentinel and back on the way in/out of the filter state.
+const ALL_OFFICES = "__all__";
+const officeModel = computed({
+  get: () => filters.value.officeId || ALL_OFFICES,
+  set: (v: string) => {
+    filters.value.officeId = v === ALL_OFFICES ? "" : v;
+    emit("apply");
+  },
+});
 </script>
 
 <template>
@@ -126,39 +137,32 @@ function handleReset() {
         </div>
 
         <!-- Custom Date Range -->
-        <div class="flex items-center gap-2">
-          <Input
-            v-model="filters.dateFrom"
-            type="date"
-            class="h-8 w-36 text-xs"
-            placeholder="From"
-            @change="emit('apply')"
-          />
-          <span class="text-xs text-muted-foreground">to</span>
-          <Input
-            v-model="filters.dateTo"
-            type="date"
-            class="h-8 w-36 text-xs"
-            placeholder="To"
-            @change="emit('apply')"
-          />
-        </div>
+        <DateRangePicker
+          :from="filters.dateFrom || null"
+          :to="filters.dateTo || null"
+          placeholder="Custom range"
+          @update:from="(v) => { filters.dateFrom = v ?? ''; emit('apply'); }"
+          @update:to="(v) => { filters.dateTo = v ?? ''; emit('apply'); }"
+        />
 
         <!-- Institution Filter -->
-        <select
-          v-model="filters.officeId"
-          class="h-8 rounded-md border bg-background px-3 text-xs"
-          @change="emit('apply')"
-        >
-          <option value="">All Institutions</option>
-          <option
-            v-for="inst in institutions"
-            :key="inst.id"
-            :value="inst.id"
-          >
-            {{ inst.name }}
-          </option>
-        </select>
+        <Select v-model="officeModel">
+          <SelectTrigger size="sm" class="text-xs">
+            <SelectValue placeholder="All Institutions" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem :value="ALL_OFFICES">
+              All Institutions
+            </SelectItem>
+            <SelectItem
+              v-for="inst in institutions"
+              :key="inst.id"
+              :value="inst.id"
+            >
+              {{ inst.name }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
 
         <!-- Search -->
         <div class="flex-1 min-w-[200px]">

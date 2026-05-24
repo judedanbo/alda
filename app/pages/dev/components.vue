@@ -36,6 +36,15 @@ const ffEmailError = computed(() =>
   ffEmail.value && !ffEmail.value.includes("@") ? "Enter a valid email address." : undefined,
 );
 
+// Date pickers state
+const dateValue = ref<string | null>(null);
+const dateTimeValue = ref<string | null>(null);
+const dateBoundedValue = ref<string | null>(null);
+const dateDisabledValue = ref<string | null>("2026-05-24");
+const rangeFrom = ref<string | null>(null);
+const rangeTo = ref<string | null>(null);
+const popoverDate = ref<string | null>(null);
+
 // Compound component state
 const tabValue = ref("overview");
 const dialogOpen = ref(false);
@@ -45,7 +54,7 @@ const paginationPage = ref(1);
 const buttonVariants = ["default", "outline", "secondary", "ghost", "destructive", "link"] as const;
 const buttonSizes = ["xs", "sm", "default", "lg"] as const;
 const badgeVariants = ["default", "secondary", "destructive", "outline", "ghost", "link"] as const;
-const inputTypes = ["text", "email", "password", "number", "search", "date", "tel", "url"] as const;
+const inputTypes = ["text", "email", "password", "number", "search", "tel", "url"] as const;
 
 const tableRows = [
   { code: "ADLA-001", name: "Ama Mensah", status: "APPROVED" },
@@ -162,6 +171,102 @@ const avatarImage
       <p class="text-xs text-muted-foreground">
         Bound value: {{ textValue || "(empty)" }}
       </p>
+    </section>
+
+    <!-- DatePicker -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold text-foreground">
+        DatePicker
+      </h2>
+      <p class="text-sm text-muted-foreground">
+        Calendar-based date selector. Renders the same way across all browsers
+        (replaces native <code>&lt;input type="date"&gt;</code>).
+      </p>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div class="space-y-1">
+          <Label>Date (day granularity)</Label>
+          <DatePicker v-model="dateValue" block />
+          <p class="text-xs text-muted-foreground">
+            Bound value: {{ dateValue || "(empty)" }}
+          </p>
+        </div>
+        <div class="space-y-1">
+          <Label>Date + time</Label>
+          <DatePicker v-model="dateTimeValue" granularity="minute" block />
+          <p class="text-xs text-muted-foreground">
+            Bound value: {{ dateTimeValue || "(empty)" }}
+          </p>
+        </div>
+        <div class="space-y-1">
+          <Label>Min/max bounded (this year only)</Label>
+          <DatePicker
+            v-model="dateBoundedValue"
+            min="2026-01-01"
+            max="2026-12-31"
+            placeholder="Pick a 2026 date"
+            block
+          />
+        </div>
+        <div class="space-y-1">
+          <Label>Disabled</Label>
+          <DatePicker v-model="dateDisabledValue" disabled block />
+        </div>
+        <div class="space-y-1 sm:col-span-2">
+          <Label>Inline (no popover) — Calendar primitive</Label>
+          <div class="rounded-lg border bg-card w-fit">
+            <Calendar />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DateRangePicker -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold text-foreground">
+        DateRangePicker
+      </h2>
+      <p class="text-sm text-muted-foreground">
+        Two-month range selector for filter bars and reports.
+      </p>
+      <DateRangePicker
+        v-model:from="rangeFrom"
+        v-model:to="rangeTo"
+      />
+      <p class="text-xs text-muted-foreground">
+        From: {{ rangeFrom || "(empty)" }} — To: {{ rangeTo || "(empty)" }}
+      </p>
+    </section>
+
+    <!-- Popover -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold text-foreground">
+        Popover
+      </h2>
+      <p class="text-sm text-muted-foreground">
+        Standalone popover primitive — the foundation for DatePicker and any
+        floating panel UI.
+      </p>
+      <Popover>
+        <PopoverTrigger as-child>
+          <Button variant="outline">
+            Open popover
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent>
+          <div class="space-y-2">
+            <h4 class="text-sm font-semibold">
+              Dimensions
+            </h4>
+            <p class="text-xs text-muted-foreground">
+              Set padding and dimensions for the layer.
+            </p>
+            <div class="space-y-1">
+              <Label class="text-xs">Date</Label>
+              <DatePicker v-model="popoverDate" block />
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
     </section>
 
     <!-- FileInput -->

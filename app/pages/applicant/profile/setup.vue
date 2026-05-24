@@ -631,31 +631,30 @@ const handleSubmit = async () => {
 
               <div class="grid grid-cols-2 gap-4">
                 <FormField
-                  v-slot="{ id, ariaInvalid, ariaDescribedby }"
+                  v-slot="{ id, ariaDescribedby }"
                   label="Start Date"
                   required
                   :error="fieldErrors.startDate"
                 >
-                  <Input
+                  <DatePicker
                     :id="id"
                     v-model="officeForm.startDate"
-                    type="date"
-                    :aria-invalid="ariaInvalid"
+                    block
                     :aria-describedby="ariaDescribedby"
-                    @input="clearFieldError('startDate')"
+                    @update:model-value="clearFieldError('startDate')"
                   />
                 </FormField>
                 <FormField
-                  v-slot="{ id, ariaInvalid, ariaDescribedby }"
+                  v-slot="{ id, ariaDescribedby }"
                   label="End Date"
                   hint="Leave blank if current"
                   :error="fieldErrors.endDate"
                 >
-                  <Input
+                  <DatePicker
                     :id="id"
                     v-model="officeForm.endDate"
-                    type="date"
-                    :aria-invalid="ariaInvalid"
+                    block
+                    placeholder="Current"
                     :aria-describedby="ariaDescribedby"
                   />
                 </FormField>

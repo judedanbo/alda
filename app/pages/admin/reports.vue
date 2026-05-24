@@ -107,22 +107,15 @@ const exportReport = async (format: 'csv' | 'pdf') => {
     <Card>
       <CardContent class="pt-6">
         <div class="flex flex-col md:flex-row gap-4 items-end">
-          <div class="flex-1">
-            <Label for="date-from">From Date</Label>
-            <Input
-              id="date-from"
-              v-model="dateFrom"
-              type="date"
-              class="mt-1"
-            />
-          </div>
-          <div class="flex-1">
-            <Label for="date-to">To Date</Label>
-            <Input
-              id="date-to"
-              v-model="dateTo"
-              type="date"
-              class="mt-1"
+          <div class="flex-1 space-y-1">
+            <Label>Reporting period</Label>
+            <DateRangePicker
+              :from="dateFrom || null"
+              :to="dateTo || null"
+              placeholder="Pick a date range"
+              block
+              @update:from="(v) => dateFrom = v ?? ''"
+              @update:to="(v) => dateTo = v ?? ''"
             />
           </div>
           <Button @click="fetchReportData">Update Report</Button>
