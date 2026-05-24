@@ -33,7 +33,7 @@ onMounted(async () => {
 
 <template>
   <div class="w-full max-w-md">
-    <Card>
+    <Card role="status" aria-live="polite">
       <!-- Loading State -->
       <div v-if="status === 'loading'" class="text-center py-4">
         <CardHeader class="text-center">
@@ -42,6 +42,7 @@ onMounted(async () => {
               class="w-10 h-10 text-primary animate-spin"
               fill="none"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <circle
                 class="opacity-25"
@@ -67,7 +68,7 @@ onMounted(async () => {
       <div v-else-if="status === 'success'" class="text-center">
         <CardHeader class="text-center">
           <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-success/10 flex items-center justify-center">
-            <svg class="w-8 h-8 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-8 h-8 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
           </div>
@@ -85,7 +86,7 @@ onMounted(async () => {
       <div v-else class="text-center">
         <CardHeader class="text-center">
           <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-destructive/10 flex items-center justify-center">
-            <svg class="w-8 h-8 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-8 h-8 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </div>

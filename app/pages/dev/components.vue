@@ -94,7 +94,7 @@ const avatarImage
           size: {{ size }}
         </Button>
         <Button size="icon" aria-label="Add">
-          <Plus />
+          <Plus aria-hidden="true" />
         </Button>
       </div>
       <div class="flex flex-wrap items-center gap-3">

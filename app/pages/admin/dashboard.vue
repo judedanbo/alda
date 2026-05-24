@@ -365,7 +365,7 @@ function getActionColor(action: string): string {
             class="flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
           >
             <div :class="[action.color, 'w-10 h-10 rounded-lg flex items-center justify-center shrink-0']">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="action.icon" />
               </svg>
             </div>

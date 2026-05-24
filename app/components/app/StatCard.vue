@@ -51,6 +51,7 @@ const Wrapper = computed(() => (props.href ? resolveComponent("NuxtLink") : "div
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path
                   stroke-linecap="round"

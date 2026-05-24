@@ -159,7 +159,7 @@ const formatDate = (date: string) =>
                 <Badge :class="statusColors[request.status] || 'bg-muted text-muted-foreground'">
                   {{ statusLabels[request.status] || request.status }}
                 </Badge>
-                <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                 </svg>
               </div>

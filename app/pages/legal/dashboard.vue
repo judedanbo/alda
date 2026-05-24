@@ -118,7 +118,7 @@ function formatTimestamp(iso: string) {
       <CardContent class="p-6">
         <form class="flex items-center gap-3 flex-wrap" @submit.prevent="lookupQuickCode">
           <div class="flex items-center gap-2 flex-1 min-w-[280px]">
-            <svg class="w-5 h-5 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-5 h-5 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <Input

@@ -78,7 +78,7 @@ const handleSubmit = async () => {
       <div v-if="!token" class="text-center">
         <CardHeader class="text-center">
           <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-destructive/10 flex items-center justify-center">
-            <svg class="w-8 h-8 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-8 h-8 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </div>
@@ -98,7 +98,7 @@ const handleSubmit = async () => {
       <div v-else-if="success" class="text-center">
         <CardHeader class="text-center">
           <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-success/10 flex items-center justify-center">
-            <svg class="w-8 h-8 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-8 h-8 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
           </div>
@@ -155,6 +155,7 @@ const handleSubmit = async () => {
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    aria-hidden="true"
                   >
                     <path
                       v-if="passwordStrength.hasMinLength"
@@ -168,6 +169,9 @@ const handleSubmit = async () => {
                   <span :class="passwordStrength.hasMinLength ? 'text-success' : 'text-muted-foreground'">
                     At least 8 characters
                   </span>
+                  <span class="sr-only">
+                    {{ passwordStrength.hasMinLength ? "(met)" : "(not met)" }}
+                  </span>
                 </div>
                 <div class="flex items-center gap-2 text-xs">
                   <svg
@@ -176,6 +180,7 @@ const handleSubmit = async () => {
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    aria-hidden="true"
                   >
                     <path
                       v-if="passwordStrength.hasUppercase"
@@ -189,6 +194,9 @@ const handleSubmit = async () => {
                   <span :class="passwordStrength.hasUppercase ? 'text-success' : 'text-muted-foreground'">
                     One uppercase letter
                   </span>
+                  <span class="sr-only">
+                    {{ passwordStrength.hasUppercase ? "(met)" : "(not met)" }}
+                  </span>
                 </div>
                 <div class="flex items-center gap-2 text-xs">
                   <svg
@@ -197,6 +205,7 @@ const handleSubmit = async () => {
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    aria-hidden="true"
                   >
                     <path
                       v-if="passwordStrength.hasLowercase"
@@ -210,6 +219,9 @@ const handleSubmit = async () => {
                   <span :class="passwordStrength.hasLowercase ? 'text-success' : 'text-muted-foreground'">
                     One lowercase letter
                   </span>
+                  <span class="sr-only">
+                    {{ passwordStrength.hasLowercase ? "(met)" : "(not met)" }}
+                  </span>
                 </div>
                 <div class="flex items-center gap-2 text-xs">
                   <svg
@@ -218,6 +230,7 @@ const handleSubmit = async () => {
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    aria-hidden="true"
                   >
                     <path
                       v-if="passwordStrength.hasDigit"
@@ -230,6 +243,9 @@ const handleSubmit = async () => {
                   </svg>
                   <span :class="passwordStrength.hasDigit ? 'text-success' : 'text-muted-foreground'">
                     One number
+                  </span>
+                  <span class="sr-only">
+                    {{ passwordStrength.hasDigit ? "(met)" : "(not met)" }}
                   </span>
                 </div>
               </div>
