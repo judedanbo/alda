@@ -49,6 +49,14 @@ import { Mail, Phone, MapPin } from 'lucide-vue-next'
             </li>
             <li>
               <a
+                href="#about-act-550"
+                class="opacity-70 hover:opacity-100 transition-opacity"
+              >
+                About Act 550
+              </a>
+            </li>
+            <li>
+              <a
                 href="#how-it-works"
                 class="opacity-70 hover:opacity-100 transition-opacity"
               >

@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { Shield, Scale, Landmark, ClipboardList } from 'lucide-vue-next'
+import { Shield, Scale, Landmark, BookText } from 'lucide-vue-next'
 
 const items = [
-  {
-    icon: Shield,
-    title: 'Secure & Confidential',
-    subtitle: 'End-to-end encrypted',
-  },
   {
     icon: Scale,
     title: 'Constitutional Mandate',
     subtitle: 'Article 286(5), 1992',
+  },
+  {
+    icon: BookText,
+    title: 'Act 550 of 1998',
+    subtitle: 'Statutory framework',
   },
   {
     icon: Landmark,
@@ -18,9 +18,9 @@ const items = [
     subtitle: 'Official government portal',
   },
   {
-    icon: ClipboardList,
-    title: 'Tracked & Auditable',
-    subtitle: 'Full declaration trail',
+    icon: Shield,
+    title: 'Secure & Auditable',
+    subtitle: 'Tamper-proof declaration trail',
   },
 ]
 </script>

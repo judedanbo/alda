@@ -83,9 +83,10 @@ onUnmounted(() => {
           <p
             class="text-lg text-white/75 max-w-lg mb-8 leading-relaxed mx-auto md:mx-0"
           >
-            Online portal for public officials to submit their asset
-            declarations as required under Article 286(5) of the 1992
-            Constitution of Ghana.
+            Online portal for public office holders to submit their asset
+            declarations as required by Article 286(5) of the 1992
+            Constitution and the Public Office Holders (Declaration of Assets
+            and Disqualification) Act, 1998 (Act 550).
           </p>
           <div class="flex items-center gap-4 justify-center md:justify-start">
             <Button
