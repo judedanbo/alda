@@ -116,9 +116,9 @@ export default defineEventHandler(async (event) => {
     const name = request.declaration.applicant.fullName;
 
     if (isApproved) {
-      await notifyFormReissueApproved(userId, code, name);
+      await notifyFormReissueApproved(userId, code, name, id);
     } else {
-      await notifyFormReissueDeclined(userId, code, name, body.decisionReason!);
+      await notifyFormReissueDeclined(userId, code, name, body.decisionReason!, id);
     }
   }
 

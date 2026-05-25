@@ -2,6 +2,7 @@
  * SMS Service for Ghana
  * Supports Hubtel and Arkesel SMS providers
  */
+import { DEFAULT_SMS_SENDER_ID } from "~/server/utils/branding";
 
 export type SmsProvider = "hubtel" | "arkesel";
 
@@ -22,6 +23,8 @@ interface SmsResult {
   success: boolean;
   messageId?: string;
   error?: string;
+  /** Which provider actually delivered the message (set on success). */
+  provider?: SmsProvider;
 }
 
 /**
@@ -38,11 +41,11 @@ function getSmsConfig(): SmsConfig {
     hubtel: {
       clientId: process.env.HUBTEL_CLIENT_ID || "",
       clientSecret: process.env.HUBTEL_CLIENT_SECRET || "",
-      senderId: process.env.HUBTEL_SENDER_ID || "ADLA",
+      senderId: process.env.HUBTEL_SENDER_ID || DEFAULT_SMS_SENDER_ID,
     },
     arkesel: {
       apiKey: process.env.ARKESEL_API_KEY || "",
-      senderId: process.env.ARKESEL_SENDER_ID || "ADLA",
+      senderId: process.env.ARKESEL_SENDER_ID || DEFAULT_SMS_SENDER_ID,
     },
   };
 }
@@ -159,7 +162,10 @@ async function sendViaArkesel(
 }
 
 /**
- * Send SMS message
+ * Send SMS message. Tries the configured primary provider, and on
+ * failure falls back to the other once. The result includes which
+ * provider actually delivered so it can be recorded in
+ * NotificationDeliveryLog.providerResponse.
  */
 export async function sendSms(to: string, message: string): Promise<SmsResult> {
   if (!isValidGhanaPhone(to)) {
@@ -167,68 +173,44 @@ export async function sendSms(to: string, message: string): Promise<SmsResult> {
   }
 
   const config = getSmsConfig();
+  const order = providerOrder(config.provider);
 
-  switch (config.provider) {
-    case "hubtel":
-      return sendViaHubtel(to, message, config.hubtel);
-    case "arkesel":
-      return sendViaArkesel(to, message, config.arkesel);
-    default:
-      console.log("[SMS-DEV] No provider, message:", message, "to:", to);
-      return { success: true, messageId: "dev-" + Date.now() };
+  let lastError: string | undefined;
+  for (const provider of order) {
+    const result = await sendVia(provider, to, message, config);
+    if (result.success) {
+      return { ...result, provider };
+    }
+    lastError = result.error;
+    // Only attempt a fallback if the other provider is actually
+    // configured — otherwise we'd just hit the dev-mode mock and report
+    // a misleading success.
+    if (!isConfigured(otherProvider(provider), config)) break;
   }
+
+  return { success: false, error: lastError ?? "All SMS providers failed" };
 }
 
-/**
- * SMS Templates
- */
-export const SmsTemplates = {
-  uniqueCode: (code: string) =>
-    `Your ADLA Declaration Code is: ${code}. Keep this code safe for tracking your declaration status.`,
-
-  declarationSubmitted: (code: string) =>
-    `Your asset declaration (${code}) has been submitted for review. You will be notified when a decision is made.`,
-
-  declarationApproved: (code: string) =>
-    `Congratulations! Your declaration (${code}) has been approved. Your receipt is ready for collection.`,
-
-  declarationRejected: (code: string) =>
-    `Your declaration (${code}) requires attention. Please log in to your account for details.`,
-
-  pickupReady: (code: string) =>
-    `Your sealed declaration document (${code}) is ready for pickup. Bring your Ghana Card for identification.`,
-
-  otp: (otp: string) =>
-    `Your ADLA verification code is: ${otp}. Valid for 10 minutes. Do not share this code.`,
-};
-
-/**
- * Send unique code SMS
- */
-export async function sendUniqueCodeSms(phone: string, code: string): Promise<SmsResult> {
-  return sendSms(phone, SmsTemplates.uniqueCode(code));
+function providerOrder(primary: SmsProvider): SmsProvider[] {
+  return primary === "hubtel" ? ["hubtel", "arkesel"] : ["arkesel", "hubtel"];
 }
 
-/**
- * Send declaration status SMS
- */
-export async function sendDeclarationStatusSms(
-  phone: string,
-  status: "submitted" | "approved" | "rejected",
-  code: string
+function otherProvider(p: SmsProvider): SmsProvider {
+  return p === "hubtel" ? "arkesel" : "hubtel";
+}
+
+function isConfigured(p: SmsProvider, config: SmsConfig): boolean {
+  if (p === "hubtel") return !!(config.hubtel?.clientId && config.hubtel?.clientSecret);
+  return !!config.arkesel?.apiKey;
+}
+
+function sendVia(
+  provider: SmsProvider,
+  to: string,
+  message: string,
+  config: SmsConfig,
 ): Promise<SmsResult> {
-  const templates = {
-    submitted: SmsTemplates.declarationSubmitted,
-    approved: SmsTemplates.declarationApproved,
-    rejected: SmsTemplates.declarationRejected,
-  };
-
-  return sendSms(phone, templates[status](code));
+  if (provider === "hubtel") return sendViaHubtel(to, message, config.hubtel);
+  return sendViaArkesel(to, message, config.arkesel);
 }
 
-/**
- * Send pickup notification SMS
- */
-export async function sendPickupSms(phone: string, code: string): Promise<SmsResult> {
-  return sendSms(phone, SmsTemplates.pickupReady(code));
-}

@@ -52,7 +52,14 @@ export default defineEventHandler(async (event) => {
     newValues: { verificationStatus: "PENDING_VERIFICATION" },
   });
 
-  await notifyVerificationSubmitted(auth.userId, profile.fullName);
+  // Dedupe key includes the post-update timestamp so each legitimate
+  // resubmit fires a fresh notification while still absorbing
+  // double-clicks within the dedupe window.
+  await notifyVerificationSubmitted(
+    auth.userId,
+    profile.fullName,
+    `${profile.id}:${updatedProfile.updatedAt.getTime()}`,
+  );
 
   return {
     success: true,

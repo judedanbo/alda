@@ -92,6 +92,19 @@ export default defineNuxtConfig({
     // Redis
     redisUrl: process.env.REDIS_URL || "redis://localhost:6379",
 
+    // Notification queue (BullMQ).
+    // `queueEnabled` flips dispatch from inline SMTP/SMS calls (which block
+    // the request) to a BullMQ job that the worker drains in the background
+    // with retries. Defaults on when REDIS_URL is configured externally so
+    // tests and bare-bones dev still work without Redis.
+    notifications: {
+      queueEnabled: envBool(process.env.NOTIFICATIONS_QUEUE_ENABLED, !!process.env.REDIS_URL),
+      workerEnabled: envBool(process.env.NOTIFICATIONS_WORKER_ENABLED, true),
+      emailConcurrency: envNum(process.env.NOTIFICATIONS_EMAIL_CONCURRENCY, 5),
+      smsConcurrency: envNum(process.env.NOTIFICATIONS_SMS_CONCURRENCY, 5),
+      maxAttempts: envNum(process.env.NOTIFICATIONS_MAX_ATTEMPTS, 3),
+    },
+
     // Web analytics, abuse detection & rate limiting (server-only).
     // Consumed via the typed helper in server/utils/analytics-config.ts.
     analytics: {
@@ -157,6 +170,8 @@ export default defineNuxtConfig({
       "*/10 * * * *": ["analytics:rollup"],
       // Prune raw events past the retention window, daily at 03:30.
       "30 3 * * *": ["analytics:prune"],
+      // Prune old notifications, daily at 03:45.
+      "45 3 * * *": ["notifications:prune"],
     },
   },
 

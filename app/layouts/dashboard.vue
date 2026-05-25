@@ -16,6 +16,10 @@ const helpStore = useHelpStore();
 const route = useRoute();
 const { hasActiveDeclaration, check: checkActiveDeclaration } = useActiveDeclaration();
 
+// Open a live SSE stream so the bell badge updates without reload.
+// The composable manages the connection lifecycle; no-op on the server.
+useNotificationStream();
+
 onMounted(() => {
   if (authStore.isApplicant) {
     checkActiveDeclaration();

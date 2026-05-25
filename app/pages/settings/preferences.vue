@@ -54,7 +54,11 @@ const channels = reactive<ChannelFlags>({
   smsEnabled: true,
   inAppEnabled: true,
 });
-const mode = ref<"category" | "type">("category");
+const defaultMode = ref<"category" | "type">("category");
+const showAdvanced = ref(false);
+const mode = computed<"category" | "type">(() =>
+  defaultMode.value === "type" || showAdvanced.value ? "type" : "category",
+);
 const groups = ref<GroupState[]>([]);
 
 let successTimer: ReturnType<typeof setTimeout> | null = null;
@@ -75,7 +79,7 @@ function applyData(data: PreferencesData) {
   channels.emailEnabled = data.channels.emailEnabled;
   channels.smsEnabled = data.channels.smsEnabled;
   channels.inAppEnabled = data.channels.inAppEnabled;
-  mode.value = data.mode;
+  defaultMode.value = data.mode;
   groups.value = data.groups.map((group) => ({
     key: group.key,
     label: group.label,
@@ -283,6 +287,15 @@ onUnmounted(() => {
                 : "Fine-tune which channel each notification uses."
             }}
           </CardDescription>
+          <div v-if="defaultMode === 'category'" class="flex items-center justify-between pt-3">
+            <div class="space-y-0.5">
+              <Label for="advanced-prefs" class="text-sm font-medium">Advanced view</Label>
+              <p class="text-xs text-muted-foreground">
+                Control each channel (email, SMS, in-app) for every notification type.
+              </p>
+            </div>
+            <Switch id="advanced-prefs" v-model="showAdvanced" />
+          </div>
         </CardHeader>
         <CardContent class="space-y-0">
           <!-- Category view -->

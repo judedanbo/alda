@@ -114,6 +114,9 @@ export const AuditActions = {
   FORM_REISSUE_APPROVED: "form_reissue_approved",
   FORM_REISSUE_DECLINED: "form_reissue_declined",
 
+  // Notifications
+  NOTIFICATION_TEST_SENT: "notification_test_sent",
+
   // Web analytics, abuse detection & rate limiting
   ABUSE_DETECTED: "abuse_detected",
   ABUSE_THROTTLE_APPLIED: "abuse_throttle_applied",

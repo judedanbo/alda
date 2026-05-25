@@ -2,6 +2,15 @@ import { Prisma } from "@prisma/client";
 import prisma from "~/server/utils/prisma";
 import { sendEmail, type EmailTemplate } from "./email.service";
 import { sendSms } from "./sms.service";
+import {
+  enqueueEmailJob,
+  enqueueSmsJob,
+  isQueueEnabled,
+} from "~/server/utils/notification-queue";
+import { payloads } from "~/server/notifications/payloads";
+import { checkRateLimit } from "~/server/utils/rate-limit";
+import { getAnalyticsStorage } from "~/server/utils/analytics-storage";
+import { publishToUser } from "~/server/utils/notification-stream";
 import type { NotificationType, NotificationChannel } from "@prisma/client";
 
 /**
@@ -14,13 +23,103 @@ export interface NotificationPayload {
   message: string;
   metadata?: Record<string, unknown>;
   channels?: NotificationChannel[];
+  /**
+   * Optional dedupe key. If a notification with the same
+   * (userId, type, dedupeKey) was created within DEDUPE_WINDOW_MS, the
+   * send is skipped. Use the natural entity id of whatever triggered the
+   * notification (declaration code, receipt number, reissue request id).
+   */
+  dedupeKey?: string;
 }
 
 /**
- * Send notification through specified channels
+ * Window during which a repeated (userId, type, dedupeKey) is treated as a
+ * duplicate and skipped. Short enough to allow legitimate re-sends (e.g.
+ * an applicant who later resubmits) but long enough to absorb double
+ * clicks and handler retries.
+ */
+const DEDUPE_WINDOW_MS = 5 * 60 * 1000;
+
+/**
+ * Per-user-per-type ceiling. Default is generous (10 of the same type
+ * per hour) — meant as a runaway-bug fuse, not a feature limit.
+ * Security/transactional types (password reset, email verification)
+ * are exempt: see ALWAYS_SEND.
+ */
+const NOTIFICATION_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+function getNotificationRateLimitPerHour(): number {
+  const v = Number(process.env.NOTIFICATIONS_RATE_LIMIT_PER_HOUR);
+  return Number.isFinite(v) && v > 0 ? Math.floor(v) : 10;
+}
+
+/**
+ * Types that bypass dedupe and rate-limiting. Anything users can't
+ * disable in their preferences (security/transactional) should go here.
+ */
+const ALWAYS_SEND: ReadonlySet<NotificationType> = new Set<NotificationType>([
+  "PASSWORD_RESET",
+  "EMAIL_VERIFICATION",
+]);
+
+/**
+ * Send a notification across the configured channels. This function is
+ * intentionally swallow-all: it never throws, so callers do not need to
+ * wrap it in try/catch. Notification failures must not break the state
+ * transition that triggered them.
  */
 export async function sendNotification(payload: NotificationPayload): Promise<void> {
-  // Get user with their notification preferences
+  try {
+    await sendNotificationInternal(payload);
+  } catch (error) {
+    console.error("[notification.service] sendNotification failed", {
+      userId: payload.userId,
+      type: payload.type,
+      dedupeKey: payload.dedupeKey,
+      error: error instanceof Error ? { message: error.message, stack: error.stack } : String(error),
+    });
+  }
+}
+
+async function sendNotificationInternal(payload: NotificationPayload): Promise<void> {
+  const bypass = ALWAYS_SEND.has(payload.type);
+
+  if (!bypass && payload.dedupeKey) {
+    const cutoff = new Date(Date.now() - DEDUPE_WINDOW_MS);
+    const existing = await prisma.notification.findFirst({
+      where: {
+        userId: payload.userId,
+        type: payload.type,
+        dedupeKey: payload.dedupeKey,
+        createdAt: { gte: cutoff },
+      },
+      select: { id: true },
+    });
+    if (existing) {
+      console.info("[notification.service] dedupe hit, skipping", {
+        userId: payload.userId,
+        type: payload.type,
+        dedupeKey: payload.dedupeKey,
+      });
+      return;
+    }
+  }
+
+  if (!bypass) {
+    const rl = await checkRateLimit(getAnalyticsStorage(), {
+      key: `notif:${payload.userId}:${payload.type}`,
+      limit: getNotificationRateLimitPerHour(),
+      windowMs: NOTIFICATION_RATE_LIMIT_WINDOW_MS,
+    });
+    if (!rl.allowed) {
+      console.warn("[notification.service] per-user-per-type rate limit hit, skipping", {
+        userId: payload.userId,
+        type: payload.type,
+        retryAfterMs: rl.retryAfterMs,
+      });
+      return;
+    }
+  }
+
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
     include: {
@@ -40,13 +139,14 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
   const typePref = user.notificationTypePrefs[0];
   const channels = payload.channels || ["EMAIL", "SMS", "IN_APP"] as NotificationChannel[];
 
-  // Create in-app notification if enabled
+  // Create in-app notification if enabled, and publish to any open
+  // SSE streams so the bell badge updates without a page reload.
   if (
     channels.includes("IN_APP") &&
     (prefs?.inAppEnabled ?? true) &&
     (typePref?.inAppEnabled ?? true)
   ) {
-    await prisma.notification.create({
+    const created = await prisma.notification.create({
       data: {
         userId: payload.userId,
         type: payload.type,
@@ -54,7 +154,17 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
         title: payload.title,
         message: payload.message,
         metadata: (payload.metadata ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        dedupeKey: payload.dedupeKey,
       },
+    });
+    await publishToUser(payload.userId, {
+      type: "notification.created",
+      notificationId: created.id,
+      title: created.title,
+      message: created.message,
+      notificationType: created.type,
+      createdAt: created.createdAt.toISOString(),
+      metadata: (payload.metadata ?? undefined),
     });
   }
 
@@ -72,10 +182,12 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
         title: payload.title,
         message: payload.message,
         metadata: (payload.metadata ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        dedupeKey: payload.dedupeKey,
       },
     });
 
-    // Create delivery log and attempt delivery
+    // Create delivery log; the queue worker (or inline fallback) will
+    // flip its status to DELIVERED/FAILED.
     const deliveryLog = await prisma.notificationDeliveryLog.create({
       data: {
         notificationId: notification.id,
@@ -84,33 +196,28 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
       },
     });
 
-    try {
-      const success = await sendEmail({
-        to: user.email,
-        subject: payload.title,
-        template: mapNotificationTypeToEmailTemplate(payload.type),
-        data: {
-          name: user.applicantProfile?.fullName || user.email,
-          ...payload.metadata,
-        },
-      });
+    const jobData = {
+      deliveryLogId: deliveryLog.id,
+      to: user.email,
+      subject: payload.title,
+      template: mapNotificationTypeToEmailTemplate(payload.type),
+      data: {
+        name: user.applicantProfile?.fullName || user.email,
+        ...payload.metadata,
+      } as Record<string, unknown>,
+    };
 
-      await prisma.notificationDeliveryLog.update({
-        where: { id: deliveryLog.id },
-        data: {
-          status: success ? "DELIVERED" : "FAILED",
-          sentAt: new Date(),
-          deliveredAt: success ? new Date() : null,
-        },
-      });
-    } catch (error) {
-      await prisma.notificationDeliveryLog.update({
-        where: { id: deliveryLog.id },
-        data: {
-          status: "FAILED",
-          providerResponse: { error: String(error) },
-        },
-      });
+    if (isQueueEnabled()) {
+      try {
+        await enqueueEmailJob(jobData);
+      } catch (error) {
+        // Queue unreachable — fall back to inline send so the
+        // notification still goes out (best-effort).
+        console.warn("[notification.service] email enqueue failed, falling back to inline send", error);
+        await sendEmailInline(deliveryLog.id, jobData);
+      }
+    } else {
+      await sendEmailInline(deliveryLog.id, jobData);
     }
   }
 
@@ -129,6 +236,7 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
         title: payload.title,
         message: payload.message,
         metadata: (payload.metadata ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        dedupeKey: payload.dedupeKey,
       },
     });
 
@@ -140,29 +248,84 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
       },
     });
 
-    try {
-      const result = await sendSms(user.phone, payload.message);
+    const jobData = {
+      deliveryLogId: deliveryLog.id,
+      to: user.phone,
+      message: payload.message,
+    };
 
-      await prisma.notificationDeliveryLog.update({
-        where: { id: deliveryLog.id },
-        data: {
-          status: result.success ? "DELIVERED" : "FAILED",
-          sentAt: new Date(),
-          deliveredAt: result.success ? new Date() : null,
-          providerResponse: result.success
-            ? { messageId: result.messageId }
-            : { error: result.error },
-        },
-      });
-    } catch (error) {
-      await prisma.notificationDeliveryLog.update({
-        where: { id: deliveryLog.id },
-        data: {
-          status: "FAILED",
-          providerResponse: { error: String(error) },
-        },
-      });
+    if (isQueueEnabled()) {
+      try {
+        await enqueueSmsJob(jobData);
+      } catch (error) {
+        console.warn("[notification.service] sms enqueue failed, falling back to inline send", error);
+        await sendSmsInline(deliveryLog.id, jobData);
+      }
+    } else {
+      await sendSmsInline(deliveryLog.id, jobData);
     }
+  }
+}
+
+/**
+ * Inline email send — used when the queue is disabled or unreachable.
+ * Mirrors what the BullMQ worker does, minus the retry mechanism.
+ */
+async function sendEmailInline(
+  deliveryLogId: string,
+  data: { to: string; subject: string; template: EmailTemplate; data: Record<string, unknown> },
+): Promise<void> {
+  try {
+    const success = await sendEmail({
+      to: data.to,
+      subject: data.subject,
+      template: data.template,
+      data: data.data,
+    });
+    await prisma.notificationDeliveryLog.update({
+      where: { id: deliveryLogId },
+      data: {
+        status: success ? "DELIVERED" : "FAILED",
+        sentAt: new Date(),
+        deliveredAt: success ? new Date() : null,
+      },
+    });
+  } catch (error) {
+    await prisma.notificationDeliveryLog.update({
+      where: { id: deliveryLogId },
+      data: {
+        status: "FAILED",
+        providerResponse: { error: String(error) },
+      },
+    });
+  }
+}
+
+async function sendSmsInline(
+  deliveryLogId: string,
+  data: { to: string; message: string },
+): Promise<void> {
+  try {
+    const result = await sendSms(data.to, data.message);
+    await prisma.notificationDeliveryLog.update({
+      where: { id: deliveryLogId },
+      data: {
+        status: result.success ? "DELIVERED" : "FAILED",
+        sentAt: new Date(),
+        deliveredAt: result.success ? new Date() : null,
+        providerResponse: result.success
+          ? { messageId: result.messageId, provider: result.provider }
+          : { error: result.error },
+      },
+    });
+  } catch (error) {
+    await prisma.notificationDeliveryLog.update({
+      where: { id: deliveryLogId },
+      data: {
+        status: "FAILED",
+        providerResponse: { error: String(error) },
+      },
+    });
   }
 }
 
@@ -203,9 +366,8 @@ export async function notifyUniqueCodeGenerated(
   await sendNotification({
     userId,
     type: "UNIQUE_CODE_GENERATED",
-    title: `Your Declaration Code: ${uniqueCode}`,
-    message: `Your unique declaration code is ${uniqueCode}. Keep this code safe for tracking your declaration.`,
-    metadata: { uniqueCode, name },
+    ...payloads.uniqueCodeGenerated({ uniqueCode, name }),
+    dedupeKey: uniqueCode,
   });
 }
 
@@ -220,13 +382,8 @@ export async function notifyDeclarationSubmitted(
   await sendNotification({
     userId,
     type: "FORM_RETURNED",
-    title: "Declaration Submitted",
-    message: `Your declaration (${uniqueCode}) has been submitted for review.`,
-    metadata: {
-      uniqueCode,
-      name,
-      submittedAt: new Date().toISOString(),
-    },
+    ...payloads.declarationSubmitted({ uniqueCode, name }),
+    dedupeKey: uniqueCode,
   });
 }
 
@@ -241,13 +398,8 @@ export async function notifyDeclarationApproved(
   await sendNotification({
     userId,
     type: "REVIEW_APPROVED",
-    title: "Declaration Approved",
-    message: `Congratulations! Your declaration (${uniqueCode}) has been approved.`,
-    metadata: {
-      uniqueCode,
-      name,
-      approvedAt: new Date().toISOString(),
-    },
+    ...payloads.declarationApproved({ uniqueCode, name }),
+    dedupeKey: uniqueCode,
   });
 }
 
@@ -263,13 +415,8 @@ export async function notifyDeclarationRejected(
   await sendNotification({
     userId,
     type: "REVIEW_REJECTED",
-    title: "Declaration Requires Attention",
-    message: `Your declaration (${uniqueCode}) requires attention. Reason: ${reason}`,
-    metadata: {
-      uniqueCode,
-      name,
-      rejectionReason: reason,
-    },
+    ...payloads.declarationRejected({ uniqueCode, name, reason }),
+    dedupeKey: uniqueCode,
   });
 }
 
@@ -279,19 +426,15 @@ export async function notifyDeclarationRejected(
 export async function notifyFormReissueRequested(
   userId: string,
   uniqueCode: string,
-  name: string
+  name: string,
+  reissueRequestId?: string,
 ): Promise<void> {
   await sendNotification({
     userId,
     type: "FORM_REISSUE_REQUESTED",
-    title: "Reissue Request Received",
-    message: `We received your request to reissue the lost form for declaration (${uniqueCode}). The Legal Unit will process it once the Auditor General's approval letter is received.`,
-    metadata: {
-      uniqueCode,
-      name,
-      requestedAt: new Date().toISOString(),
-    },
+    ...payloads.formReissueRequested({ uniqueCode, name }),
     channels: ["IN_APP"],
+    dedupeKey: reissueRequestId ?? uniqueCode,
   });
 }
 
@@ -301,18 +444,14 @@ export async function notifyFormReissueRequested(
 export async function notifyFormReissueApproved(
   userId: string,
   uniqueCode: string,
-  name: string
+  name: string,
+  reissueRequestId?: string,
 ): Promise<void> {
   await sendNotification({
     userId,
     type: "FORM_REISSUE_APPROVED",
-    title: "Form Reissue Approved",
-    message: `Your request to reissue the lost form for declaration (${uniqueCode}) has been approved. Collect the reissued form and return it through the normal process.`,
-    metadata: {
-      uniqueCode,
-      name,
-      approvedAt: new Date().toISOString(),
-    },
+    ...payloads.formReissueApproved({ uniqueCode, name }),
+    dedupeKey: reissueRequestId ?? uniqueCode,
   });
 }
 
@@ -323,19 +462,15 @@ export async function notifyFormReissueDeclined(
   userId: string,
   uniqueCode: string,
   name: string,
-  reason: string
+  reason: string,
+  reissueRequestId?: string,
 ): Promise<void> {
   await sendNotification({
     userId,
     type: "FORM_REISSUE_DECLINED",
-    title: "Form Reissue Declined",
-    message: `Your request to reissue the lost form for declaration (${uniqueCode}) was declined. Reason: ${reason}`,
-    metadata: {
-      uniqueCode,
-      name,
-      decisionReason: reason,
-    },
+    ...payloads.formReissueDeclined({ uniqueCode, name, reason }),
     channels: ["EMAIL", "IN_APP"],
+    dedupeKey: reissueRequestId ?? uniqueCode,
   });
 }
 
@@ -351,13 +486,8 @@ export async function notifyReceiptReady(
   await sendNotification({
     userId,
     type: "RECEIPT_READY",
-    title: "Receipt Ready",
-    message: `Your receipt (${receiptNumber}) for declaration ${uniqueCode} is ready.`,
-    metadata: {
-      uniqueCode,
-      receiptNumber,
-      name,
-    },
+    ...payloads.receiptReady({ uniqueCode, receiptNumber, name }),
+    dedupeKey: receiptNumber,
   });
 }
 
@@ -381,20 +511,6 @@ export async function notifyVerificationStatusChanged(
     REJECTED: "VERIFICATION_REJECTED",
   };
 
-  const titleMap: Record<string, string> = {
-    VERIFIED: "Registration Verified",
-    ON_HOLD: "Registration Under Investigation",
-    MORE_INFO_REQUIRED: "Additional Information Required",
-    REJECTED: "Registration Not Approved",
-  };
-
-  const messageMap: Record<string, string> = {
-    VERIFIED: "Your registration has been verified. You can now create asset declarations.",
-    ON_HOLD: `Your registration is under investigation. Reason: ${reason}`,
-    MORE_INFO_REQUIRED: `Additional information required: ${messageToApplicant || reason}`,
-    REJECTED: `Your registration was not approved. Reason: ${reason}`,
-  };
-
   const channelMap: Record<string, NotificationChannel[]> = {
     VERIFIED: ["EMAIL", "SMS", "IN_APP"],
     ON_HOLD: ["EMAIL", "IN_APP"],
@@ -405,27 +521,30 @@ export async function notifyVerificationStatusChanged(
   await sendNotification({
     userId,
     type: typeMap[status]!,
-    title: titleMap[status]!,
-    message: messageMap[status]!,
-    metadata: { name, reason, messageToApplicant, dashboardUrl },
+    ...payloads.verificationStatus({ status, name, reason, messageToApplicant, dashboardUrl }),
     channels: channelMap[status],
+    dedupeKey: `${status}:${userId}`,
   });
 }
 
 /**
- * Send notification that verification was submitted
+ * Send notification that verification was submitted.
+ *
+ * `dedupeKey` should be a per-submission identifier (e.g. `profile.id`
+ * for initial submit, or `${profile.id}:${updatedAt}` for resubmits) so
+ * double-clicks dedupe but legitimate re-submissions don't.
  */
 export async function notifyVerificationSubmitted(
   userId: string,
   name: string,
+  dedupeKey?: string,
 ): Promise<void> {
   await sendNotification({
     userId,
     type: "VERIFICATION_SUBMITTED",
-    title: "Registration Under Review",
-    message: "Your registration is now being reviewed by the legal office.",
-    metadata: { name },
+    ...payloads.verificationSubmitted({ name }),
     channels: ["EMAIL", "IN_APP"],
+    dedupeKey,
   });
 }
 
