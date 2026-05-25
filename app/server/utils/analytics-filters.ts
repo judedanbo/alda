@@ -142,6 +142,7 @@ export function buildSealedHistoryWhere(
         { uniqueCode: { contains: searchTerm, mode: "insensitive" } },
         { applicant: { fullName: { contains: searchTerm, mode: "insensitive" } } },
         { applicant: { ghanaCardNumber: { contains: searchTerm, mode: "insensitive" } } },
+        { applicant: { alternateIdNumber: { contains: searchTerm, mode: "insensitive" } } },
       ],
     };
   }

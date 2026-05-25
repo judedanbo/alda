@@ -1,3 +1,5 @@
+import { IdDocumentType } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import prisma from "~/server/utils/prisma";
 import { validateBody, applicantProfileSchema } from "~/server/utils/validators";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
@@ -13,7 +15,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Check if user already has a profile
   const existingProfile = await prisma.applicantProfile.findUnique({
     where: { userId: auth.userId },
   });
@@ -26,31 +27,65 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Validate request body
   const data = await validateBody(event, applicantProfileSchema);
 
-  // Verify Ghana Card number is unique
-  const existingCard = await prisma.applicantProfile.findUnique({
-    where: { ghanaCardNumber: data.ghanaCardNumber },
-  });
-
-  if (existingCard) {
-    throw createError({
-      statusCode: 409,
-      statusMessage: "Conflict",
-      message: "A profile with this Ghana Card number already exists",
+  // Per-path uniqueness check. DB constraints catch races, but a friendly
+  // 409 with field-scoped error is far better than a raw constraint failure.
+  if (data.idType === IdDocumentType.GHANA_CARD) {
+    const existingCard = await prisma.applicantProfile.findUnique({
+      where: { ghanaCardNumber: data.ghanaCardNumber },
     });
+    if (existingCard) {
+      throw createError({
+        statusCode: 409,
+        statusMessage: "Conflict",
+        data: {
+          fieldErrors: { ghanaCardNumber: ["A profile with this Ghana Card number already exists"] },
+          formErrors: [],
+        },
+      });
+    }
+  } else {
+    const existingAlt = await prisma.applicantProfile.findFirst({
+      where: {
+        idType: data.idType,
+        alternateIdNumber: data.alternateIdNumber,
+      },
+    });
+    if (existingAlt) {
+      throw createError({
+        statusCode: 409,
+        statusMessage: "Conflict",
+        data: {
+          fieldErrors: { alternateIdNumber: ["A profile with this ID number already exists"] },
+          formErrors: [],
+        },
+      });
+    }
   }
 
-  // Create profile
+  const createData: Prisma.ApplicantProfileCreateInput =
+    data.idType === IdDocumentType.GHANA_CARD
+      ? {
+        user: { connect: { id: auth.userId } },
+        fullName: data.fullName,
+        idType: data.idType,
+        ghanaCardNumber: data.ghanaCardNumber,
+        ghanaCardFrontUrl: data.ghanaCardFrontUrl,
+        ghanaCardBackUrl: data.ghanaCardBackUrl,
+      }
+      : {
+        user: { connect: { id: auth.userId } },
+        fullName: data.fullName,
+        idType: data.idType,
+        alternateIdNumber: data.alternateIdNumber,
+        alternateIdScanUrl: data.alternateIdScanUrl,
+        alternateIdReason: data.alternateIdReason,
+        alternateIdDetails: data.alternateIdDetails,
+      };
+
   const profile = await prisma.applicantProfile.create({
-    data: {
-      userId: auth.userId,
-      fullName: data.fullName,
-      ghanaCardNumber: data.ghanaCardNumber,
-      ghanaCardFrontUrl: data.ghanaCardFrontUrl || "",
-      ghanaCardBackUrl: data.ghanaCardBackUrl,
-    },
+    data: createData,
     include: {
       offices: {
         include: {
@@ -61,7 +96,6 @@ export default defineEventHandler(async (event) => {
     },
   });
 
-  // Create audit log
   await createAuditLog(event, {
     userId: auth.userId,
     action: AuditActions.PROFILE_CREATED,
@@ -69,11 +103,13 @@ export default defineEventHandler(async (event) => {
     entityId: profile.id,
     newValues: {
       fullName: profile.fullName,
+      idType: profile.idType,
       ghanaCardNumber: profile.ghanaCardNumber,
+      alternateIdNumber: profile.alternateIdNumber,
+      alternateIdReason: profile.alternateIdReason,
     },
   });
 
-  // Log verification request
   await createAuditLog(event, {
     userId: auth.userId,
     action: AuditActions.APPLICANT_VERIFICATION_REQUESTED,

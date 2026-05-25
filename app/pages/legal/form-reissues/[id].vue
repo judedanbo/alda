@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { displayId } from "~/utils/displayId";
+
 interface ReissueUser {
   email: string;
 }
@@ -40,7 +42,9 @@ interface ApplicantOfficeInfo {
 interface ApplicantInfo {
   id: string;
   fullName: string;
-  ghanaCardNumber: string;
+  idType: import("~/utils/displayId").IdType;
+  ghanaCardNumber: string | null;
+  alternateIdNumber: string | null;
   user: ApplicantUser;
   offices: ApplicantOfficeInfo[];
 }
@@ -249,9 +253,9 @@ const formatDate = (date: string) =>
                   <dt class="text-muted-foreground">Full Name</dt>
                   <dd class="font-medium">{{ declaration?.applicant?.fullName }}</dd>
                 </div>
-                <div>
-                  <dt class="text-muted-foreground">Ghana Card Number</dt>
-                  <dd class="font-mono font-medium">{{ declaration?.applicant?.ghanaCardNumber }}</dd>
+                <div v-if="declaration?.applicant">
+                  <dt class="text-muted-foreground">{{ displayId(declaration.applicant).label }} Number</dt>
+                  <dd class="font-mono font-medium">{{ displayId(declaration.applicant).value }}</dd>
                 </div>
                 <div>
                   <dt class="text-muted-foreground">Email</dt>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { displayId } from "~/utils/displayId";
+
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
@@ -13,7 +15,9 @@ interface VerificationResult {
     createdAt: string;
     applicant: {
       fullName: string;
-      ghanaCardNumber: string;
+      idType: import("~/utils/displayId").IdType;
+      ghanaCardNumber: string | null;
+      alternateIdNumber: string | null;
       ghanaCardFrontUrl: string | null;
       ghanaCardBackUrl: string | null;
       offices: Array<{
@@ -190,8 +194,8 @@ const formatDate = (date: string) => {
                   <span class="font-medium">{{ verificationResult.declaration.applicant.fullName }}</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-muted-foreground">Ghana Card:</span>
-                  <span class="font-mono">{{ verificationResult.declaration.applicant.ghanaCardNumber }}</span>
+                  <span class="text-muted-foreground">{{ displayId(verificationResult.declaration.applicant).label }}:</span>
+                  <span class="font-mono">{{ displayId(verificationResult.declaration.applicant).value }}</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-muted-foreground">Email:</span>

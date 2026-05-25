@@ -109,11 +109,15 @@ export default defineEventHandler(async (event) => {
       officeCategory: o.officeCategory?.name || "N/A",
     }));
 
+  const { displayId, ID_TYPE_LABEL } = await import("~/server/utils/displayId");
+  const idView = displayId(declaration.applicant);
+
   const pdfUrl = await generateReceiptPDF({
     receiptNumber,
     declarationCode: declaration.uniqueCode,
     applicantName: declaration.applicant.fullName,
-    ghanaCardNumber: declaration.applicant.ghanaCardNumber,
+    idLabel: ID_TYPE_LABEL[declaration.applicant.idType] ?? "ID",
+    idNumber: idView.value,
     offices: activeOffices,
     submissionDate: declaration.submittedAt || declaration.createdAt,
     approvalDate: review?.reviewDate || new Date(),

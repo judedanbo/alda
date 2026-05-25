@@ -5,6 +5,7 @@ import { z } from "zod";
 const updateProfileSchema = z.object({
   ghanaCardFrontUrl: z.string().url().optional(),
   ghanaCardBackUrl: z.string().url().optional(),
+  alternateIdScanUrl: z.string().url().optional(),
 });
 
 export default defineEventHandler(async (event) => {
@@ -41,6 +42,7 @@ export default defineEventHandler(async (event) => {
   const oldValues = {
     ghanaCardFrontUrl: profile.ghanaCardFrontUrl,
     ghanaCardBackUrl: profile.ghanaCardBackUrl,
+    alternateIdScanUrl: profile.alternateIdScanUrl,
   };
 
   const updated = await prisma.applicantProfile.update({

@@ -50,6 +50,8 @@ export default defineEventHandler(async (event) => {
       email: user.email,
       phone: user.phone,
       emailVerified: user.emailVerified,
+      phoneVerified: user.phoneVerified,
+      phoneVerifiedAt: user.phoneVerifiedAt,
       roles: user.roles.map((r) => r.role.name),
       profile: user.applicantProfile
         ? {

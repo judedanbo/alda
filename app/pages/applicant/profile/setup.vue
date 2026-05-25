@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { useDebounceFn } from "@vueuse/core";
 import { useAuthStore } from "~/stores/auth";
+import { ID_TYPE_LABEL, ALT_REASON_LABEL, type IdType, type AltReason } from "~/utils/displayId";
 
 definePageMeta({
   layout: "auth",
@@ -27,13 +29,63 @@ onMounted(async () => {
   }
 });
 
-// Form state
+// Form state — covers both the Ghana Card path and the alternate-ID path.
+// The active fields depend on form.idType; inactive fields are ignored on submit.
 const form = reactive({
   fullName: "",
+  idType: "GHANA_CARD" as IdType,
+  // Ghana Card path
   ghanaCardNumber: "",
   ghanaCardFrontUrl: "",
   ghanaCardBackUrl: "",
+  // Alternate-ID path
+  alternateIdNumber: "",
+  alternateIdScanUrl: "",
+  alternateIdReason: "" as AltReason | "",
+  alternateIdDetails: "",
 });
+
+const isGhanaCard = computed(() => form.idType === "GHANA_CARD");
+
+const ID_TYPE_OPTIONS: { value: IdType; label: string }[] = [
+  { value: "GHANA_CARD", label: ID_TYPE_LABEL.GHANA_CARD },
+  { value: "PASSPORT", label: ID_TYPE_LABEL.PASSPORT },
+  { value: "VOTER_ID", label: ID_TYPE_LABEL.VOTER_ID },
+  { value: "DRIVERS_LICENSE", label: ID_TYPE_LABEL.DRIVERS_LICENSE },
+  { value: "NIA_RECEIPT", label: ID_TYPE_LABEL.NIA_RECEIPT },
+];
+
+const ALT_REASON_OPTIONS: { value: AltReason; label: string }[] = [
+  { value: "PENDING_NIA_REGISTRATION", label: ALT_REASON_LABEL.PENDING_NIA_REGISTRATION },
+  { value: "FOREIGN_NATIONAL", label: ALT_REASON_LABEL.FOREIGN_NATIONAL },
+  { value: "LOST_AWAITING_REISSUE", label: ALT_REASON_LABEL.LOST_AWAITING_REISSUE },
+  { value: "DAMAGED_AWAITING_REISSUE", label: ALT_REASON_LABEL.DAMAGED_AWAITING_REISSUE },
+  { value: "OTHER", label: ALT_REASON_LABEL.OTHER },
+];
+
+const ID_NUMBER_PLACEHOLDER: Record<IdType, string> = {
+  GHANA_CARD: "GHA-XXXXXXXXX-X",
+  PASSPORT: "G1234567",
+  VOTER_ID: "10-digit voter ID",
+  DRIVERS_LICENSE: "AA-NNNNNNN-NN",
+  NIA_RECEIPT: "Receipt code",
+};
+
+const ID_NUMBER_HINT: Record<IdType, string> = {
+  GHANA_CARD: "Format: GHA-XXXXXXXXX-X (e.g., GHA-123456789-0)",
+  PASSPORT: "Letter followed by 7 or 8 digits",
+  VOTER_ID: "Exactly 10 digits",
+  DRIVERS_LICENSE: "Two letters, 6–8 digits, two-digit suffix",
+  NIA_RECEIPT: "Receipt code from your NIA registration slip (6–32 alphanumeric / dashes)",
+};
+
+const ID_NUMBER_REGEX: Record<IdType, RegExp> = {
+  GHANA_CARD: /^GHA-\d{9}-\d$/,
+  PASSPORT: /^[A-Z][0-9]{7,8}$/,
+  VOTER_ID: /^\d{10}$/,
+  DRIVERS_LICENSE: /^[A-Z]{2}-\d{6,8}-\d{2}$/,
+  NIA_RECEIPT: /^[A-Z0-9-]{6,32}$/,
+};
 
 interface OfficeApiResponse {
   id: string;
@@ -75,13 +127,13 @@ const error = ref("");
 const isLoading = ref(false);
 const currentStep = ref(1);
 const totalSteps = 3;
-const stepTitles = [
+const stepTitles = computed(() => [
   "Personal Information",
-  "Upload Ghana Card",
+  isGhanaCard.value ? "Upload Ghana Card" : `Upload ${ID_TYPE_LABEL[form.idType]} Scan`,
   "Office Details",
-] as const;
+]);
 const stepAnnouncement = computed(
-  () => `Step ${currentStep.value} of ${totalSteps}: ${stepTitles[currentStep.value - 1]}`,
+  () => `Step ${currentStep.value} of ${totalSteps}: ${stepTitles.value[currentStep.value - 1]}`,
 );
 const { fieldErrors, clearFieldError, clearAll, handleServerError } = useFieldErrors();
 
@@ -92,6 +144,7 @@ const { data: institutions } = await useFetch("/api/institutions");
 // File upload state
 const uploadingFront = ref(false);
 const uploadingBack = ref(false);
+const uploadingAlternate = ref(false);
 
 // Upload Ghana Card image
 const uploadGhanaCard = async (file: File, side: "front" | "back") => {
@@ -125,17 +178,87 @@ const uploadGhanaCard = async (file: File, side: "front" | "back") => {
   }
 };
 
-// Ghana Card validation
-const ghanaCardRegex = /^GHA-\d{9}-\d$/i;
-const isGhanaCardValid = computed(() => ghanaCardRegex.test(form.ghanaCardNumber));
+const uploadAlternateIdScan = async (file: File) => {
+  uploadingAlternate.value = true;
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("idType", form.idType);
+
+    const response = await authFetch<{ success: boolean; data: { url: string } }>("/api/upload/alternate-id", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (response.success) {
+      form.alternateIdScanUrl = response.data.url;
+      clearFieldError("alternateIdScan");
+    }
+  } catch (err: unknown) {
+    const e = err as { data?: { message?: string } };
+    error.value = e.data?.message || "Failed to upload ID scan";
+  } finally {
+    uploadingAlternate.value = false;
+  }
+};
+
+// Active ID-number field across both paths
+const currentIdNumber = computed({
+  get: () => isGhanaCard.value ? form.ghanaCardNumber : form.alternateIdNumber,
+  set: (v: string) => {
+    if (isGhanaCard.value) form.ghanaCardNumber = v;
+    else form.alternateIdNumber = v;
+  },
+});
+
+const isIdNumberValid = computed(() =>
+  ID_NUMBER_REGEX[form.idType].test(currentIdNumber.value),
+);
+
+// Live uniqueness check
+const idNumberChecking = ref(false);
+const idNumberTaken = ref(false);
+
+const idNumberErrorKey = computed(() =>
+  isGhanaCard.value ? "ghanaCardNumber" : "alternateIdNumber",
+);
+
+const checkIdAvailability = useDebounceFn(async (value: string) => {
+  const trimmed = value.trim().toUpperCase();
+  if (!trimmed || !ID_NUMBER_REGEX[form.idType].test(trimmed)) {
+    idNumberChecking.value = false;
+    idNumberTaken.value = false;
+    return;
+  }
+  try {
+    const res = await authFetch<{ success: boolean; data: { available: boolean; invalid: boolean } }>(
+      "/api/profile/check-id",
+      { query: { idType: form.idType, number: trimmed } },
+    );
+    if (trimmed !== currentIdNumber.value.trim().toUpperCase()) return;
+    idNumberTaken.value = !res.data.available && !res.data.invalid;
+    if (idNumberTaken.value) {
+      fieldErrors[idNumberErrorKey.value] = "This ID number is already registered";
+    } else {
+      clearFieldError(idNumberErrorKey.value);
+    }
+  } catch {
+    // fail open — server enforces on submit
+  } finally {
+    idNumberChecking.value = false;
+  }
+}, 400);
 
 // Validate current step
 const _isStepValid = computed(() => {
   switch (currentStep.value) {
-    case 1:
-      return form.fullName.length >= 2 && isGhanaCardValid.value;
+    case 1: {
+      if (form.fullName.length < 2 || !isIdNumberValid.value) return false;
+      if (!isGhanaCard.value && !form.alternateIdReason) return false;
+      return true;
+    }
     case 2:
-      return form.ghanaCardFrontUrl !== "";
+      return isGhanaCard.value ? form.ghanaCardFrontUrl !== "" : form.alternateIdScanUrl !== "";
     case 3:
       return offices.value.length > 0;
     default:
@@ -143,31 +266,65 @@ const _isStepValid = computed(() => {
   }
 });
 
-// Convert Ghana Card number to uppercase as user types
-watch(() => form.ghanaCardNumber, (newVal) => {
+// Uppercase and trigger availability check on every change
+watch(currentIdNumber, (newVal) => {
   const upperVal = newVal.toUpperCase();
   if (newVal !== upperVal) {
-    form.ghanaCardNumber = upperVal;
+    currentIdNumber.value = upperVal;
+    return;
   }
+  idNumberTaken.value = false;
+  if (upperVal && ID_NUMBER_REGEX[form.idType].test(upperVal)) {
+    idNumberChecking.value = true;
+  } else {
+    idNumberChecking.value = false;
+  }
+  checkIdAvailability(upperVal);
+});
+
+// Switching ID type resets number/check state so stale errors don't leak
+watch(() => form.idType, () => {
+  form.ghanaCardNumber = "";
+  form.alternateIdNumber = "";
+  idNumberChecking.value = false;
+  idNumberTaken.value = false;
+  clearFieldError("ghanaCardNumber");
+  clearFieldError("alternateIdNumber");
+  clearFieldError("alternateIdReason");
 });
 
 // Validate and show field errors for current step
 const validateStep = (): boolean => {
   clearAll();
   switch (currentStep.value) {
-    case 1:
+    case 1: {
       if (!form.fullName || form.fullName.length < 2) {
         fieldErrors.fullName = "Name must be at least 2 characters";
       }
-      if (!form.ghanaCardNumber) {
-        fieldErrors.ghanaCardNumber = "Ghana Card number is required";
-      } else if (!isGhanaCardValid.value) {
-        fieldErrors.ghanaCardNumber = "Invalid format. Use: GHA-XXXXXXXXX-X";
+      const numberKey = idNumberErrorKey.value;
+      if (!currentIdNumber.value) {
+        fieldErrors[numberKey] = "ID number is required";
+      } else if (!isIdNumberValid.value) {
+        fieldErrors[numberKey] = `Invalid format. ${ID_NUMBER_HINT[form.idType]}`;
+      } else if (idNumberTaken.value) {
+        fieldErrors[numberKey] = "This ID number is already registered";
+      } else if (idNumberChecking.value) {
+        fieldErrors[numberKey] = "Checking availability, please wait…";
+      }
+      if (!isGhanaCard.value && !form.alternateIdReason) {
+        fieldErrors.alternateIdReason = "Please pick a reason for using an alternate ID";
       }
       break;
+    }
     case 2:
-      if (!form.ghanaCardFrontUrl) {
-        fieldErrors.ghanaCardFront = "Ghana Card front image is required";
+      if (isGhanaCard.value) {
+        if (!form.ghanaCardFrontUrl) {
+          fieldErrors.ghanaCardFront = "Ghana Card front image is required";
+        }
+      } else {
+        if (!form.alternateIdScanUrl) {
+          fieldErrors.alternateIdScan = "ID scan is required";
+        }
       }
       break;
     case 3:
@@ -213,16 +370,25 @@ const createProfile = async () => {
   error.value = "";
   isLoading.value = true;
 
+  const body = isGhanaCard.value
+    ? {
+      fullName: form.fullName,
+      idType: form.idType,
+      ghanaCardNumber: form.ghanaCardNumber,
+      ghanaCardFrontUrl: form.ghanaCardFrontUrl,
+      ghanaCardBackUrl: form.ghanaCardBackUrl || undefined,
+    }
+    : {
+      fullName: form.fullName,
+      idType: form.idType,
+      alternateIdNumber: form.alternateIdNumber,
+      alternateIdScanUrl: form.alternateIdScanUrl,
+      alternateIdReason: form.alternateIdReason,
+      alternateIdDetails: form.alternateIdDetails || undefined,
+    };
+
   try {
-    await authFetch("/api/profile", {
-      method: "POST",
-      body: {
-        fullName: form.fullName,
-        ghanaCardNumber: form.ghanaCardNumber,
-        ghanaCardFrontUrl: form.ghanaCardFrontUrl,
-        ghanaCardBackUrl: form.ghanaCardBackUrl || undefined,
-      },
-    });
+    await authFetch("/api/profile", { method: "POST", body });
   } catch (err: unknown) {
     error.value = handleServerError(err);
     throw err;
@@ -384,7 +550,7 @@ const handleSubmit = async () => {
 
             <FormField
               v-slot="{ id, ariaInvalid, ariaDescribedby }"
-              label="Full Name (as on Ghana Card)"
+              label="Full Name (as on your ID)"
               required
               :error="fieldErrors.fullName || (form.fullName && form.fullName.length < 2 ? 'Name must be at least 2 characters' : undefined)"
             >
@@ -402,64 +568,156 @@ const handleSubmit = async () => {
 
             <FormField
               required
-              hint="Format: GHA-XXXXXXXXX-X (e.g., GHA-123456789-0)"
-              :error="fieldErrors.ghanaCardNumber || (form.ghanaCardNumber && !isGhanaCardValid ? 'Invalid format. Use: GHA-XXXXXXXXX-X (e.g., GHA-123456789-0)' : undefined)"
+              hint="Most applicants will use a Ghana Card. Pick an alternate ID only if you genuinely don't have one yet."
+              :error="fieldErrors.idType"
             >
               <template #label>
-                Ghana Card Number
-                <HelpTip field-id="profile.ghanaCardNumber" />
+                Identification Document
+                <HelpTip field-id="profile.idType" />
+              </template>
+              <template #default="{ id: fieldId, ariaDescribedby }">
+                <Select v-model="form.idType">
+                  <SelectTrigger :id="fieldId" :aria-describedby="ariaDescribedby" class="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem
+                      v-for="opt in ID_TYPE_OPTIONS"
+                      :key="opt.value"
+                      :value="opt.value"
+                    >
+                      {{ opt.label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </template>
+            </FormField>
+
+            <FormField
+              required
+              :hint="idNumberChecking ? 'Checking availability…' : ID_NUMBER_HINT[form.idType]"
+              :error="fieldErrors[idNumberErrorKey] || (currentIdNumber && !isIdNumberValid ? `Invalid format. ${ID_NUMBER_HINT[form.idType]}` : undefined)"
+            >
+              <template #label>
+                {{ ID_TYPE_LABEL[form.idType] }} Number
+                <HelpTip v-if="isGhanaCard" field-id="profile.ghanaCardNumber" />
+                <HelpTip v-else field-id="profile.alternateIdNumber" />
               </template>
               <template #default="{ id, ariaInvalid, ariaDescribedby }">
                 <Input
                   :id="id"
-                  v-model="form.ghanaCardNumber"
+                  v-model="currentIdNumber"
                   type="text"
                   required
                   class="uppercase"
-                  placeholder="GHA-XXXXXXXXX-X"
-                  :aria-invalid="ariaInvalid"
+                  :placeholder="ID_NUMBER_PLACEHOLDER[form.idType]"
+                  :aria-invalid="ariaInvalid || idNumberTaken"
                   :aria-describedby="ariaDescribedby"
-                  @input="clearFieldError('ghanaCardNumber')"
                 />
               </template>
             </FormField>
+
+            <template v-if="!isGhanaCard">
+              <FormField required :error="fieldErrors.alternateIdReason">
+                <template #label>
+                  Why are you using an alternate ID?
+                  <HelpTip field-id="profile.alternateIdReason" />
+                </template>
+                <template #default="{ id: fieldId, ariaDescribedby }">
+                  <Select
+                    v-model="form.alternateIdReason"
+                    @update:model-value="clearFieldError('alternateIdReason')"
+                  >
+                    <SelectTrigger :id="fieldId" :aria-describedby="ariaDescribedby" class="w-full">
+                      <SelectValue placeholder="Select a reason" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem
+                        v-for="opt in ALT_REASON_OPTIONS"
+                        :key="opt.value"
+                        :value="opt.value"
+                      >
+                        {{ opt.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </template>
+              </FormField>
+
+              <FormField
+                v-slot="{ id, ariaDescribedby }"
+                label="Additional details (optional)"
+                hint="Anything else the Legal Unit reviewer should know — e.g. NIA application receipt number, expected card-collection date."
+              >
+                <Textarea
+                  :id="id"
+                  v-model="form.alternateIdDetails"
+                  :rows="3"
+                  :aria-describedby="ariaDescribedby"
+                  placeholder="Optional context"
+                />
+              </FormField>
+            </template>
           </div>
 
-          <!-- Step 2: Ghana Card Upload -->
+          <!-- Step 2: ID document upload -->
           <div v-show="currentStep === 2" class="space-y-6">
-            <h3 class="text-lg font-semibold text-foreground">Upload Ghana Card</h3>
+            <h3 class="text-lg font-semibold text-foreground">
+              {{ isGhanaCard ? "Upload Ghana Card" : `Upload ${ID_TYPE_LABEL[form.idType]} Scan` }}
+            </h3>
 
-            <AppFileUploadDropzone
-              label="Ghana Card Front"
-              required
-              :uploading="uploadingFront"
-              :image-url="form.ghanaCardFrontUrl"
-              image-alt="Ghana Card Front"
-              :error="fieldErrors.ghanaCardFront"
-              help-text="JPG or PNG. Click, press Enter, or drop a file."
-              success-text="Front uploaded successfully"
-              placeholder-text="Upload front of Ghana Card"
-              @file-selected="(file) => uploadGhanaCard(file, 'front')"
-            >
-              <template #label-suffix>
-                <HelpTip field-id="profile.ghanaCardFront" />
-              </template>
-            </AppFileUploadDropzone>
+            <template v-if="isGhanaCard">
+              <AppFileUploadDropzone
+                label="Ghana Card Front"
+                required
+                :uploading="uploadingFront"
+                :image-url="form.ghanaCardFrontUrl"
+                image-alt="Ghana Card Front"
+                :error="fieldErrors.ghanaCardFront"
+                help-text="JPG or PNG. Click, press Enter, or drop a file."
+                success-text="Front uploaded successfully"
+                placeholder-text="Upload front of Ghana Card"
+                @file-selected="(file) => uploadGhanaCard(file, 'front')"
+              >
+                <template #label-suffix>
+                  <HelpTip field-id="profile.ghanaCardFront" />
+                </template>
+              </AppFileUploadDropzone>
 
-            <AppFileUploadDropzone
-              label="Ghana Card Back (Optional)"
-              :uploading="uploadingBack"
-              :image-url="form.ghanaCardBackUrl"
-              image-alt="Ghana Card Back"
-              help-text="JPG or PNG. Click, press Enter, or drop a file."
-              success-text="Back uploaded successfully"
-              placeholder-text="Upload back of Ghana Card"
-              @file-selected="(file) => uploadGhanaCard(file, 'back')"
-            >
-              <template #label-suffix>
-                <HelpTip field-id="profile.ghanaCardBack" />
-              </template>
-            </AppFileUploadDropzone>
+              <AppFileUploadDropzone
+                label="Ghana Card Back (Optional)"
+                :uploading="uploadingBack"
+                :image-url="form.ghanaCardBackUrl"
+                image-alt="Ghana Card Back"
+                help-text="JPG or PNG. Click, press Enter, or drop a file."
+                success-text="Back uploaded successfully"
+                placeholder-text="Upload back of Ghana Card"
+                @file-selected="(file) => uploadGhanaCard(file, 'back')"
+              >
+                <template #label-suffix>
+                  <HelpTip field-id="profile.ghanaCardBack" />
+                </template>
+              </AppFileUploadDropzone>
+            </template>
+
+            <template v-else>
+              <AppFileUploadDropzone
+                :label="`${ID_TYPE_LABEL[form.idType]} Scan`"
+                required
+                :uploading="uploadingAlternate"
+                :image-url="form.alternateIdScanUrl"
+                :image-alt="`${ID_TYPE_LABEL[form.idType]} Scan`"
+                :error="fieldErrors.alternateIdScan"
+                help-text="JPG or PNG of your ID. A clear photo of the page showing your name and number is fine."
+                success-text="Scan uploaded successfully"
+                :placeholder-text="`Upload a scan of your ${ID_TYPE_LABEL[form.idType]}`"
+                @file-selected="uploadAlternateIdScan"
+              >
+                <template #label-suffix>
+                  <HelpTip field-id="profile.alternateIdScan" />
+                </template>
+              </AppFileUploadDropzone>
+            </template>
           </div>
 
           <!-- Step 3: Office Details -->

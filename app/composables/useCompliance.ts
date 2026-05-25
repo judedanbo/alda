@@ -12,7 +12,9 @@ export interface ComplianceSummaryData {
 export interface ComplianceListItem {
   applicantId: string;
   fullName: string | null;
+  idType: import("~/utils/displayId").IdType | null;
   ghanaCardNumber: string | null;
+  alternateIdNumber: string | null;
   institution: string | null;
   institutionId: string | null;
   designation: string;

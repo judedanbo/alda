@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import { displayId, type IdType } from "~/utils/displayId";
+
 interface ReissueApplicant {
   fullName: string;
-  ghanaCardNumber: string;
+  idType: IdType;
+  ghanaCardNumber: string | null;
+  alternateIdNumber: string | null;
   user: { email: string };
 }
 
@@ -147,7 +151,7 @@ const formatDate = (date: string) =>
                     <span class="font-mono text-sm text-primary ml-2">{{ request.declaration?.uniqueCode }}</span>
                   </p>
                   <p class="text-sm text-muted-foreground">
-                    {{ request.declaration?.applicant?.ghanaCardNumber }}
+                    {{ request.declaration?.applicant ? displayId(request.declaration.applicant).value : "" }}
                     &bull; {{ request.declaration?.applicant?.user?.email }}
                   </p>
                   <p class="text-xs text-muted-foreground mt-1">

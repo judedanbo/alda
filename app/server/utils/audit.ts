@@ -56,6 +56,9 @@ export const AuditActions = {
   PASSWORD_RESET_REQUESTED: "password_reset_requested",
   PASSWORD_RESET_COMPLETED: "password_reset_completed",
   EMAIL_VERIFIED: "email_verified",
+  PHONE_CODE_REQUESTED: "phone_code_requested",
+  PHONE_VERIFIED: "phone_verified",
+  PHONE_VERIFICATION_FAILED: "phone_verification_failed",
 
   // Profile
   PROFILE_CREATED: "profile_created",

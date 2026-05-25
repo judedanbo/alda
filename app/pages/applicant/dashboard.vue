@@ -4,7 +4,7 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { user, isEmailVerified, isVerified } = useAuth();
+const { user, isEmailVerified, isPhoneVerified, isVerified, sendPhoneCode, verifyPhone } = useAuth();
 
 interface CodeHistoryEntry {
   id: string;
@@ -67,8 +67,17 @@ const canCreateDeclaration = computed(
   () =>
     user.value?.hasProfile &&
     isVerified.value &&
+    isPhoneVerified.value &&
     !dashboard.value?.activeDeclaration,
 );
+
+const createDeclarationDisabledReason = computed(() => {
+  if (!user.value?.hasProfile) return "Complete your applicant profile first.";
+  if (!isVerified.value) return "Your registration must be verified by the Legal Unit first.";
+  if (!isPhoneVerified.value) return "Verify your phone number first.";
+  if (dashboard.value?.activeDeclaration) return "You already have an active declaration.";
+  return "";
+});
 
 async function copyCode() {
   const code = dashboard.value?.activeDeclaration?.uniqueCode;
@@ -92,6 +101,63 @@ async function resendVerification() {
     alert(err.data?.message || "Failed to send verification email.");
   } finally {
     resendLoading.value = false;
+  }
+}
+
+// Phone verification state — two render modes inside one banner.
+const phoneCodeSent = ref(false);
+const phoneCodeInput = ref("");
+const phoneCodeError = ref("");
+const phoneCodeSending = ref(false);
+const phoneCodeVerifying = ref(false);
+const phoneResendSeconds = ref(0);
+let phoneResendTimer: ReturnType<typeof setInterval> | null = null;
+
+function startResendCountdown(seconds: number) {
+  phoneResendSeconds.value = seconds;
+  if (phoneResendTimer) clearInterval(phoneResendTimer);
+  phoneResendTimer = setInterval(() => {
+    phoneResendSeconds.value -= 1;
+    if (phoneResendSeconds.value <= 0 && phoneResendTimer) {
+      clearInterval(phoneResendTimer);
+      phoneResendTimer = null;
+    }
+  }, 1000);
+}
+
+onUnmounted(() => {
+  if (phoneResendTimer) clearInterval(phoneResendTimer);
+});
+
+async function handleSendPhoneCode() {
+  phoneCodeError.value = "";
+  phoneCodeSending.value = true;
+  const result = await sendPhoneCode();
+  phoneCodeSending.value = false;
+  if (result.success) {
+    phoneCodeSent.value = true;
+    startResendCountdown(60);
+  } else {
+    phoneCodeError.value = result.error || "Failed to send code";
+    if (result.retryInSec) startResendCountdown(result.retryInSec);
+  }
+}
+
+async function handleVerifyPhone() {
+  phoneCodeError.value = "";
+  if (!/^\d{6}$/.test(phoneCodeInput.value)) {
+    phoneCodeError.value = "Enter the 6-digit code from the SMS";
+    return;
+  }
+  phoneCodeVerifying.value = true;
+  const result = await verifyPhone(phoneCodeInput.value);
+  phoneCodeVerifying.value = false;
+  if (result.success) {
+    phoneCodeSent.value = false;
+    phoneCodeInput.value = "";
+    if (phoneResendTimer) clearInterval(phoneResendTimer);
+  } else {
+    phoneCodeError.value = result.error || "Verification failed";
   }
 }
 </script>
@@ -140,6 +206,85 @@ async function resendVerification() {
       >
         {{ resendLoading ? "Sending..." : "Resend" }}
       </Button>
+    </div>
+
+    <!-- Phone Verification Banner -->
+    <div
+      v-if="user && !isPhoneVerified"
+      class="bg-amber-50 border border-amber-200 rounded-lg p-4 dark:bg-amber-950/30 dark:border-amber-900"
+    >
+      <div class="flex items-start gap-3">
+        <svg
+          class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5 dark:text-amber-400"
+          fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <div class="flex-1 min-w-0">
+          <p class="font-medium text-amber-800 dark:text-amber-200">
+            Verify your phone number
+          </p>
+          <p class="text-sm text-amber-600 dark:text-amber-400 mt-1">
+            <template v-if="!user.phone">
+              Add a phone number to your account before you can verify it. A verified phone is required to create declarations.
+            </template>
+            <template v-else>
+              We'll send a 6-digit code to <span class="font-mono">{{ user.phone }}</span>. You must verify your phone before you can create declarations.
+            </template>
+          </p>
+
+          <div v-if="user.phone" class="mt-3">
+            <!-- Idle state -->
+            <div v-if="!phoneCodeSent" class="flex items-center gap-2 flex-wrap">
+              <Button
+                size="sm"
+                variant="outline"
+                :disabled="phoneCodeSending || phoneResendSeconds > 0"
+                @click="handleSendPhoneCode"
+              >
+                <template v-if="phoneCodeSending">Sending…</template>
+                <template v-else-if="phoneResendSeconds > 0">Resend in {{ phoneResendSeconds }}s</template>
+                <template v-else>Send code</template>
+              </Button>
+            </div>
+
+            <!-- Code-sent state -->
+            <div v-else class="space-y-2">
+              <div class="flex items-center gap-2 flex-wrap">
+                <Input
+                  v-model="phoneCodeInput"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="one-time-code"
+                  maxlength="6"
+                  placeholder="123456"
+                  class="w-32 font-mono tracking-widest text-center"
+                  aria-label="6-digit SMS verification code"
+                  @input="phoneCodeError = ''"
+                />
+                <Button
+                  size="sm"
+                  :disabled="phoneCodeVerifying || phoneCodeInput.length !== 6"
+                  @click="handleVerifyPhone"
+                >
+                  {{ phoneCodeVerifying ? "Verifying…" : "Verify" }}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  :disabled="phoneCodeSending || phoneResendSeconds > 0"
+                  @click="handleSendPhoneCode"
+                >
+                  <template v-if="phoneResendSeconds > 0">Resend in {{ phoneResendSeconds }}s</template>
+                  <template v-else>Resend code</template>
+                </Button>
+              </div>
+            </div>
+
+            <p v-if="phoneCodeError" class="text-xs text-destructive mt-2">{{ phoneCodeError }}</p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Profile Setup Alert -->
@@ -449,6 +594,8 @@ async function resendVerification() {
                   ? 'hover:bg-muted'
                   : 'opacity-50 pointer-events-none cursor-not-allowed'
               "
+              :title="canCreateDeclaration ? undefined : createDeclarationDisabledReason"
+              :aria-disabled="!canCreateDeclaration"
             >
               <div
                 class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center"
@@ -471,11 +618,7 @@ async function resendVerification() {
               <div>
                 <p class="font-medium text-sm">New Declaration</p>
                 <p class="text-xs text-muted-foreground">
-                  {{
-                    canCreateDeclaration
-                      ? "Submit a new declaration"
-                      : "Active declaration in progress"
-                  }}
+                  {{ canCreateDeclaration ? "Submit a new declaration" : createDeclarationDisabledReason }}
                 </p>
               </div>
             </NuxtLink>

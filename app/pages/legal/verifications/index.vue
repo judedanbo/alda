@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { displayId, type IdType } from "~/utils/displayId";
+
 interface ProfileUser {
   email: string;
   phone: string | null;
@@ -24,7 +26,9 @@ interface ProfileOffice {
 interface ProfileListItem {
   id: string;
   fullName: string;
-  ghanaCardNumber: string;
+  idType: IdType;
+  ghanaCardNumber: string | null;
+  alternateIdNumber: string | null;
   verificationStatus: string;
   createdAt: string;
   user: ProfileUser;
@@ -97,7 +101,7 @@ const formatDate = (date: string) =>
         <Input
           v-model="search"
           type="search"
-          placeholder="Search by name, Ghana Card, or email..."
+          placeholder="Search by name, ID number, or email..."
         />
       </div>
       <Select v-model="statusFilter">
@@ -163,7 +167,7 @@ const formatDate = (date: string) =>
                 <div>
                   <p class="font-medium text-foreground">{{ profile.fullName }}</p>
                   <p class="text-sm text-muted-foreground">
-                    {{ profile.ghanaCardNumber }} &bull; {{ profile.user?.email }}
+                    {{ displayId(profile).value }} &bull; {{ profile.user?.email }}
                   </p>
                   <p class="text-xs text-muted-foreground mt-1">
                     <template v-if="profile.offices?.[0]">

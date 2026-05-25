@@ -19,7 +19,9 @@ interface Declaration {
   status: string;
   applicant: {
     fullName: string;
-    ghanaCardNumber: string;
+    idType: import("~/utils/displayId").IdType;
+    ghanaCardNumber: string | null;
+    alternateIdNumber: string | null;
     offices: Array<{
       officeCategory: { name: string } | null;
       institution: { name: string } | null;

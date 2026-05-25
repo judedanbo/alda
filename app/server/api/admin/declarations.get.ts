@@ -39,6 +39,7 @@ export default defineEventHandler(async (event) => {
       { uniqueCode: { contains: search, mode: "insensitive" } },
       { applicant: { fullName: { contains: search, mode: "insensitive" } } },
       { applicant: { ghanaCardNumber: { contains: search, mode: "insensitive" } } },
+      { applicant: { alternateIdNumber: { contains: search, mode: "insensitive" } } },
     ];
   }
 
@@ -128,7 +129,9 @@ export default defineEventHandler(async (event) => {
         createdAt: d.createdAt.toISOString(),
         applicant: {
           fullName: d.applicant.fullName,
+          idType: d.applicant.idType,
           ghanaCardNumber: d.applicant.ghanaCardNumber,
+          alternateIdNumber: d.applicant.alternateIdNumber,
           offices: d.applicant.offices,
           user: d.applicant.user,
         },

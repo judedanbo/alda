@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useDebounceFn } from "@vueuse/core";
 import { useAuthStore } from "~/stores/auth";
 
 definePageMeta({
@@ -19,7 +20,62 @@ const form = reactive({
 const error = ref("");
 const isLoading = ref(false);
 const submitted = ref(false);
+const phoneChecking = ref(false);
+const phoneTaken = ref(false);
 const { fieldErrors, clearFieldError, clearAll } = useFieldErrors();
+
+// E.164: leading +, country code 1-9, total 8-15 digits.
+const e164Regex = /^\+[1-9]\d{6,14}$/;
+// Bare Ghana local form (0XXXXXXXXX) — accept so the user can keep typing
+// the way they used to; the server promotes it to +233...
+const ghanaLocalRegex = /^0[2-9]\d{8}$/;
+const isPhoneShapeValid = (raw: string) => {
+  const s = raw.replace(/[\s().-]+/g, "");
+  return e164Regex.test(s) || ghanaLocalRegex.test(s);
+};
+
+const checkPhoneAvailability = useDebounceFn(async (value: string) => {
+  const trimmed = value.replace(/[\s().-]+/g, "");
+  if (!trimmed) {
+    phoneChecking.value = false;
+    phoneTaken.value = false;
+    return;
+  }
+  if (!isPhoneShapeValid(trimmed)) {
+    phoneChecking.value = false;
+    phoneTaken.value = false;
+    return;
+  }
+  try {
+    const res = await $fetch<{ success: boolean; data: { available: boolean; invalid: boolean } }>(
+      "/api/auth/check-phone",
+      { query: { phone: trimmed } },
+    );
+    if (trimmed !== form.phone.trim().replace(/\s+/g, "")) return;
+    phoneTaken.value = !res.data.available && !res.data.invalid;
+    if (phoneTaken.value) {
+      fieldErrors.phone = "This phone number is already registered";
+    } else {
+      clearFieldError("phone");
+    }
+  } catch {
+    // fail open — server check still runs on submit
+  } finally {
+    phoneChecking.value = false;
+  }
+}, 400);
+
+watch(() => form.phone, (value) => {
+  phoneTaken.value = false;
+  clearFieldError("phone");
+  const trimmed = value.replace(/[\s().-]+/g, "");
+  if (trimmed && isPhoneShapeValid(trimmed)) {
+    phoneChecking.value = true;
+  } else {
+    phoneChecking.value = false;
+  }
+  checkPhoneAvailability(value);
+});
 
 const passwordErrors = computed(() => {
   const errors: string[] = [];
@@ -51,7 +107,9 @@ const isFormValid = computed(() => {
     form.confirmPassword &&
     passwordErrors.value.length === 0 &&
     passwordsMatch.value &&
-    form.acceptTerms
+    form.acceptTerms &&
+    !phoneTaken.value &&
+    !phoneChecking.value
   );
 });
 
@@ -66,6 +124,7 @@ const handleSubmit = async () => {
   if (!form.confirmPassword) fieldErrors.confirmPassword = "Please confirm your password";
   else if (!passwordsMatch.value) fieldErrors.confirmPassword = "Passwords do not match";
   if (!form.acceptTerms) fieldErrors.acceptTerms = "You must accept the terms";
+  if (phoneTaken.value) fieldErrors.phone = "This phone number is already registered";
 
   if (Object.keys(fieldErrors).length > 0) return;
   if (!isFormValid.value) return;
@@ -134,7 +193,7 @@ const handleSubmit = async () => {
           <FormField
             v-slot="{ id, ariaInvalid, ariaDescribedby }"
             label="Phone number"
-            hint="Ghana phone number format: +233XXXXXXXXX or 0XXXXXXXXX"
+            :hint="phoneChecking ? 'Checking availability…' : 'Include your country code, e.g. +233241234567 or +14155551234'"
             :error="fieldErrors.phone"
           >
             <Input
@@ -142,10 +201,9 @@ const handleSubmit = async () => {
               v-model="form.phone"
               type="tel"
               autocomplete="tel"
-              placeholder="+233 XX XXX XXXX"
-              :aria-invalid="ariaInvalid"
+              placeholder="+233241234567"
+              :aria-invalid="ariaInvalid || phoneTaken"
               :aria-describedby="ariaDescribedby"
-              @input="clearFieldError('phone')"
             />
           </FormField>
 
