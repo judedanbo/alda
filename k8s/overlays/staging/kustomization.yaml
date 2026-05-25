@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: adla-staging
+
+resources:
+  - ../../base
+
+patches:
+  - path: namespace-patch.yaml
+  - path: configmap-patch.yaml
+  - path: ingress-patch.yaml
+  - path: secret-provider-patch.yaml
+  - path: hpa-patch.yaml
+
+images:
+  - name: adlaacr.azurecr.io/adla-app
+    newTag: staging-latest
+  - name: adlaacr.azurecr.io/adla-migrate
+    newTag: staging-latest
