@@ -31,7 +31,9 @@ function getMinioClient(): Client {
     minioClient = new Client({
       endPoint: config.minioEndpoint,
       port: config.minioPort,
-      useSSL: false,
+      // Server-to-MinIO TLS. False for the local dev stack; true for any
+      // production deploy whose MinIO link crosses a network segment.
+      useSSL: config.minioUseSSL,
       accessKey: config.minioAccessKey,
       secretKey: config.minioSecretKey,
     });
@@ -246,55 +248,143 @@ export async function getPresignedUrl(
 }
 
 /**
- * Validate image file
+ * Trusted content type for an upload — one we can serve safely with the
+ * matching response header.
  */
-export function validateImageFile(
-  contentType: string,
-  size: number
-): { valid: boolean; error?: string } {
-  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-  const maxSize = 5 * 1024 * 1024; // 5MB
+export type SupportedUploadType = "image/jpeg" | "image/png" | "image/webp" | "application/pdf";
 
-  if (!allowedTypes.includes(contentType)) {
-    return {
-      valid: false,
-      error: "Invalid file type. Only JPEG, PNG, and WebP images are allowed.",
-    };
+/**
+ * Inspect the first bytes of a file and return the content-type implied by
+ * its signature, or `null` when the file isn't one of the supported formats.
+ *
+ * Used to reject the H-4 polyglot attack: a payload labelled `image/jpeg`
+ * that actually carries HTML or SVG (which a browser could execute if it
+ * ever sniffs the response). We trust the bytes, not the client's claim.
+ *
+ * Anything starting with `<` is treated as text-shaped (HTML / SVG / XML)
+ * and rejected explicitly, so a renamed `.html` can't slip through under a
+ * future "unknown format" allowance.
+ */
+export function detectMagicType(buffer: Buffer): SupportedUploadType | null {
+  if (!buffer || buffer.length < 4) return null;
+
+  // JPEG: FF D8 FF
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return "image/jpeg";
   }
 
-  if (size > maxSize) {
-    return {
-      valid: false,
-      error: "File too large. Maximum size is 5MB.",
-    };
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (
+    buffer.length >= 8
+    && buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47
+    && buffer[4] === 0x0d && buffer[5] === 0x0a && buffer[6] === 0x1a && buffer[7] === 0x0a
+  ) {
+    return "image/png";
   }
 
-  return { valid: true };
+  // WebP: "RIFF"...."WEBP"
+  if (
+    buffer.length >= 12
+    && buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46
+    && buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50
+  ) {
+    return "image/webp";
+  }
+
+  // PDF: "%PDF-"
+  if (
+    buffer.length >= 5
+    && buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46
+    && buffer[4] === 0x2d
+  ) {
+    return "application/pdf";
+  }
+
+  // Explicit reject for anything text-shaped (HTML / SVG / XML), so a
+  // future allowance for "unknown bytes" can't accidentally let these
+  // through. Leading whitespace is permitted before the `<` because
+  // browsers tolerate it when MIME-sniffing.
+  let i = 0;
+  while (i < buffer.length && i < 32 && (buffer[i] === 0x20 || buffer[i] === 0x09 || buffer[i] === 0x0a || buffer[i] === 0x0d)) {
+    i++;
+  }
+  if (i < buffer.length && buffer[i] === 0x3c /* '<' */) return null;
+
+  return null;
+}
+
+const IMAGE_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+const DOCUMENT_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+
+const IMAGE_ALLOWED = new Set<SupportedUploadType>(["image/jpeg", "image/png", "image/webp"]);
+const DOCUMENT_ALLOWED = new Set<SupportedUploadType>([
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
+export interface FileValidationResult {
+  valid: boolean;
+  error?: string;
+  /** Trusted content-type derived from the file's bytes. Use this when
+   * writing to MinIO so the served object can't be replayed with a
+   * client-chosen Content-Type (e.g. `text/html`). */
+  contentType?: SupportedUploadType;
+}
+
+function validateAgainstAllowList(
+  file: Buffer,
+  declaredType: string,
+  allowed: Set<SupportedUploadType>,
+  maxBytes: number,
+  fileKindLabel: string,
+): FileValidationResult {
+  if (!allowed.has(declaredType as SupportedUploadType)) {
+    return { valid: false, error: `Invalid file type. Allowed: ${[...allowed].join(", ")}.` };
+  }
+  if (file.length > maxBytes) {
+    return {
+      valid: false,
+      error: `File too large. Maximum size is ${Math.round(maxBytes / 1024 / 1024)}MB.`,
+    };
+  }
+  const sniffed = detectMagicType(file);
+  if (sniffed === null) {
+    return {
+      valid: false,
+      error: `File contents don't look like a supported ${fileKindLabel}.`,
+    };
+  }
+  if (sniffed !== declaredType) {
+    return {
+      valid: false,
+      error: "File contents don't match the declared type.",
+    };
+  }
+  return { valid: true, contentType: sniffed };
 }
 
 /**
- * Validate document file (scanned letters: PDF or image)
+ * Validate an image upload. Sniffs magic bytes; rejects when the file's
+ * actual content doesn't match the declared type. Returns the trusted
+ * content-type the caller should use when storing the object — bypassing
+ * the client-supplied value entirely.
  */
-export function validateDocumentFile(
-  contentType: string,
-  size: number
-): { valid: boolean; error?: string } {
-  const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
-  const maxSize = 10 * 1024 * 1024; // 10MB
+export function validateImageFile(file: Buffer, declaredType: string): FileValidationResult {
+  return validateAgainstAllowList(file, declaredType, IMAGE_ALLOWED, IMAGE_MAX_BYTES, "image");
+}
 
-  if (!allowedTypes.includes(contentType)) {
-    return {
-      valid: false,
-      error: "Invalid file type. Only PDF, JPEG, PNG, and WebP files are allowed.",
-    };
-  }
-
-  if (size > maxSize) {
-    return {
-      valid: false,
-      error: "File too large. Maximum size is 10MB.",
-    };
-  }
-
-  return { valid: true };
+/**
+ * Validate a document upload (PDF or image). Same magic-byte contract as
+ * `validateImageFile` with the wider allow list and a 10 MB cap.
+ */
+export function validateDocumentFile(file: Buffer, declaredType: string): FileValidationResult {
+  return validateAgainstAllowList(
+    file,
+    declaredType,
+    DOCUMENT_ALLOWED,
+    DOCUMENT_MAX_BYTES,
+    "image or PDF",
+  );
 }

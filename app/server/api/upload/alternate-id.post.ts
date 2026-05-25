@@ -43,11 +43,12 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const contentType = fileField.type || "image/jpeg";
+  const declaredType = fileField.type || "image/jpeg";
   const originalName = fileField.filename || "alternate-id.jpg";
 
-  const validation = validateImageFile(contentType, fileField.data.length);
-  if (!validation.valid) {
+  // Magic-byte validation — see ghana-card.post.ts for rationale.
+  const validation = validateImageFile(fileField.data, declaredType);
+  if (!validation.valid || !validation.contentType) {
     throw createError({
       statusCode: 400,
       statusMessage: "Bad Request",
@@ -58,7 +59,7 @@ export default defineEventHandler(async (event) => {
   const result = await uploadAlternateIdScan(
     fileField.data,
     originalName,
-    contentType,
+    validation.contentType,
     auth.userId,
     idType,
   );

@@ -47,11 +47,12 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const contentType = fileField.type || "application/pdf";
+  const declaredType = fileField.type || "application/pdf";
   const originalName = fileField.filename || "reissue-letter.pdf";
 
-  const validation = validateDocumentFile(contentType, fileField.data.length);
-  if (!validation.valid) {
+  // Magic-byte validation — see ghana-card.post.ts for rationale.
+  const validation = validateDocumentFile(fileField.data, declaredType);
+  if (!validation.valid || !validation.contentType) {
     throw createError({
       statusCode: 400,
       statusMessage: "Bad Request",
@@ -62,7 +63,7 @@ export default defineEventHandler(async (event) => {
   const result = await uploadFile(
     fileField.data,
     originalName,
-    contentType,
+    validation.contentType,
     "reissue-letters"
   );
 

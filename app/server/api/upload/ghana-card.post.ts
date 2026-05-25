@@ -42,12 +42,13 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const contentType = fileField.type || "image/jpeg";
+  const declaredType = fileField.type || "image/jpeg";
   const originalName = fileField.filename || "ghana-card.jpg";
 
-  // Validate file
-  const validation = validateImageFile(contentType, fileField.data.length);
-  if (!validation.valid) {
+  // Magic-byte validation rejects polyglots regardless of client-claimed
+  // Content-Type. The returned `contentType` is the trusted one to store.
+  const validation = validateImageFile(fileField.data, declaredType);
+  if (!validation.valid || !validation.contentType) {
     throw createError({
       statusCode: 400,
       statusMessage: "Bad Request",
@@ -55,11 +56,11 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Upload to MinIO
+  // Upload to MinIO using the sniffed content-type, never the client claim.
   const result = await uploadGhanaCard(
     fileField.data,
     originalName,
-    contentType,
+    validation.contentType,
     auth.userId,
     side
   );

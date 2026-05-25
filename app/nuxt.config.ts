@@ -78,6 +78,7 @@ export default defineNuxtConfig({
     // MinIO
     minioEndpoint: process.env.MINIO_ENDPOINT || "localhost",
     minioPort: parseInt(process.env.MINIO_PORT || "9000"),
+    minioUseSSL: envBool(process.env.MINIO_USE_SSL, false),
     minioAccessKey: process.env.MINIO_ACCESS_KEY || "minioadmin",
     minioSecretKey: process.env.MINIO_SECRET_KEY || "minioadmin",
     minioBucket: process.env.MINIO_BUCKET || "adla-uploads",
