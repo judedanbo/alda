@@ -178,9 +178,9 @@ const handleLogout = async () => {
                 <DropdownMenuTrigger as-child>
                   <button class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-muted">
                     <div class="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
-                      {{ authStore.user?.email?.charAt(0).toUpperCase() }}
+                      {{ (authStore.user?.fullName || authStore.user?.email)?.charAt(0).toUpperCase() }}
                     </div>
-                    <span class="hidden md:inline text-sm text-foreground">{{ authStore.user?.email }}</span>
+                    <span class="hidden md:inline text-sm text-foreground">{{ authStore.user?.fullName || authStore.user?.email }}</span>
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" class="w-56">

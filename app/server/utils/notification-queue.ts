@@ -19,8 +19,9 @@ import prisma from "~/server/utils/prisma";
 import { sendEmail, type EmailTemplate } from "~/server/services/email.service";
 import { sendSms } from "~/server/services/sms.service";
 
-export const EMAIL_QUEUE_NAME = "notifications:email";
-export const SMS_QUEUE_NAME = "notifications:sms";
+// BullMQ disallows `:` in queue names because Redis uses it as a key separator.
+export const EMAIL_QUEUE_NAME = "notifications-email";
+export const SMS_QUEUE_NAME = "notifications-sms";
 
 export interface EmailJobData {
   deliveryLogId: string;

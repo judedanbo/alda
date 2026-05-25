@@ -33,8 +33,8 @@ const open = ref(false);
           signed in.
         </SheetDescription>
       </SheetHeader>
-      <AppAccessibilityPanel class="mt-6" />
-      <div class="mt-6 border-t pt-4 text-sm">
+      <AppAccessibilityPanel class="mt-6 mx-4" />
+      <div class="mt-6 border-t pt-4 text-sm mx-4">
         <NuxtLink to="/accessibility" class="text-primary hover:underline">
           Read our accessibility statement →
         </NuxtLink>

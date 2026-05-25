@@ -5,6 +5,13 @@ import { Button } from "~/components/ui/button";
 import { Switch } from "~/components/ui/switch";
 import { Alert, AlertDescription } from "~/components/ui/alert";
 import { Input } from "~/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 
 definePageMeta({
   layout: "dashboard",
@@ -96,15 +103,16 @@ async function send() {
       <CardContent class="space-y-4">
         <div class="space-y-2">
           <Label for="type">Notification type</Label>
-          <select
-            id="type"
-            v-model="selectedType"
-            class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          >
-            <option v-for="t in TYPES" :key="t.value" :value="t.value">
-              {{ t.label }}
-            </option>
-          </select>
+          <Select v-model="selectedType">
+            <SelectTrigger id="type" class="w-full">
+              <SelectValue placeholder="Select a notification type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="t in TYPES" :key="t.value" :value="t.value">
+                {{ t.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div class="space-y-2">
