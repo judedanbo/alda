@@ -114,6 +114,13 @@ export default defineNuxtConfig({
       aiDetectionEnabled: envBool(process.env.ANALYTICS_AI_DETECTION_ENABLED, true),
       rateLimitEnabled: envBool(process.env.ANALYTICS_RATE_LIMIT_ENABLED, true),
       ipSalt: process.env.ANALYTICS_IP_SALT || "change-this-analytics-ip-salt-in-production",
+      // Comma-separated CIDRs (IPv4/IPv6) whose `X-Forwarded-For` is honored.
+      // Empty = trust no forwarding headers; use the socket peer. See
+      // server/utils/request-meta.ts:extractClientIp.
+      trustedProxies: (process.env.ANALYTICS_TRUSTED_PROXIES || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
       respectDnt: envBool(process.env.ANALYTICS_RESPECT_DNT, true),
       retentionDays: envNum(process.env.ANALYTICS_RETENTION_DAYS, 30),
       rollupRetentionDays: envNum(process.env.ANALYTICS_ROLLUP_RETENTION_DAYS, 365),

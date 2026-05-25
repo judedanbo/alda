@@ -1,6 +1,7 @@
 import type { H3Event } from "h3";
 import { Prisma } from "@prisma/client";
 import prisma from "./prisma";
+import { extractClientIp } from "./request-meta";
 
 export interface AuditLogData {
   userId?: string;
@@ -18,9 +19,7 @@ export async function createAuditLog(
   event: H3Event,
   data: AuditLogData
 ): Promise<void> {
-  const ipAddress = getHeader(event, "x-forwarded-for")?.split(",")[0]?.trim()
-    || getHeader(event, "x-real-ip")
-    || "unknown";
+  const ipAddress = extractClientIp(event);
   const userAgent = getHeader(event, "user-agent") || "unknown";
   const sessionId = getCookie(event, "session_id") || undefined;
 

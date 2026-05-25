@@ -22,6 +22,13 @@ export interface AnalyticsConfig {
   rateLimitEnabled: boolean;
   /** Salt for hashing client IPs before storage. */
   ipSalt: string;
+  /**
+   * CIDRs (IPv4 or IPv6) whose `X-Forwarded-For` / `X-Real-IP` headers may
+   * be trusted. The socket peer must match one of these for forwarding
+   * headers to be honored — otherwise the socket peer is treated as the
+   * client. Empty list = trust nothing (correct for bare-Node deployments).
+   */
+  trustedProxies: string[];
   /** Honour the `DNT: 1` request header. */
   respectDnt: boolean;
   /** Days to keep raw traffic events. */
@@ -89,6 +96,9 @@ export function getAnalyticsConfig(): AnalyticsConfig {
     aiDetectionEnabled: raw.aiDetectionEnabled !== false,
     rateLimitEnabled: raw.rateLimitEnabled !== false,
     ipSalt: String(raw.ipSalt || "adla-analytics-default-salt"),
+    trustedProxies: Array.isArray(raw.trustedProxies)
+      ? (raw.trustedProxies as unknown[]).map((p) => String(p).trim()).filter(Boolean)
+      : [],
     respectDnt: raw.respectDnt !== false,
     retentionDays: Number(raw.retentionDays) || 30,
     rollupRetentionDays: Number(raw.rollupRetentionDays) || 365,
