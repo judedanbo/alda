@@ -1,6 +1,11 @@
 import { useAuthStore } from "~/stores/auth";
 
 export default defineNuxtRouteMiddleware(async (to) => {
+  // Auth state lives in localStorage (see plugins/auth.ts) and is unreachable
+  // during SSR, so this middleware runs on the client only — otherwise the
+  // server would force-redirect every authenticated request to /auth/login.
+  if (import.meta.server) return;
+
   const authStore = useAuthStore();
 
   // Initialize auth state
