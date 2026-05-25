@@ -1,5 +1,6 @@
 import prisma from "~/server/utils/prisma";
 import { logAction } from "~/server/utils/audit";
+import { presignStored } from "~/server/services/storage.service";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -119,10 +120,31 @@ export default defineEventHandler(async (event) => {
     event,
   });
 
+  const [ghanaCardFrontUrl, ghanaCardBackUrl, alternateIdScanUrl, signedReceipts] = await Promise.all([
+    presignStored(declaration.applicant.ghanaCardFrontUrl),
+    presignStored(declaration.applicant.ghanaCardBackUrl),
+    presignStored(declaration.applicant.alternateIdScanUrl),
+    Promise.all(
+      declaration.receipts.map(async (r) => ({
+        ...r,
+        pdfUrl: await presignStored(r.pdfUrl),
+      })),
+    ),
+  ]);
+
   return {
     success: true,
     data: {
-      declaration,
+      declaration: {
+        ...declaration,
+        applicant: {
+          ...declaration.applicant,
+          ghanaCardFrontUrl,
+          ghanaCardBackUrl,
+          alternateIdScanUrl,
+        },
+        receipts: signedReceipts,
+      },
       verification: {
         verified: true,
         verifiedAt: new Date().toISOString(),

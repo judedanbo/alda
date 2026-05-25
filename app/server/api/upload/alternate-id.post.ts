@@ -67,6 +67,9 @@ export default defineEventHandler(async (event) => {
     success: true,
     message: "Alternate ID scan uploaded successfully",
     data: {
+      // `key` is the durable identifier — persist this in the profile.
+      // `url` is a short-lived presigned URL for immediate preview only.
+      key: result.key,
       url: result.url,
       idType,
     },

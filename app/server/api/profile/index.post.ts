@@ -4,6 +4,7 @@ import prisma from "~/server/utils/prisma";
 import { validateBody, applicantProfileSchema } from "~/server/utils/validators";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
 import { notifyVerificationSubmitted } from "~/server/services/notification.service";
+import { presignStored } from "~/server/services/storage.service";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -125,9 +126,21 @@ export default defineEventHandler(async (event) => {
   // uses a different key (see resubmit endpoint).
   await notifyVerificationSubmitted(auth.userId, data.fullName, profile.id);
 
+  // Re-sign the stored keys for client preview.
+  const [ghanaCardFrontUrl, ghanaCardBackUrl, alternateIdScanUrl] = await Promise.all([
+    presignStored(profile.ghanaCardFrontUrl),
+    presignStored(profile.ghanaCardBackUrl),
+    presignStored(profile.alternateIdScanUrl),
+  ]);
+
   return {
     success: true,
     message: "Profile created successfully",
-    data: profile,
+    data: {
+      ...profile,
+      ghanaCardFrontUrl,
+      ghanaCardBackUrl,
+      alternateIdScanUrl,
+    },
   };
 });

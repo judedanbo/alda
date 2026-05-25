@@ -1,5 +1,6 @@
 import prisma from "~/server/utils/prisma";
 import type { FormReissueStatus } from "@prisma/client";
+import { presignStored } from "~/server/services/storage.service";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -56,10 +57,18 @@ export default defineEventHandler(async (event) => {
     prisma.formReissueRequest.count({ where }),
   ]);
 
+  // Re-sign letterScanUrl per row — list rows render thumbnails / link.
+  const signedRequests = await Promise.all(
+    requests.map(async (r) => ({
+      ...r,
+      letterScanUrl: await presignStored(r.letterScanUrl),
+    })),
+  );
+
   return {
     success: true,
     data: {
-      requests,
+      requests: signedRequests,
       pagination: {
         page,
         limit,

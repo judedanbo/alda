@@ -4,6 +4,7 @@ import {
   getRoleScope,
   buildSealedHistoryWhere,
 } from "~/server/utils/analytics-filters";
+import { presignStored } from "~/server/services/storage.service";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -75,7 +76,7 @@ export default defineEventHandler(async (event) => {
     }),
   ]);
 
-  const items = rows.map((row) => {
+  const items = await Promise.all(rows.map(async (row) => {
     const decl = row.declaration;
     const sealedAt = row.createdAt;
     const codeGeneratedAt = decl.createdAt;
@@ -110,9 +111,9 @@ export default defineEventHandler(async (event) => {
       processingDays,
       processedBy: row.changedBy?.email?.split("@")[0] ?? "System",
       receiptNumber: receipt?.receiptNumber ?? null,
-      receiptUrl: receipt?.pdfUrl ?? null,
+      receiptUrl: receipt?.pdfUrl ? await presignStored(receipt.pdfUrl) : null,
     };
-  });
+  }));
 
   return {
     success: true,

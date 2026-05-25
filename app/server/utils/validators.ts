@@ -85,13 +85,17 @@ const ghanaCardProfileSchema = z.object({
   ghanaCardNumber: z
     .string()
     .regex(ghanaCardRegex, "Invalid Ghana Card number format (GHA-XXXXXXXXX-X)"),
-  ghanaCardFrontUrl: z.string().url("Invalid Ghana Card front image URL"),
-  ghanaCardBackUrl: z.string().url("Invalid Ghana Card back image URL").optional(),
+  // Now holds a MinIO bucket key (e.g. "ghana-cards/<userId>/front.jpg")
+  // returned by the upload endpoint, not a parseable URL. The DB column is
+  // still named *Url for backwards compatibility; the read path re-signs
+  // through presignStored.
+  ghanaCardFrontUrl: z.string().min(1).max(500),
+  ghanaCardBackUrl: z.string().min(1).max(500).optional(),
 });
 
 const alternateIdProfileBase = z.object({
   fullName: fullNameSchema,
-  alternateIdScanUrl: z.string().url("Invalid alternate ID scan URL"),
+  alternateIdScanUrl: z.string().min(1).max(500),
   alternateIdReason: z.nativeEnum(AlternateIdReason, {
     errorMap: () => ({ message: "Please pick a reason for using an alternate ID" }),
   }),
@@ -229,7 +233,8 @@ export const reissueRequestSchema = z.object({
  */
 export const reissueDecisionSchema = z.object({
   status: z.enum(["APPROVED", "DECLINED"]),
-  letterScanUrl: z.string().url("Invalid letter scan URL").optional(),
+  // MinIO bucket key returned by /api/upload/reissue-letter — not a URL.
+  letterScanUrl: z.string().min(1).max(500).optional(),
   approverType: z.enum(["AUDITOR_GENERAL", "REGIONAL_AUDITOR"]).optional(),
   approverDetail: z.string().max(255).optional(),
   decisionReason: z.string().optional(),

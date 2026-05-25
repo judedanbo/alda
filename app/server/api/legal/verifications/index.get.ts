@@ -1,5 +1,6 @@
 import prisma from "~/server/utils/prisma";
 import type { VerificationStatus } from "@prisma/client";
+import { presignStored } from "~/server/services/storage.service";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -57,10 +58,21 @@ export default defineEventHandler(async (event) => {
     prisma.applicantProfile.count({ where }),
   ]);
 
+  const signedProfiles = await Promise.all(
+    profiles.map(async (p) => {
+      const [ghanaCardFrontUrl, ghanaCardBackUrl, alternateIdScanUrl] = await Promise.all([
+        presignStored(p.ghanaCardFrontUrl),
+        presignStored(p.ghanaCardBackUrl),
+        presignStored(p.alternateIdScanUrl),
+      ]);
+      return { ...p, ghanaCardFrontUrl, ghanaCardBackUrl, alternateIdScanUrl };
+    }),
+  );
+
   return {
     success: true,
     data: {
-      profiles,
+      profiles: signedProfiles,
       pagination: {
         page,
         limit,

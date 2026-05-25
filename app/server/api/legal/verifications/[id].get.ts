@@ -1,4 +1,5 @@
 import prisma from "~/server/utils/prisma";
+import { presignStored } from "~/server/services/storage.service";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -76,10 +77,21 @@ export default defineEventHandler(async (event) => {
     })
     : [];
 
+  // The bucket is private; re-sign stored keys into short-lived URLs so
+  // the reviewer can render the Ghana Card / alternate-ID scans.
+  const [ghanaCardFrontUrl, ghanaCardBackUrl, alternateIdScanUrl] = await Promise.all([
+    presignStored(profile.ghanaCardFrontUrl),
+    presignStored(profile.ghanaCardBackUrl),
+    presignStored(profile.alternateIdScanUrl),
+  ]);
+
   return {
     success: true,
     data: {
       ...profile,
+      ghanaCardFrontUrl,
+      ghanaCardBackUrl,
+      alternateIdScanUrl,
       idCheck: {
         idType: profile.idType,
         number: normalizedNumber,

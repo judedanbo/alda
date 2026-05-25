@@ -354,10 +354,10 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<string> {
   // Generate PDF bytes
   const pdfBytes = await doc.save();
   const pdfBuffer = Buffer.from(pdfBytes);
-  const fileName = `receipts/${data.receiptNumber}.pdf`;
-  const url = await uploadBuffer(pdfBuffer, fileName, "application/pdf");
-
-  return url;
+  const key = `receipts/${data.receiptNumber}.pdf`;
+  // The bucket is private — `uploadBuffer` returns the object key, not a
+  // public URL. Persist the key; re-sign with `presignStored` on read.
+  return uploadBuffer(pdfBuffer, key, "application/pdf");
 }
 
 function formatDate(date: Date): string {

@@ -1,4 +1,5 @@
 import prisma from "~/server/utils/prisma";
+import { presignStored } from "~/server/services/storage.service";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -52,8 +53,44 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  // Re-sign every stored MinIO key the response surfaces — the reissue
+  // letter on the top-level request, the Ghana Card / alternate-ID scans on
+  // the nested applicant, and the letter on each historical reissue entry.
+  const applicant = request.declaration.applicant;
+  const [
+    letterScanUrl,
+    ghanaCardFrontUrl,
+    ghanaCardBackUrl,
+    alternateIdScanUrl,
+    historicalLetters,
+  ] = await Promise.all([
+    presignStored(request.letterScanUrl),
+    presignStored(applicant.ghanaCardFrontUrl),
+    presignStored(applicant.ghanaCardBackUrl),
+    presignStored(applicant.alternateIdScanUrl),
+    Promise.all(
+      request.declaration.formReissueRequests.map((r) => presignStored(r.letterScanUrl)),
+    ),
+  ]);
+
   return {
     success: true,
-    data: request,
+    data: {
+      ...request,
+      letterScanUrl,
+      declaration: {
+        ...request.declaration,
+        applicant: {
+          ...applicant,
+          ghanaCardFrontUrl,
+          ghanaCardBackUrl,
+          alternateIdScanUrl,
+        },
+        formReissueRequests: request.declaration.formReissueRequests.map((r, i) => ({
+          ...r,
+          letterScanUrl: historicalLetters[i],
+        })),
+      },
+    },
   };
 });

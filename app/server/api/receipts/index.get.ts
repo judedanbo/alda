@@ -1,4 +1,5 @@
 import prisma from "~/server/utils/prisma";
+import { presignStored } from "~/server/services/storage.service";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -78,10 +79,36 @@ export default defineEventHandler(async (event) => {
     prisma.receipt.count({ where }),
   ]);
 
+  // Re-sign every receipt PDF + the nested applicant's ID scans for preview.
+  const signedReceipts = await Promise.all(
+    receipts.map(async (r) => {
+      const applicant = r.declaration.applicant;
+      const [pdfUrl, ghanaCardFrontUrl, ghanaCardBackUrl, alternateIdScanUrl] = await Promise.all([
+        presignStored(r.pdfUrl),
+        presignStored(applicant.ghanaCardFrontUrl),
+        presignStored(applicant.ghanaCardBackUrl),
+        presignStored(applicant.alternateIdScanUrl),
+      ]);
+      return {
+        ...r,
+        pdfUrl,
+        declaration: {
+          ...r.declaration,
+          applicant: {
+            ...applicant,
+            ghanaCardFrontUrl,
+            ghanaCardBackUrl,
+            alternateIdScanUrl,
+          },
+        },
+      };
+    }),
+  );
+
   return {
     success: true,
     data: {
-      receipts,
+      receipts: signedReceipts,
       total,
       limit,
       offset,

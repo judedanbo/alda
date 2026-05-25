@@ -4,8 +4,27 @@ import { randomUUID } from "crypto";
 let minioClient: Client | null = null;
 
 /**
- * Get or create MinIO client
+ * The bucket holds national-ID images, alternate-ID scans, reissue letters,
+ * and receipt PDFs. None of it is public.
+ *
+ * The policy is intentionally an empty statement set. This overwrites any
+ * pre-existing anonymous-allow policy (e.g. left over from `mc anonymous
+ * set download` in older dev setups) without introducing an explicit Deny
+ * that risks blocking authenticated server-side operations on MinIO
+ * versions where `aws:PrincipalType: Anonymous` isn't honored. With no
+ * Allow rule in effect, S3's default-deny applies to anonymous traffic;
+ * authenticated callers presenting our access key continue to work.
  */
+function denyAnonymousPolicy(): string {
+  return JSON.stringify({
+    Version: "2012-10-17",
+    Statement: [],
+  });
+}
+
+const DEFAULT_PRESIGN_TTL_SECONDS = 900;
+
+/** Get or create MinIO client. */
 function getMinioClient(): Client {
   if (!minioClient) {
     const config = useRuntimeConfig();
@@ -21,7 +40,10 @@ function getMinioClient(): Client {
 }
 
 /**
- * Ensure bucket exists
+ * Ensure the bucket exists AND assert a deny-anonymous policy on every boot.
+ * Idempotent: setBucketPolicy overwrites, so this is the durable source of
+ * truth for the bucket being private even if a dev compose script or a hand-
+ * applied policy says otherwise.
  */
 async function ensureBucket(bucketName: string): Promise<void> {
   const client = getMinioClient();
@@ -29,11 +51,18 @@ async function ensureBucket(bucketName: string): Promise<void> {
   if (!exists) {
     await client.makeBucket(bucketName);
   }
+  try {
+    await client.setBucketPolicy(bucketName, denyAnonymousPolicy());
+  } catch (err) {
+    // Setting a bucket policy can fail on an under-privileged access key.
+    // Surface it loudly — a silent failure here means the bucket is wide
+    // open. Server keeps starting (so health endpoints stay reachable) but
+    // the operator sees the warning.
+    console.error("[storage] failed to assert deny-anonymous bucket policy:", err);
+  }
 }
 
-/**
- * Upload file result
- */
+/** Upload result. `url` is a short-lived presigned URL for immediate preview; `key` is the canonical persistable identifier. */
 export interface UploadResult {
   url: string;
   key: string;
@@ -42,9 +71,13 @@ export interface UploadResult {
   contentType: string;
 }
 
-/**
- * Upload a file to MinIO
- */
+async function presignFresh(key: string, ttlSeconds = DEFAULT_PRESIGN_TTL_SECONDS): Promise<string> {
+  const config = useRuntimeConfig();
+  const client = getMinioClient();
+  return client.presignedGetObject(config.minioBucket, key, ttlSeconds);
+}
+
+/** Upload a file to MinIO. The bucket is private; the returned `url` is a presigned URL valid for ~15 minutes. Persist `key`, not `url`. */
 export async function uploadFile(
   file: Buffer,
   originalName: string,
@@ -57,31 +90,18 @@ export async function uploadFile(
 
   await ensureBucket(bucket);
 
-  // Generate unique filename
   const ext = originalName.split(".").pop() || "";
   const key = `${folder}/${randomUUID()}.${ext}`;
 
-  // Upload file
   await client.putObject(bucket, key, file, file.length, {
     "Content-Type": contentType,
-    "x-amz-acl": "public-read",
   });
 
-  // Generate URL
-  const url = `http://${config.minioEndpoint}:${config.minioPort}/${bucket}/${key}`;
-
-  return {
-    url,
-    key,
-    bucket,
-    size: file.length,
-    contentType,
-  };
+  const url = await presignFresh(key);
+  return { url, key, bucket, size: file.length, contentType };
 }
 
-/**
- * Upload Ghana Card image
- */
+/** Upload Ghana Card image (per-user, per-side path). */
 export async function uploadGhanaCard(
   file: Buffer,
   originalName: string,
@@ -89,32 +109,21 @@ export async function uploadGhanaCard(
   userId: string,
   side: "front" | "back"
 ): Promise<UploadResult> {
-  const folder = `ghana-cards/${userId}`;
   const config = useRuntimeConfig();
   const bucket = config.minioBucket;
   const client = getMinioClient();
 
   await ensureBucket(bucket);
 
-  // Generate filename
   const ext = originalName.split(".").pop() || "jpg";
-  const key = `${folder}/${side}.${ext}`;
+  const key = `ghana-cards/${userId}/${side}.${ext}`;
 
-  // Upload file
   await client.putObject(bucket, key, file, file.length, {
     "Content-Type": contentType,
   });
 
-  // Generate URL
-  const url = `http://${config.minioEndpoint}:${config.minioPort}/${bucket}/${key}`;
-
-  return {
-    url,
-    key,
-    bucket,
-    size: file.length,
-    contentType,
-  };
+  const url = await presignFresh(key);
+  return { url, key, bucket, size: file.length, contentType };
 }
 
 /**
@@ -130,7 +139,6 @@ export async function uploadAlternateIdScan(
   userId: string,
   idType: string,
 ): Promise<UploadResult> {
-  const folder = `alternate-ids/${userId}`;
   const config = useRuntimeConfig();
   const bucket = config.minioBucket;
   const client = getMinioClient();
@@ -139,26 +147,17 @@ export async function uploadAlternateIdScan(
 
   const ext = originalName.split(".").pop() || "jpg";
   const safeType = idType.toLowerCase().replace(/[^a-z0-9_-]/g, "");
-  const key = `${folder}/${safeType}.${ext}`;
+  const key = `alternate-ids/${userId}/${safeType}.${ext}`;
 
   await client.putObject(bucket, key, file, file.length, {
     "Content-Type": contentType,
   });
 
-  const url = `http://${config.minioEndpoint}:${config.minioPort}/${bucket}/${key}`;
-
-  return {
-    url,
-    key,
-    bucket,
-    size: file.length,
-    contentType,
-  };
+  const url = await presignFresh(key);
+  return { url, key, bucket, size: file.length, contentType };
 }
 
-/**
- * Upload a buffer directly with a specific path
- */
+/** Upload a buffer directly to a specific key. Returns the key (persistable); re-sign with `presignStored` on read. */
 export async function uploadBuffer(
   buffer: Buffer,
   key: string,
@@ -174,7 +173,55 @@ export async function uploadBuffer(
     "Content-Type": contentType,
   });
 
-  return `http://${config.minioEndpoint}:${config.minioPort}/${bucket}/${key}`;
+  return key;
+}
+
+/**
+ * Turn a stored MinIO reference into a fresh short-lived presigned URL.
+ *
+ * Accepts three shapes:
+ * - a bare bucket-relative key (the new persistable form);
+ * - a legacy absolute URL `http://host:port/bucket/path` (what older rows
+ *   captured before the bucket went private);
+ * - an expired presigned URL (same shape plus a query string).
+ *
+ * For the URL forms it parses the key by stripping origin, the leading
+ * bucket prefix, and any query string. Inputs that don't match either
+ * shape pass through unchanged — so a corrupt row degrades to a broken
+ * preview rather than a 500.
+ */
+export async function presignStored(
+  stored: string | null | undefined,
+  ttlSeconds = DEFAULT_PRESIGN_TTL_SECONDS,
+): Promise<string | null> {
+  if (!stored) return null;
+  const key = parseStoredKey(stored);
+  if (key === null) return stored;
+  return presignFresh(key, ttlSeconds);
+}
+
+/** Exported for unit testing — returns the key or null when the input isn't recognizable. */
+export function parseStoredKey(stored: string): string | null {
+  if (!stored) return null;
+  // Bare key — already in canonical form.
+  if (!stored.includes("://")) return stored;
+  // Absolute URL (possibly with a presign query string).
+  try {
+    const url = new URL(stored);
+    const path = url.pathname.replace(/^\/+/, "");
+    const config = useRuntimeConfig();
+    const bucketPrefix = `${config.minioBucket}/`;
+    if (path.startsWith(bucketPrefix)) {
+      const key = path.slice(bucketPrefix.length);
+      return key || null;
+    }
+    // Different bucket name in the URL (e.g. legacy data from a renamed
+    // bucket) — fall through and just use the path as-is; better than
+    // erroring out.
+    return path || null;
+  } catch {
+    return null;
+  }
 }
 
 /**

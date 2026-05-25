@@ -68,6 +68,9 @@ export default defineEventHandler(async (event) => {
     success: true,
     message: `Ghana Card ${side} uploaded successfully`,
     data: {
+      // `key` is the durable identifier — persist this in the profile.
+      // `url` is a short-lived presigned URL for immediate preview only.
+      key: result.key,
       url: result.url,
       side,
     },

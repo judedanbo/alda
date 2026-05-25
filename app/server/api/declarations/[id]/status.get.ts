@@ -1,4 +1,5 @@
 import prisma from "~/server/utils/prisma";
+import { presignStored } from "~/server/services/storage.service";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -171,7 +172,12 @@ export default defineEventHandler(async (event) => {
         (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
       ),
       latestReview: declaration.reviews[0] || null,
-      receipt: declaration.receipts[0] || null,
+      receipt: declaration.receipts[0]
+        ? {
+          ...declaration.receipts[0],
+          pdfUrl: await presignStored(declaration.receipts[0]!.pdfUrl),
+        }
+        : null,
       sectionReviews: declaration.sectionReviews,
       hasPendingReissue: declaration.formReissueRequests.some(
         (r) => r.status === "PENDING"
