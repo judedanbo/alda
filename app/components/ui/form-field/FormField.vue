@@ -49,8 +49,20 @@ const slotBindings = computed(() => ({
     <p v-if="hint" :id="hintId" class="text-xs text-muted-foreground">
       {{ hint }}
     </p>
-    <p v-if="error" :id="errorId" class="text-xs text-destructive">
-      {{ error }}
+    <!--
+      Always-rendered live region so newly-appearing errors are announced
+      reliably (some screen readers don't announce regions that mount with
+      content). Empty text means no announcement; we only show the element
+      visually when there's something to show.
+    -->
+    <p
+      :id="errorId"
+      class="text-xs text-destructive"
+      :class="error ? '' : 'sr-only'"
+      role="status"
+      aria-live="polite"
+    >
+      {{ error ?? '' }}
     </p>
   </div>
 </template>

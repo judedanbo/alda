@@ -35,6 +35,7 @@ model User {
   notifications            Notification[]
   notificationPrefs        NotificationPreference?
   notificationTypePrefs    NotificationTypePreference[]
+  accessibilityPrefs       AccessibilityPreference?
   archivedRecords          ArchivedRecord[]             @relation("ArchivedBy")
   passwordResetTokens      PasswordResetToken[]
   emailVerificationTokens  EmailVerificationToken[]
@@ -538,6 +539,22 @@ model NotificationTypePreference {
 
   @@unique([userId, type])
   @@map("notification_type_preferences")
+}
+
+model AccessibilityPreference {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @unique @map("user_id") @db.Uuid
+  textSize       String   @default("base") @map("text_size") @db.VarChar(16)
+  reduceMotion   Boolean  @default(false) @map("reduce_motion")
+  underlineLinks Boolean  @default(false) @map("underline_links")
+  readableFont   Boolean  @default(false) @map("readable_font")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("accessibility_preferences")
 }
 
 enum DeliveryStatus {

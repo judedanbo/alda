@@ -208,20 +208,23 @@ onUnmounted(() => {
         <AlertDescription>{{ errorMessage }}</AlertDescription>
       </Alert>
 
-      <!-- Appearance -->
+      <!-- Display & Accessibility -->
       <Card>
         <CardHeader>
-          <CardTitle>Appearance</CardTitle>
+          <CardTitle>Display &amp; Accessibility</CardTitle>
           <CardDescription>
-            Choose a color theme for the portal. Your choice is saved on this device.
+            Customize text size, colour theme, and accessibility settings.
+            Your choices are saved to your account and synced across devices.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <ClientOnly>
-            <AppThemeSwitcherCards />
+            <AppAccessibilityPanel />
             <template #fallback>
-              <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <Skeleton v-for="n in 6" :key="n" class="h-32 w-full rounded-lg" />
+              <div class="space-y-4">
+                <Skeleton class="h-10 w-full rounded-md" />
+                <Skeleton class="h-32 w-full rounded-md" />
+                <Skeleton class="h-16 w-full rounded-md" />
               </div>
             </template>
           </ClientOnly>

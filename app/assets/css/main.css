@@ -1,5 +1,6 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap');
 
 @import "tailwindcss";
 
@@ -202,4 +203,64 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+
+  /* WCAG 2.4.7 — always-visible keyboard focus across every theme. */
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+/* ============================================
+ * Accessibility — user-controlled preferences
+ * Applied via <html data-a11y-text-size="…"> + .a11y-* classes.
+ * Values are written by stores/accessibility.ts and by the inline FOUC
+ * script in app.vue (so they apply before first paint, no flicker).
+ * ============================================ */
+
+/* Text size scales the root font-size; Tailwind utilities are rem-based,
+   so this scales the entire UI uniformly. */
+html { font-size: 100%; }
+html[data-a11y-text-size="lg"]  { font-size: 115%; }
+html[data-a11y-text-size="xl"]  { font-size: 130%; }
+html[data-a11y-text-size="2xl"] { font-size: 150%; }
+
+/* Explicit user toggle to suppress animation. */
+html.a11y-reduce-motion *,
+html.a11y-reduce-motion *::before,
+html.a11y-reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Baseline OS-respect — kicks in even without JS / before hydration. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Always-underline content links. Scoped to <main> so we don't underline
+   nav pills, button-styled links, or theme cards. The data-no-a11y-underline
+   attribute is an opt-out hook for content links that already carry their
+   own visual treatment. */
+html.a11y-underline-links main a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+html.a11y-underline-links main a[data-no-a11y-underline],
+html.a11y-underline-links main nav a,
+html.a11y-underline-links main [role="button"],
+html.a11y-underline-links main button {
+  text-decoration: none;
+}
+
+/* Atkinson Hyperlegible — a legibility-optimised, dyslexia-friendly font. */
+html.a11y-readable-font body {
+  font-family: "Atkinson Hyperlegible", system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, sans-serif;
 }

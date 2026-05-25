@@ -26,7 +26,11 @@
     </header>
 
     <!-- Main content -->
-    <main class="flex-1 flex items-center justify-center p-4">
+    <main
+      id="main-content"
+      tabindex="-1"
+      class="flex-1 flex items-center justify-center p-4"
+    >
       <slot />
     </main>
 
@@ -46,6 +50,10 @@
         <span class="text-muted-foreground">|</span>
         <NuxtLink to="/privacy" class="text-muted-foreground hover:text-primary hover:underline">
           Privacy Policy
+        </NuxtLink>
+        <span class="text-muted-foreground">|</span>
+        <NuxtLink to="/accessibility" class="text-muted-foreground hover:text-primary hover:underline">
+          Accessibility
         </NuxtLink>
       </div>
     </footer>

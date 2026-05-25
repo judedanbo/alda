@@ -8,7 +8,7 @@ const { current, themes, setTheme } = useTheme();
   <DropdownMenu>
     <DropdownMenuTrigger as-child>
       <Button variant="ghost" size="icon" class="size-9">
-        <Palette class="size-4" />
+        <Palette class="size-4" aria-hidden="true" />
         <span class="sr-only">Change theme</span>
       </Button>
     </DropdownMenuTrigger>

@@ -116,6 +116,7 @@ async function resendVerification() {
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
           <path
             stroke-linecap="round"
@@ -148,6 +149,7 @@ async function resendVerification() {
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
+        aria-hidden="true"
       >
         <path
           stroke-linecap="round"
@@ -197,6 +199,7 @@ async function resendVerification() {
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
+        aria-hidden="true"
       >
         <path
           stroke-linecap="round"
@@ -292,7 +295,8 @@ async function resendVerification() {
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                title="Copy code"
+                :title="codeCopied ? 'Code copied' : 'Copy code'"
+                :aria-label="codeCopied ? 'Code copied' : 'Copy code'"
                 @click="copyCode"
               >
                 <svg
@@ -301,6 +305,7 @@ async function resendVerification() {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     stroke-linecap="round"
@@ -315,6 +320,7 @@ async function resendVerification() {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     stroke-linecap="round"
@@ -371,6 +377,7 @@ async function resendVerification() {
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <path
               stroke-linecap="round"
@@ -451,6 +458,7 @@ async function resendVerification() {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     stroke-linecap="round"
@@ -483,6 +491,7 @@ async function resendVerification() {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     stroke-linecap="round"
@@ -512,6 +521,7 @@ async function resendVerification() {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     stroke-linecap="round"

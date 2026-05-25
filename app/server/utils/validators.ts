@@ -210,6 +210,16 @@ export const notificationPreferencesSchema = z.object({
 });
 
 /**
+ * Accessibility preferences schema (per-user UI display settings)
+ */
+export const accessibilityPreferencesSchema = z.object({
+  textSize: z.enum(["base", "lg", "xl", "2xl"]),
+  reduceMotion: z.boolean(),
+  underlineLinks: z.boolean(),
+  readableFont: z.boolean(),
+});
+
+/**
  * Analytics actor allow/block rule schema (admin manual enforcement)
  */
 export const analyticsActorRuleSchema = z.object({

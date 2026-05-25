@@ -65,6 +65,7 @@ const codeClass = computed(() => {
         size="sm"
         variant="ghost"
         :title="copied ? 'Copied' : 'Copy code'"
+        :aria-label="copied ? 'Code copied' : 'Copy code'"
         @click="copyCode"
       >
         <svg
@@ -73,6 +74,7 @@ const codeClass = computed(() => {
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
           <path
             stroke-linecap="round"
@@ -87,6 +89,7 @@ const codeClass = computed(() => {
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
           <path
             stroke-linecap="round"
