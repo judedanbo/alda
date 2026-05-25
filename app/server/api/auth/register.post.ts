@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import prisma from "~/server/utils/prisma";
 import { validateBody, registerSchema } from "~/server/utils/validators";
@@ -102,11 +103,13 @@ export default defineEventHandler(async (event) => {
     roles,
   });
 
-  // Store refresh token
+  // Store refresh token. New registration starts a fresh token family;
+  // the familyId is inherited across rotations and torn down on replay.
   await prisma.refreshToken.create({
     data: {
       userId: user.id,
       token: tokens.refreshToken,
+      familyId: randomUUID(),
       expiresAt: getTokenExpiry(config.jwtRefreshExpiresIn || "7d"),
     },
   });

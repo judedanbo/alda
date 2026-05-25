@@ -73,16 +73,23 @@ model UserRole {
 }
 
 model RefreshToken {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  token     String   @unique @db.VarChar(500)
-  expiresAt DateTime @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  token       String    @unique @db.VarChar(500)
+  // Family identifier — every refresh in a session inherits the familyId
+  // of the consumed token; presenting a token whose row has `consumedAt`
+  // set is treated as a replay and tears down the family. Nullable to
+  // tolerate pre-migration rows that haven't rotated yet.
+  familyId    String?   @map("family_id") @db.Uuid
+  consumedAt  DateTime? @map("consumed_at")
+  expiresAt   DateTime  @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([token])
+  @@index([familyId])
   @@map("refresh_tokens")
 }
 

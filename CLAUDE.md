@@ -76,6 +76,13 @@ Token shape (`JwtPayload`): `{ userId, email, roles: string[] }`. Tokens are sig
 
 Roles in the system are exactly: `applicant`, `schedule_officer`, `legal_unit`, `admin`. Add new role checks by extending both middleware files together.
 
+**Auth hardening that lives alongside the middleware**:
+
+- `app/server/utils/auth-lockout.ts` — per-account login-failure counter + cool-down lock (10 failures in 15 min → 60-minute lock). `login.post.ts` consults it before the bcrypt compare; storage is the existing analytics KV (Redis or in-memory).
+- `login.post.ts` runs `bcrypt.compare` against a constant dummy hash on the user-not-found path, so timing doesn't leak which emails exist.
+- `RefreshToken` carries `familyId` + `consumedAt`. Refresh marks the old token consumed (no delete) and chains a new token in the same family. Presenting a consumed token wipes the family and audit-logs `REFRESH_TOKEN_REPLAY_DETECTED` — both the attacker and the legitimate client must re-authenticate.
+- `server/utils/rate-limit.ts` no longer fails open when its KV throws; a tiny per-process Map applies conservative caps (auth: 5/min, write: 20/min, default: 60/min) so a Redis blip degrades to per-instance limits.
+
 ### Prisma client is a singleton
 
 Always import via `import prisma from "~/server/utils/prisma"`. Constructing `new PrismaClient()` elsewhere will leak connections in dev (HMR re-imports). The singleton attaches itself to `globalThis` outside production for that reason.

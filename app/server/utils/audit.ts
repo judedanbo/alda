@@ -59,6 +59,7 @@ export const AuditActions = {
   USER_LOGIN: "user_login",
   USER_LOGOUT: "user_logout",
   USER_LOGIN_FAILED: "user_login_failed",
+  REFRESH_TOKEN_REPLAY_DETECTED: "refresh_token_replay_detected",
   PASSWORD_RESET_REQUESTED: "password_reset_requested",
   PASSWORD_RESET_COMPLETED: "password_reset_completed",
   EMAIL_VERIFIED: "email_verified",
