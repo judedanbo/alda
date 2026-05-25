@@ -63,6 +63,8 @@ async function switchToUser(user: DevUser) {
           email: string;
           phone: string | null;
           emailVerified: boolean;
+          phoneVerified: boolean;
+          phoneVerifiedAt: string | null;
           roles: string[];
           hasProfile?: boolean;
           fullName?: string;

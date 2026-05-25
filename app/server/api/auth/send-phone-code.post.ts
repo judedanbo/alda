@@ -27,7 +27,11 @@ export default defineEventHandler(async (event) => {
   }
 
   if (user.phoneVerified) {
-    return { success: true, message: "Phone is already verified" };
+    return {
+      success: true,
+      message: "Phone is already verified",
+      data: { expiresAt: null as string | null },
+    };
   }
 
   if (!user.phone) {
@@ -98,6 +102,6 @@ export default defineEventHandler(async (event) => {
   return {
     success: true,
     message: "Verification code sent",
-    data: { expiresAt: expiresAt.toISOString() },
+    data: { expiresAt: expiresAt.toISOString() as string | null },
   };
 });
