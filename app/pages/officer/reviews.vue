@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ClipboardCheck } from "lucide-vue-next";
+import { displayId, type IdType } from "~/utils/displayId";
 
 definePageMeta({
   layout: "dashboard",
@@ -25,7 +26,9 @@ interface Declaration {
   submittedAt: string | null;
   applicant: {
     fullName: string;
-    ghanaCardNumber: string;
+    idType: IdType;
+    ghanaCardNumber: string | null;
+    alternateIdNumber: string | null;
     offices: Array<{
       id: string;
       designation: string;
@@ -220,7 +223,7 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
                 <TableCell>
                   <div>
                     <p class="font-medium text-foreground">{{ declaration.applicant.fullName }}</p>
-                    <p class="text-sm text-muted-foreground">{{ declaration.applicant.ghanaCardNumber }}</p>
+                    <p class="text-sm text-muted-foreground">{{ displayId(declaration.applicant).value }}</p>
                   </div>
                 </TableCell>
                 <TableCell class="text-sm text-muted-foreground">

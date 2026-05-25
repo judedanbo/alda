@@ -42,7 +42,8 @@ export interface ListItem {
   id: string;
   uniqueCode: string;
   applicantName: string;
-  ghanaCardNumber: string;
+  idType: import("~/utils/displayId").IdType;
+  idNumber: string | null;
   institutions: string[];
   collectionOfficeName: string | null;
   collectionOfficeRegion: string | null;

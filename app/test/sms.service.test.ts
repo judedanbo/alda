@@ -159,5 +159,38 @@ describe("sendSms — provider failover", () => {
     expect(result.provider).toBe("arkesel");
     expect(fetchMock.mock.calls[0]![0]).toContain("arkesel");
   });
+
+  it("routes a non-Ghana number through Twilio when configured", async () => {
+    process.env.SMS_TWILIO_ACCOUNT_SID = "AC-test";
+    process.env.SMS_TWILIO_AUTH_TOKEN = "token";
+    process.env.SMS_TWILIO_FROM_NUMBER = "+15555550100";
+    fetchMock.mockReturnValueOnce(mockResponse(201, { sid: "SM-1" }));
+
+    const result = await sendSms("+14155551234", "hi");
+
+    expect(result.success).toBe(true);
+    expect(result.provider).toBe("twilio");
+    expect(result.messageId).toBe("SM-1");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]![0]).toContain("twilio.com");
+  });
+
+  it("does not call Ghana providers for an international number", async () => {
+    process.env.SMS_TWILIO_ACCOUNT_SID = "AC-test";
+    process.env.SMS_TWILIO_AUTH_TOKEN = "token";
+    process.env.SMS_TWILIO_FROM_NUMBER = "+15555550100";
+    fetchMock.mockReturnValueOnce(mockResponse(201, { sid: "SM-2" }));
+
+    await sendSms("+447911123456", "hi");
+
+    expect(fetchMock.mock.calls[0]![0]).not.toContain("hubtel");
+    expect(fetchMock.mock.calls[0]![0]).not.toContain("arkesel");
+  });
+
+  it("rejects invalid phone numbers up front", async () => {
+    const result = await sendSms("not a phone", "hi");
+    expect(result.success).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });
 

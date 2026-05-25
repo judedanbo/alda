@@ -11,7 +11,8 @@ interface ReceiptData {
   receiptNumber: string;
   declarationCode: string;
   applicantName: string;
-  ghanaCardNumber: string;
+  idLabel: string;
+  idNumber: string;
   offices: OfficeEntry[];
   submissionDate: Date;
   approvalDate: Date;
@@ -124,7 +125,7 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<string> {
   const details = [
     { label: "Declaration Code:", value: data.declarationCode },
     { label: "Full Name:", value: data.applicantName },
-    { label: "Ghana Card Number:", value: data.ghanaCardNumber },
+    { label: `${data.idLabel} Number:`, value: data.idNumber },
     { label: "Submission Date:", value: formatDate(data.submissionDate) },
     { label: "Approval Date:", value: formatDate(data.approvalDate) },
   ];

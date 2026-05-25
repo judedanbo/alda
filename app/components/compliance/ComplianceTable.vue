@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ComplianceListData } from "~/composables/useCompliance";
 import { TONE_BADGE } from "~/utils/statusStyles";
+import { displayId } from "~/utils/displayId";
 
 defineProps<{
   data: ComplianceListData | null;
@@ -16,7 +17,7 @@ const emit = defineEmits<{
 
 const columns = [
   { key: "fullName", label: "Applicant", sortable: true, sortKey: "applicantName" },
-  { key: "ghanaCardNumber", label: "Ghana Card", sortable: false },
+  { key: "idNumber", label: "ID Number", sortable: false },
   { key: "institution", label: "Institution", sortable: true },
   { key: "designation", label: "Designation", sortable: false },
   { key: "obligationType", label: "Obligation", sortable: false },
@@ -89,7 +90,7 @@ function formatDays(days: number): string {
           <TableBody>
             <TableRow v-for="(item, idx) in data.items" :key="idx">
               <TableCell>{{ item.fullName ?? "—" }}</TableCell>
-              <TableCell class="font-mono text-xs">{{ item.ghanaCardNumber ?? "—" }}</TableCell>
+              <TableCell class="font-mono text-xs">{{ displayId(item).value || "—" }}</TableCell>
               <TableCell class="max-w-[180px] truncate" :title="item.institution ?? ''">
                 {{ item.institution ?? "—" }}
               </TableCell>

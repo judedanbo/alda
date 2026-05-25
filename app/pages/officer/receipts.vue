@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Receipt } from "lucide-vue-next";
+import { displayId, type IdType } from "~/utils/displayId";
 
 definePageMeta({
   layout: "dashboard",
@@ -13,7 +14,9 @@ interface Declaration {
   submittedAt: string | null;
   applicant: {
     fullName: string;
-    ghanaCardNumber: string;
+    idType: IdType;
+    ghanaCardNumber: string | null;
+    alternateIdNumber: string | null;
     offices: Array<{
       id: string;
       designation: string;
@@ -219,8 +222,8 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
               <span class="font-medium">{{ selectedDeclaration.applicant.fullName }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-sm text-muted-foreground">Ghana Card:</span>
-              <span>{{ selectedDeclaration.applicant.ghanaCardNumber }}</span>
+              <span class="text-sm text-muted-foreground">{{ displayId(selectedDeclaration.applicant).label }}:</span>
+              <span>{{ displayId(selectedDeclaration.applicant).value }}</span>
             </div>
           </div>
 

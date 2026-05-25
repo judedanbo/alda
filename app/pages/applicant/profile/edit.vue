@@ -18,7 +18,9 @@ interface Office {
 interface ProfileResponse {
   data: {
     fullName: string;
-    ghanaCardNumber: string;
+    idType: import("~/utils/displayId").IdType;
+    ghanaCardNumber: string | null;
+    alternateIdNumber: string | null;
     offices: Office[];
   };
 }
@@ -29,7 +31,8 @@ interface ReferenceDataResponse {
 
 const readOnly = reactive({
   fullName: "",
-  ghanaCardNumber: "",
+  idLabel: "Ghana Card",
+  idNumber: "",
 });
 
 const isLoading = ref(true);
@@ -61,7 +64,12 @@ const institutions = (institutionsRes as ReferenceDataResponse).data || [];
 const categories = (categoriesRes as ReferenceDataResponse).data || [];
 
 readOnly.fullName = profile.fullName ?? "";
-readOnly.ghanaCardNumber = profile.ghanaCardNumber ?? "";
+{
+  const { displayId } = await import("~/utils/displayId");
+  const view = displayId(profile);
+  readOnly.idLabel = view.label;
+  readOnly.idNumber = view.value;
+}
 offices.value = (profile.offices || []).map((o: Office) => ({
   ...o,
   startDate: o.startDate ? o.startDate.split("T")[0] ?? "" : "",
@@ -220,10 +228,10 @@ function formatDate(dateStr: string | null): string {
             disabled
           />
         </FormField>
-        <FormField v-slot="{ id }" label="Ghana Card Number">
+        <FormField v-slot="{ id }" :label="`${readOnly.idLabel} Number`">
           <Input
             :id="id"
-            :model-value="readOnly.ghanaCardNumber"
+            :model-value="readOnly.idNumber"
             type="text"
             disabled
             class="uppercase"

@@ -71,7 +71,9 @@ export default defineEventHandler(async (event) => {
         applicantProfile: {
           select: {
             fullName: true,
+            idType: true,
             ghanaCardNumber: true,
+            alternateIdNumber: true,
             offices: {
               include: {
                 officeCategory: true,
@@ -104,7 +106,9 @@ export default defineEventHandler(async (event) => {
         profile: user.applicantProfile
           ? {
               fullName: user.applicantProfile.fullName,
+              idType: user.applicantProfile.idType,
               ghanaCardNumber: user.applicantProfile.ghanaCardNumber,
+              alternateIdNumber: user.applicantProfile.alternateIdNumber,
               offices: user.applicantProfile.offices,
             }
           : null,

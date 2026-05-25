@@ -7,7 +7,9 @@ export type ComplianceStatus = "compliant" | "upcoming" | "due_now" | "overdue";
 export interface ComplianceObligation {
   applicantId: string;
   fullName: string | null;
+  idType: string | null;
   ghanaCardNumber: string | null;
+  alternateIdNumber: string | null;
   institution: string | null;
   institutionId: string | null;
   designation: string;
@@ -135,7 +137,9 @@ export async function computeComplianceObligations(
         select: {
           id: true,
           fullName: true,
+          idType: true,
           ghanaCardNumber: true,
+          alternateIdNumber: true,
           declarations: {
             select: {
               statusHistory: {
@@ -173,7 +177,9 @@ export async function computeComplianceObligations(
       obligations.push({
         applicantId: office.profile.id,
         fullName: office.profile.fullName,
+        idType: office.profile.idType,
         ghanaCardNumber: office.profile.ghanaCardNumber,
+        alternateIdNumber: office.profile.alternateIdNumber,
         institution: office.institution?.name ?? null,
         institutionId: office.institution?.id ?? null,
         designation: office.designation,
@@ -252,7 +258,8 @@ export async function getComplianceList(
       obligations = obligations.filter(
         (o) =>
           o.fullName?.toLowerCase().includes(term) ||
-          o.ghanaCardNumber?.toLowerCase().includes(term),
+          o.ghanaCardNumber?.toLowerCase().includes(term) ||
+          o.alternateIdNumber?.toLowerCase().includes(term),
       );
     }
 

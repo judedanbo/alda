@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { displayId, type IdType } from "~/utils/displayId";
+
 interface ProfileOffice {
   id: string;
   designation: string;
@@ -8,7 +10,9 @@ interface ProfileOffice {
 
 interface ProfileData {
   fullName: string;
-  ghanaCardNumber: string;
+  idType: IdType;
+  ghanaCardNumber: string | null;
+  alternateIdNumber: string | null;
   offices: ProfileOffice[];
 }
 
@@ -161,9 +165,9 @@ const handleCreate = async () => {
               <dt class="text-muted-foreground">Full Name</dt>
               <dd class="font-medium text-foreground">{{ profile?.fullName }}</dd>
             </div>
-            <div class="flex justify-between">
-              <dt class="text-muted-foreground">Ghana Card</dt>
-              <dd class="font-medium text-foreground">{{ profile?.ghanaCardNumber }}</dd>
+            <div v-if="profile" class="flex justify-between">
+              <dt class="text-muted-foreground">{{ displayId(profile).label }}</dt>
+              <dd class="font-medium text-foreground">{{ displayId(profile).value }}</dd>
             </div>
           </dl>
           <div v-if="profile?.offices?.length" class="mt-4">

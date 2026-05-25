@@ -1,10 +1,28 @@
 import type { H3Event } from "h3";
 import { z } from "zod";
-import { NotificationType } from "@prisma/client";
+import { NotificationType, IdDocumentType, AlternateIdReason } from "@prisma/client";
 
 // Common validation patterns
-const ghanaPhoneRegex = /^(\+233|0)[2-9]\d{8}$/;
+const e164PhoneRegex = /^\+[1-9]\d{6,14}$/;
 const ghanaCardRegex = /^GHA-\d{9}-\d$/;
+
+// Per-type formats for alternate identity documents. These are deliberately
+// tolerant — the canonical authority is the uploaded scan + Legal Unit review.
+export const ID_NUMBER_PATTERNS: Record<IdDocumentType, RegExp> = {
+  GHANA_CARD: ghanaCardRegex,
+  PASSPORT: /^[A-Z][0-9]{7,8}$/,
+  VOTER_ID: /^\d{10}$/,
+  DRIVERS_LICENSE: /^[A-Z]{2}-\d{6,8}-\d{2}$/,
+  NIA_RECEIPT: /^[A-Z0-9-]{6,32}$/,
+};
+
+export const ID_NUMBER_FORMAT_HINTS: Record<IdDocumentType, string> = {
+  GHANA_CARD: "GHA-XXXXXXXXX-X",
+  PASSPORT: "Letter + 7 or 8 digits (e.g. G1234567)",
+  VOTER_ID: "10 digits",
+  DRIVERS_LICENSE: "AA-NNNNNNN-NN",
+  NIA_RECEIPT: "Receipt code (6–32 alphanumeric / dashes)",
+};
 
 /**
  * User registration schema
@@ -19,7 +37,7 @@ export const registerSchema = z.object({
     .regex(/[0-9]/, "Password must contain at least one number"),
   phone: z
     .string()
-    .regex(ghanaPhoneRegex, "Invalid Ghana phone number format")
+    .regex(e164PhoneRegex, "Invalid phone number — include country code, e.g. +14155551234")
     .optional(),
 });
 
@@ -52,16 +70,71 @@ export const resetPasswordSchema = z.object({
 });
 
 /**
- * Applicant profile schema
+ * Applicant profile schema — discriminated union on `idType`.
+ *
+ * GHANA_CARD branch keeps the historic shape; alternate-ID branches require
+ * a structured justification reason plus an uploaded scan. The DB CHECK
+ * constraint enforces the same shape at the storage layer, so a request
+ * that slips past validation still cannot persist a half-formed profile.
  */
-export const applicantProfileSchema = z.object({
-  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+const fullNameSchema = z.string().min(2, "Full name must be at least 2 characters");
+
+const ghanaCardProfileSchema = z.object({
+  idType: z.literal(IdDocumentType.GHANA_CARD),
+  fullName: fullNameSchema,
   ghanaCardNumber: z
     .string()
     .regex(ghanaCardRegex, "Invalid Ghana Card number format (GHA-XXXXXXXXX-X)"),
-  ghanaCardFrontUrl: z.string().url("Invalid Ghana Card front image URL").optional(),
+  ghanaCardFrontUrl: z.string().url("Invalid Ghana Card front image URL"),
   ghanaCardBackUrl: z.string().url("Invalid Ghana Card back image URL").optional(),
 });
+
+const alternateIdProfileBase = z.object({
+  fullName: fullNameSchema,
+  alternateIdScanUrl: z.string().url("Invalid alternate ID scan URL"),
+  alternateIdReason: z.nativeEnum(AlternateIdReason, {
+    errorMap: () => ({ message: "Please pick a reason for using an alternate ID" }),
+  }),
+  alternateIdDetails: z.string().max(2000).optional(),
+});
+
+const passportProfileSchema = alternateIdProfileBase.extend({
+  idType: z.literal(IdDocumentType.PASSPORT),
+  alternateIdNumber: z
+    .string()
+    .regex(ID_NUMBER_PATTERNS.PASSPORT, `Invalid passport number (${ID_NUMBER_FORMAT_HINTS.PASSPORT})`),
+});
+
+const voterIdProfileSchema = alternateIdProfileBase.extend({
+  idType: z.literal(IdDocumentType.VOTER_ID),
+  alternateIdNumber: z
+    .string()
+    .regex(ID_NUMBER_PATTERNS.VOTER_ID, `Invalid voter ID (${ID_NUMBER_FORMAT_HINTS.VOTER_ID})`),
+});
+
+const driversLicenseProfileSchema = alternateIdProfileBase.extend({
+  idType: z.literal(IdDocumentType.DRIVERS_LICENSE),
+  alternateIdNumber: z
+    .string()
+    .regex(ID_NUMBER_PATTERNS.DRIVERS_LICENSE, `Invalid driver's licence (${ID_NUMBER_FORMAT_HINTS.DRIVERS_LICENSE})`),
+});
+
+const niaReceiptProfileSchema = alternateIdProfileBase.extend({
+  idType: z.literal(IdDocumentType.NIA_RECEIPT),
+  alternateIdNumber: z
+    .string()
+    .regex(ID_NUMBER_PATTERNS.NIA_RECEIPT, `Invalid NIA receipt code (${ID_NUMBER_FORMAT_HINTS.NIA_RECEIPT})`),
+});
+
+export const applicantProfileSchema = z.discriminatedUnion("idType", [
+  ghanaCardProfileSchema,
+  passportProfileSchema,
+  voterIdProfileSchema,
+  driversLicenseProfileSchema,
+  niaReceiptProfileSchema,
+]);
+
+export type ApplicantProfileInput = z.infer<typeof applicantProfileSchema>;
 
 export const officeSchema = z.object({
   designation: z.string().min(2, "Designation is required").max(255),

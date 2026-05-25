@@ -37,6 +37,14 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  if (!profile.user.phoneVerified) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: "Forbidden",
+      message: "Please verify your phone number before creating a declaration",
+    });
+  }
+
   // Check verification status
   if (profile.verificationStatus !== "VERIFIED") {
     throw createError({

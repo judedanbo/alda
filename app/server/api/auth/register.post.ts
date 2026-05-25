@@ -5,10 +5,13 @@ import { generateTokenPair, getTokenExpiry } from "~/server/utils/jwt";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
 import { sendWelcomeEmail, sendVerificationEmail } from "~/server/services/email.service";
 import { generateVerificationToken } from "~/server/utils/code-generator";
+import { ghanaPhoneAlternates, isGhanaPhone, normalizePhoneE164 } from "~/server/utils/phone";
 
 export default defineEventHandler(async (event) => {
   // Validate request body
   const { email, password, phone } = await validateBody(event, registerSchema);
+
+  const normalizedPhone = phone ? (normalizePhoneE164(phone) ?? undefined) : undefined;
 
   // Check if user already exists
   const existingUser = await prisma.user.findUnique({
@@ -21,6 +24,26 @@ export default defineEventHandler(async (event) => {
       statusMessage: "Conflict",
       message: "An account with this email already exists",
     });
+  }
+
+  if (normalizedPhone) {
+    const candidates = isGhanaPhone(normalizedPhone)
+      ? ghanaPhoneAlternates(normalizedPhone)
+      : [normalizedPhone];
+    const phoneOwner = await prisma.user.findFirst({
+      where: { phone: { in: candidates } },
+      select: { id: true },
+    });
+    if (phoneOwner) {
+      throw createError({
+        statusCode: 409,
+        statusMessage: "Conflict",
+        data: {
+          fieldErrors: { phone: ["This phone number is already registered"] },
+          formErrors: [],
+        },
+      });
+    }
   }
 
   // Get the applicant role
@@ -44,7 +67,7 @@ export default defineEventHandler(async (event) => {
     data: {
       email: email.toLowerCase(),
       passwordHash,
-      phone,
+      phone: normalizedPhone,
       roles: {
         create: {
           roleId: applicantRole.id,
@@ -127,6 +150,8 @@ export default defineEventHandler(async (event) => {
         email: user.email,
         phone: user.phone,
         emailVerified: user.emailVerified,
+        phoneVerified: user.phoneVerified,
+        phoneVerifiedAt: user.phoneVerifiedAt,
         roles,
       },
       tokens,

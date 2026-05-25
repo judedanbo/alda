@@ -45,7 +45,9 @@ export default defineEventHandler(async (event) => {
             applicant: {
               select: {
                 fullName: true,
+                idType: true,
                 ghanaCardNumber: true,
+                alternateIdNumber: true,
                 offices: {
                   select: {
                     institution: { select: { name: true } },
@@ -96,7 +98,11 @@ export default defineEventHandler(async (event) => {
       id: decl.id,
       uniqueCode: decl.uniqueCode,
       applicantName: decl.applicant.fullName,
-      ghanaCardNumber: decl.applicant.ghanaCardNumber,
+      idType: decl.applicant.idType,
+      idNumber:
+        decl.applicant.idType === "GHANA_CARD"
+          ? decl.applicant.ghanaCardNumber
+          : decl.applicant.alternateIdNumber,
       institutions: uniqueInstitutions,
       collectionOfficeName: collectionOffice?.name ?? null,
       collectionOfficeRegion: collectionOffice?.region ?? null,

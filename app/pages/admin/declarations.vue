@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { FORM_SECTION_LABELS } from "~/utils/form-sections";
+import { displayId, type IdType } from "~/utils/displayId";
 
 definePageMeta({
   layout: "dashboard",
@@ -14,7 +15,9 @@ interface Declaration {
   createdAt: string;
   applicant: {
     fullName: string;
-    ghanaCardNumber: string;
+    idType: IdType;
+    ghanaCardNumber: string | null;
+    alternateIdNumber: string | null;
     offices: Array<{
       id: string;
       designation: string;
@@ -320,7 +323,7 @@ const statuses = [
             <TableCell>
               <div>
                 <p class="text-sm font-medium text-foreground">{{ declaration.applicant.fullName }}</p>
-                <p class="text-xs text-muted-foreground">{{ declaration.applicant.ghanaCardNumber }}</p>
+                <p class="text-xs text-muted-foreground">{{ displayId(declaration.applicant).value }}</p>
               </div>
             </TableCell>
             <TableCell class="text-sm text-muted-foreground">
@@ -400,8 +403,8 @@ const statuses = [
                   <p class="text-sm font-medium text-foreground">{{ selectedDeclaration.applicant.fullName }}</p>
                 </div>
                 <div>
-                  <p class="text-xs text-muted-foreground">Ghana Card</p>
-                  <p class="text-sm font-medium text-foreground">{{ selectedDeclaration.applicant.ghanaCardNumber }}</p>
+                  <p class="text-xs text-muted-foreground">{{ displayId(selectedDeclaration.applicant).label }}</p>
+                  <p class="text-sm font-medium text-foreground">{{ displayId(selectedDeclaration.applicant).value }}</p>
                 </div>
                 <div>
                   <p class="text-xs text-muted-foreground">Email</p>

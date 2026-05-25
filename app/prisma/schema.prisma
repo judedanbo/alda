@@ -12,45 +12,48 @@ datasource db {
 // ============================================
 
 model User {
-  id            String    @id @default(uuid()) @db.Uuid
-  email         String    @unique @db.VarChar(255)
-  passwordHash  String    @map("password_hash") @db.VarChar(255)
-  phone         String?   @db.VarChar(20)
-  emailVerified Boolean   @default(false) @map("email_verified")
-  isActive      Boolean   @default(true) @map("is_active")
-  lastLoginAt   DateTime? @map("last_login_at")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  id              String    @id @default(uuid()) @db.Uuid
+  email           String    @unique @db.VarChar(255)
+  passwordHash    String    @map("password_hash") @db.VarChar(255)
+  phone           String?   @unique @db.VarChar(20)
+  phoneVerified   Boolean   @default(false) @map("phone_verified")
+  phoneVerifiedAt DateTime? @map("phone_verified_at")
+  emailVerified   Boolean   @default(false) @map("email_verified")
+  isActive        Boolean   @default(true) @map("is_active")
+  lastLoginAt     DateTime? @map("last_login_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
   // Relations
   roles                    UserRole[]
   applicantProfile         ApplicantProfile?
   refreshTokens            RefreshToken[]
-  formCollections          FormCollection[]             @relation("FormCollectedBy")
+  formCollections          FormCollection[]              @relation("FormCollectedBy")
   sectionReviews           DeclarationSectionReview[]    @relation("SectionReviewedBy")
   sectionResolutions       DeclarationSectionReview[]    @relation("SectionResolvedBy")
-  reviews                  Review[]                     @relation("ReviewedBy")
-  receipts                 Receipt[]                    @relation("GeneratedBy")
+  reviews                  Review[]                      @relation("ReviewedBy")
+  receipts                 Receipt[]                     @relation("GeneratedBy")
   auditLogs                AuditLog[]
   notifications            Notification[]
   notificationPrefs        NotificationPreference?
   notificationTypePrefs    NotificationTypePreference[]
   accessibilityPrefs       AccessibilityPreference?
-  archivedRecords          ArchivedRecord[]             @relation("ArchivedBy")
+  archivedRecords          ArchivedRecord[]              @relation("ArchivedBy")
   passwordResetTokens      PasswordResetToken[]
   emailVerificationTokens  EmailVerificationToken[]
-  declarationStatusChanges     DeclarationStatusHistory[]   @relation("StatusChangedBy")
-  verificationReviews          ApplicantVerificationReview[] @relation("VerificationReviewedBy")
-  formReissuesRequested        FormReissueRequest[]          @relation("ReissueRequestedBy")
-  formReissuesReviewed         FormReissueRequest[]          @relation("ReissueReviewedBy")
+  phoneVerificationTokens  PhoneVerificationToken[]
+  declarationStatusChanges DeclarationStatusHistory[]    @relation("StatusChangedBy")
+  verificationReviews      ApplicantVerificationReview[] @relation("VerificationReviewedBy")
+  formReissuesRequested    FormReissueRequest[]          @relation("ReissueRequestedBy")
+  formReissuesReviewed     FormReissueRequest[]          @relation("ReissueReviewedBy")
 
   @@map("users")
 }
 
 model Role {
-  id          Int        @id @default(autoincrement())
-  name        String     @unique @db.VarChar(50)
-  description String?    @db.Text
+  id          Int     @id @default(autoincrement())
+  name        String  @unique @db.VarChar(50)
+  description String? @db.Text
 
   // Relations
   users UserRole[]
@@ -84,12 +87,12 @@ model RefreshToken {
 }
 
 model PasswordResetToken {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  token     String   @unique @db.VarChar(255)
-  expiresAt DateTime @map("expires_at")
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  token     String    @unique @db.VarChar(255)
+  expiresAt DateTime  @map("expires_at")
   usedAt    DateTime? @map("used_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime  @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -112,19 +115,40 @@ model EmailVerificationToken {
   @@map("email_verification_tokens")
 }
 
+model PhoneVerificationToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  code      String    @db.VarChar(6)
+  attempts  Int       @default(0)
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, usedAt])
+  @@map("phone_verification_tokens")
+}
+
 // ============================================
 // Applicant Profiles
 // ============================================
 
 model ApplicantProfile {
-  id               String   @id @default(uuid()) @db.Uuid
-  userId           String   @unique @map("user_id") @db.Uuid
-  fullName         String   @map("full_name") @db.VarChar(255)
-  ghanaCardNumber  String   @unique @map("ghana_card_number") @db.VarChar(20)
-  ghanaCardFrontUrl String  @map("ghana_card_front_url") @db.Text
-  ghanaCardBackUrl  String? @map("ghana_card_back_url") @db.Text
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  id                 String             @id @default(uuid()) @db.Uuid
+  userId             String             @unique @map("user_id") @db.Uuid
+  fullName           String             @map("full_name") @db.VarChar(255)
+  idType             IdDocumentType     @default(GHANA_CARD) @map("id_type")
+  ghanaCardNumber    String?            @unique @map("ghana_card_number") @db.VarChar(20)
+  ghanaCardFrontUrl  String?            @map("ghana_card_front_url") @db.Text
+  ghanaCardBackUrl   String?            @map("ghana_card_back_url") @db.Text
+  alternateIdNumber  String?            @map("alternate_id_number") @db.VarChar(64)
+  alternateIdScanUrl String?            @map("alternate_id_scan_url") @db.Text
+  alternateIdReason  AlternateIdReason? @map("alternate_id_reason")
+  alternateIdDetails String?            @map("alternate_id_details") @db.Text
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
   verificationStatus VerificationStatus @default(PENDING_VERIFICATION) @map("verification_status")
 
   // Relations
@@ -133,7 +157,9 @@ model ApplicantProfile {
   declarations        Declaration[]
   verificationReviews ApplicantVerificationReview[]
 
+  @@unique([idType, alternateIdNumber], name: "applicant_profiles_alt_id_key")
   @@index([verificationStatus])
+  @@index([idType])
   @@map("applicant_profiles")
 }
 
@@ -263,6 +289,26 @@ enum ReissueApproverType {
   @@map("reissue_approver_type")
 }
 
+enum IdDocumentType {
+  GHANA_CARD
+  PASSPORT
+  VOTER_ID
+  DRIVERS_LICENSE
+  NIA_RECEIPT
+
+  @@map("id_document_type")
+}
+
+enum AlternateIdReason {
+  PENDING_NIA_REGISTRATION
+  FOREIGN_NATIONAL
+  LOST_AWAITING_REISSUE
+  DAMAGED_AWAITING_REISSUE
+  OTHER
+
+  @@map("alternate_id_reason")
+}
+
 model Declaration {
   id                    String            @id @default(uuid()) @db.Uuid
   applicantId           String            @map("applicant_id") @db.Uuid
@@ -275,10 +321,10 @@ model Declaration {
   updatedAt             DateTime          @updatedAt @map("updated_at")
 
   // Relations
-  applicant            ApplicantProfile           @relation(fields: [applicantId], references: [id])
-  returnOffice         CollectionOffice?          @relation("FormReturnedTo", fields: [returnOfficeId], references: [id])
-  formCollections      FormCollection[]
-  formReissueRequests  FormReissueRequest[]
+  applicant           ApplicantProfile           @relation(fields: [applicantId], references: [id])
+  returnOffice        CollectionOffice?          @relation("FormReturnedTo", fields: [returnOfficeId], references: [id])
+  formCollections     FormCollection[]
+  formReissueRequests FormReissueRequest[]
   reviews             Review[]
   receipts            Receipt[]
   sectionReviews      DeclarationSectionReview[]
@@ -603,12 +649,12 @@ model DataRetentionPolicy {
 }
 
 model ArchivedRecord {
-  id                    String   @id @default(uuid()) @db.Uuid
-  entityType            String   @map("entity_type") @db.VarChar(50)
-  entityId              String   @map("entity_id") @db.Uuid
-  archivedData          Json     @map("archived_data")
-  archivedBy            String?  @map("archived_by") @db.Uuid
-  archivedAt            DateTime @default(now()) @map("archived_at")
+  id                    String    @id @default(uuid()) @db.Uuid
+  entityType            String    @map("entity_type") @db.VarChar(50)
+  entityId              String    @map("entity_id") @db.Uuid
+  archivedData          Json      @map("archived_data")
+  archivedBy            String?   @map("archived_by") @db.Uuid
+  archivedAt            DateTime  @default(now()) @map("archived_at")
   scheduledDeletionDate DateTime? @map("scheduled_deletion_date") @db.Date
 
   // Relations

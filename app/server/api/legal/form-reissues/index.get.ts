@@ -25,6 +25,7 @@ export default defineEventHandler(async (event) => {
       { declaration: { uniqueCode: { contains: search, mode: "insensitive" } } },
       { declaration: { applicant: { fullName: { contains: search, mode: "insensitive" } } } },
       { declaration: { applicant: { ghanaCardNumber: { contains: search, mode: "insensitive" } } } },
+      { declaration: { applicant: { alternateIdNumber: { contains: search, mode: "insensitive" } } } },
     ];
   }
 
@@ -37,7 +38,9 @@ export default defineEventHandler(async (event) => {
             applicant: {
               select: {
                 fullName: true,
+                idType: true,
                 ghanaCardNumber: true,
+                alternateIdNumber: true,
                 user: { select: { email: true } },
               },
             },

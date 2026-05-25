@@ -6,6 +6,8 @@ export interface User {
   email: string;
   phone: string | null;
   emailVerified: boolean;
+  phoneVerified: boolean;
+  phoneVerifiedAt: string | null;
   roles: string[];
   hasProfile?: boolean;
   fullName?: string;
@@ -31,6 +33,7 @@ export const useAuthStore = defineStore("auth", () => {
   const isLegalUnit = computed(() => user.value?.roles.includes("legal_unit") ?? false);
   const isAdmin = computed(() => user.value?.roles.includes("admin") ?? false);
   const isEmailVerified = computed(() => user.value?.emailVerified ?? false);
+  const isPhoneVerified = computed(() => user.value?.phoneVerified ?? false);
   const isVerified = computed(() => user.value?.verificationStatus === "VERIFIED");
 
   // Actions
@@ -159,6 +162,8 @@ export const useAuthStore = defineStore("auth", () => {
           email: response.data.email,
           phone: response.data.phone,
           emailVerified: response.data.emailVerified,
+          phoneVerified: response.data.phoneVerified ?? false,
+          phoneVerifiedAt: response.data.phoneVerifiedAt ?? null,
           roles: response.data.roles,
           hasProfile: !!response.data.profile,
           fullName: response.data.profile?.fullName,
@@ -216,6 +221,48 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
+  async function sendPhoneCode() {
+    if (!tokens.value?.accessToken) {
+      return { success: false, error: "Not authenticated" };
+    }
+    try {
+      const response = await $fetch("/api/auth/send-phone-code", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${tokens.value.accessToken}` },
+      });
+      return {
+        success: true,
+        message: response.message,
+        expiresAt: response.data?.expiresAt as string | undefined,
+      };
+    } catch (error: unknown) {
+      const e = error as { data?: { message?: string; data?: { retryInSec?: number } }; statusCode?: number };
+      return {
+        success: false,
+        error: e.data?.message || "Failed to send code",
+        retryInSec: e.data?.data?.retryInSec,
+      };
+    }
+  }
+
+  async function verifyPhone(code: string) {
+    if (!tokens.value?.accessToken) {
+      return { success: false, error: "Not authenticated" };
+    }
+    try {
+      await $fetch("/api/auth/verify-phone", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${tokens.value.accessToken}` },
+        body: { code },
+      });
+      await fetchUser();
+      return { success: true };
+    } catch (error: unknown) {
+      const e = error as { data?: { message?: string } };
+      return { success: false, error: e.data?.message || "Verification failed" };
+    }
+  }
+
   function getAuthHeaders(): Record<string, string> {
     if (!tokens.value?.accessToken) return {};
     return {
@@ -236,6 +283,7 @@ export const useAuthStore = defineStore("auth", () => {
     isLegalUnit,
     isAdmin,
     isEmailVerified,
+    isPhoneVerified,
     isVerified,
     // Actions
     setTokens,
@@ -248,6 +296,8 @@ export const useAuthStore = defineStore("auth", () => {
     fetchUser,
     forgotPassword,
     resetPassword,
+    sendPhoneCode,
+    verifyPhone,
     getAuthHeaders,
   };
 });

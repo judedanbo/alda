@@ -6,6 +6,7 @@ export function useAuth() {
   const user = computed(() => store.user);
   const isAuthenticated = computed(() => store.isAuthenticated);
   const isEmailVerified = computed(() => store.user?.emailVerified ?? false);
+  const isPhoneVerified = computed(() => store.user?.phoneVerified ?? false);
   const isVerified = computed(() => store.isVerified);
   const isApplicant = computed(() => store.isApplicant);
   const isOfficer = computed(() => store.isOfficer);
@@ -16,6 +17,7 @@ export function useAuth() {
     user,
     isAuthenticated,
     isEmailVerified,
+    isPhoneVerified,
     isVerified,
     isApplicant,
     isOfficer,
@@ -24,5 +26,7 @@ export function useAuth() {
     login: store.login,
     logout: store.logout,
     register: store.register,
+    sendPhoneCode: store.sendPhoneCode,
+    verifyPhone: store.verifyPhone,
   };
 }

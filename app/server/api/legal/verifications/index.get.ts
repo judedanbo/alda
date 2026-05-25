@@ -24,6 +24,7 @@ export default defineEventHandler(async (event) => {
     where.OR = [
       { fullName: { contains: search, mode: "insensitive" } },
       { ghanaCardNumber: { contains: search, mode: "insensitive" } },
+      { alternateIdNumber: { contains: search, mode: "insensitive" } },
       { user: { email: { contains: search, mode: "insensitive" } } },
     ];
   }

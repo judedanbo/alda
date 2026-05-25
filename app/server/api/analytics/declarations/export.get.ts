@@ -42,7 +42,9 @@ export default defineEventHandler(async (event) => {
           applicant: {
             select: {
               fullName: true,
+              idType: true,
               ghanaCardNumber: true,
+              alternateIdNumber: true,
               offices: {
                 select: { institution: { select: { name: true } } },
               },
@@ -80,7 +82,11 @@ export default defineEventHandler(async (event) => {
     return {
       code: decl.uniqueCode,
       applicant: decl.applicant.fullName,
-      ghanaCard: decl.applicant.ghanaCardNumber,
+      idType: decl.applicant.idType,
+      idNumber:
+        decl.applicant.idType === "GHANA_CARD"
+          ? decl.applicant.ghanaCardNumber
+          : decl.applicant.alternateIdNumber,
       institutions,
       collectionOffice: office?.name ?? "",
       region: office?.region ?? "",
@@ -95,7 +101,8 @@ export default defineEventHandler(async (event) => {
     const headers = [
       "Code",
       "Applicant",
-      "Ghana Card",
+      "ID Type",
+      "ID Number",
       "Institutions",
       "Collection Office",
       "Region",
@@ -110,7 +117,8 @@ export default defineEventHandler(async (event) => {
         [
           item.code,
           `"${item.applicant}"`,
-          item.ghanaCard,
+          item.idType,
+          item.idNumber ?? "",
           `"${item.institutions}"`,
           `"${item.collectionOffice}"`,
           `"${item.region}"`,

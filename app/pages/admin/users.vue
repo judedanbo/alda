@@ -17,7 +17,9 @@ interface User {
   roles: string[];
   profile: {
     fullName: string;
-    ghanaCardNumber: string;
+    idType: import("~/utils/displayId").IdType;
+    ghanaCardNumber: string | null;
+    alternateIdNumber: string | null;
     offices: Array<{
       designation: string;
       officeCategory: { name: string } | null;

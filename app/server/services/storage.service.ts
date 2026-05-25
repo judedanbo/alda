@@ -118,6 +118,45 @@ export async function uploadGhanaCard(
 }
 
 /**
+ * Upload a scan of an alternate government ID (passport, voter card, etc.)
+ * for applicants who legitimately can't provide a Ghana Card. The path is
+ * keyed per-user + per-type so re-uploads of the same type overwrite, but
+ * a different type does not clobber the previous artifact.
+ */
+export async function uploadAlternateIdScan(
+  file: Buffer,
+  originalName: string,
+  contentType: string,
+  userId: string,
+  idType: string,
+): Promise<UploadResult> {
+  const folder = `alternate-ids/${userId}`;
+  const config = useRuntimeConfig();
+  const bucket = config.minioBucket;
+  const client = getMinioClient();
+
+  await ensureBucket(bucket);
+
+  const ext = originalName.split(".").pop() || "jpg";
+  const safeType = idType.toLowerCase().replace(/[^a-z0-9_-]/g, "");
+  const key = `${folder}/${safeType}.${ext}`;
+
+  await client.putObject(bucket, key, file, file.length, {
+    "Content-Type": contentType,
+  });
+
+  const url = `http://${config.minioEndpoint}:${config.minioPort}/${bucket}/${key}`;
+
+  return {
+    url,
+    key,
+    bucket,
+    size: file.length,
+    contentType,
+  };
+}
+
+/**
  * Upload a buffer directly with a specific path
  */
 export async function uploadBuffer(

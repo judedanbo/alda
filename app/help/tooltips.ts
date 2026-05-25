@@ -17,6 +17,22 @@ export const fieldTooltips: FieldTooltip[] = [
     text: "Upload a clear photo of the back of your Ghana Card. Blurred or cropped images delay verification.",
   },
   {
+    id: "profile.idType",
+    text: "Most applicants must use a Ghana Card. Pick an alternate ID only if you genuinely don't have one yet — for example, your card is being reissued or you are a foreign national appointed to a qualifying office.",
+  },
+  {
+    id: "profile.alternateIdNumber",
+    text: "Enter the ID number exactly as it appears on the document. The Legal Unit will compare it against your uploaded scan.",
+  },
+  {
+    id: "profile.alternateIdReason",
+    text: "Pick the closest reason. This helps the Legal Unit reviewer route your application and decide what extra checks they need.",
+  },
+  {
+    id: "profile.alternateIdScan",
+    text: "Upload a clear, well-lit photo or scan of the document page that shows your full name and ID number.",
+  },
+  {
     id: "profile.designation",
     text: "Your official job title in the public office you hold.",
   },

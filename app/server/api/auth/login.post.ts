@@ -119,6 +119,8 @@ export default defineEventHandler(async (event) => {
         email: user.email,
         phone: user.phone,
         emailVerified: user.emailVerified,
+        phoneVerified: user.phoneVerified,
+        phoneVerifiedAt: user.phoneVerifiedAt,
         roles,
         hasProfile: !!profile,
         fullName: profile?.fullName,

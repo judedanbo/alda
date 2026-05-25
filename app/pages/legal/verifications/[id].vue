@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { displayId, altReasonLabel, ID_TYPE_LABEL, type IdType, type AltReason } from "~/utils/displayId";
+
 interface VerificationUser {
   id: string;
   email: string;
@@ -33,17 +35,42 @@ interface VerificationReview {
   reviewer: { email: string };
 }
 
+interface IdMatch {
+  id: string;
+  fullName: string;
+  idType: IdType;
+  ghanaCardNumber: string | null;
+  alternateIdNumber: string | null;
+  verificationStatus: string;
+  createdAt: string;
+  user: { email: string };
+}
+
+interface IdCheck {
+  idType: IdType;
+  number: string;
+  unique: boolean;
+  checkedAt: string;
+  matches: IdMatch[];
+}
+
 interface VerificationProfile {
   id: string;
   fullName: string;
-  ghanaCardNumber: string;
-  ghanaCardFrontUrl: string;
+  idType: IdType;
+  ghanaCardNumber: string | null;
+  ghanaCardFrontUrl: string | null;
   ghanaCardBackUrl: string | null;
+  alternateIdNumber: string | null;
+  alternateIdScanUrl: string | null;
+  alternateIdReason: AltReason | null;
+  alternateIdDetails: string | null;
   verificationStatus: string;
   createdAt: string;
   user: VerificationUser;
   offices: ApplicantOfficeInfo[];
   verificationReviews: VerificationReview[];
+  idCheck: IdCheck;
 }
 
 definePageMeta({
@@ -155,6 +182,93 @@ const formatDate = (date: string) =>
         </Badge>
       </div>
 
+      <!-- Alternate ID context banner -->
+      <div
+        v-if="profile.idType !== 'GHANA_CARD'"
+        role="status"
+        aria-live="polite"
+        class="flex items-start gap-3 rounded-lg border-2 border-amber-500 bg-amber-50 dark:bg-amber-950/40 p-4"
+      >
+        <svg
+          class="w-6 h-6 flex-shrink-0 text-amber-600 dark:text-amber-400"
+          fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div class="flex-1 min-w-0">
+          <p class="font-semibold text-amber-900 dark:text-amber-100">
+            Alternate ID — applicant has no Ghana Card
+          </p>
+          <p class="text-sm mt-1 text-amber-800 dark:text-amber-200">
+            Submitted under <strong>{{ ID_TYPE_LABEL[profile.idType] }}</strong>. Reason: <em>{{ altReasonLabel(profile.alternateIdReason) }}</em>. Verify the uploaded scan carefully before approving.
+          </p>
+          <p
+            v-if="profile.alternateIdDetails"
+            class="text-sm mt-2 text-amber-900 dark:text-amber-100 whitespace-pre-wrap"
+          >
+            <span class="font-medium">Applicant note:</span> {{ profile.alternateIdDetails }}
+          </p>
+        </div>
+      </div>
+
+      <!-- ID uniqueness banner -->
+      <div
+        v-if="profile.idCheck"
+        role="status"
+        :aria-live="profile.idCheck.unique ? 'polite' : 'assertive'"
+        class="flex items-start gap-3 rounded-lg border-2 p-4"
+        :class="profile.idCheck.unique
+          ? 'border-green-500 bg-green-50 dark:bg-green-950/40'
+          : 'border-red-500 bg-red-50 dark:bg-red-950/40'"
+      >
+        <svg
+          v-if="profile.idCheck.unique"
+          class="w-6 h-6 flex-shrink-0 text-green-600 dark:text-green-400"
+          fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <svg
+          v-else
+          class="w-6 h-6 flex-shrink-0 text-red-600 dark:text-red-400"
+          fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <div class="flex-1 min-w-0">
+          <p class="font-semibold" :class="profile.idCheck.unique ? 'text-green-900 dark:text-green-100' : 'text-red-900 dark:text-red-100'">
+            <span v-if="profile.idCheck.unique">{{ ID_TYPE_LABEL[profile.idType] }} number is unique</span>
+            <span v-else>Duplicate {{ ID_TYPE_LABEL[profile.idType] }} number detected ({{ profile.idCheck.matches.length }} match{{ profile.idCheck.matches.length === 1 ? '' : 'es' }})</span>
+          </p>
+          <p class="text-sm mt-1" :class="profile.idCheck.unique ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'">
+            <span v-if="profile.idCheck.unique">
+              <span class="font-mono">{{ displayId(profile).value }}</span> does not appear on any other applicant profile.
+            </span>
+            <span v-else>
+              <span class="font-mono">{{ displayId(profile).value }}</span> is also registered to the following profile(s). Review carefully before approving.
+            </span>
+          </p>
+          <ul v-if="!profile.idCheck.unique" class="mt-3 space-y-1 text-sm">
+            <li
+              v-for="match in profile.idCheck.matches"
+              :key="match.id"
+              class="flex items-center gap-2"
+            >
+              <NuxtLink
+                :to="`/legal/verifications/${match.id}`"
+                class="font-medium text-red-900 dark:text-red-100 underline hover:no-underline"
+              >
+                {{ match.fullName }}
+              </NuxtLink>
+              <span class="text-red-800 dark:text-red-200">— {{ match.user?.email }}</span>
+              <Badge :class="statusColors[match.verificationStatus] || 'bg-muted text-muted-foreground'">
+                {{ statusLabels[match.verificationStatus] || match.verificationStatus }}
+              </Badge>
+            </li>
+          </ul>
+        </div>
+      </div>
+
       <div class="grid lg:grid-cols-3 gap-6">
         <!-- Left column: Applicant info -->
         <div class="lg:col-span-2 space-y-6">
@@ -168,8 +282,8 @@ const formatDate = (date: string) =>
                   <dd class="font-medium">{{ profile.fullName }}</dd>
                 </div>
                 <div>
-                  <dt class="text-muted-foreground">Ghana Card Number</dt>
-                  <dd class="font-mono font-medium">{{ profile.ghanaCardNumber }}</dd>
+                  <dt class="text-muted-foreground">{{ displayId(profile).label }} Number</dt>
+                  <dd class="font-mono font-medium">{{ displayId(profile).value }}</dd>
                 </div>
                 <div>
                   <dt class="text-muted-foreground">Email</dt>
@@ -191,12 +305,16 @@ const formatDate = (date: string) =>
             </CardContent>
           </Card>
 
-          <!-- Ghana Card Images -->
+          <!-- ID document images -->
           <Card>
-            <CardHeader><CardTitle>Ghana Card Images</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>
+                {{ profile.idType === "GHANA_CARD" ? "Ghana Card Images" : `${ID_TYPE_LABEL[profile.idType]} Scan` }}
+              </CardTitle>
+            </CardHeader>
             <CardContent>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+              <div v-if="profile.idType === 'GHANA_CARD'" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div v-if="profile.ghanaCardFrontUrl">
                   <p class="text-sm text-muted-foreground mb-2">Front</p>
                   <a :href="profile.ghanaCardFrontUrl" target="_blank" class="block">
                     <img
@@ -217,6 +335,16 @@ const formatDate = (date: string) =>
                   </a>
                 </div>
               </div>
+              <div v-else-if="profile.alternateIdScanUrl">
+                <a :href="profile.alternateIdScanUrl" target="_blank" class="block">
+                  <img
+                    :src="profile.alternateIdScanUrl"
+                    :alt="`${ID_TYPE_LABEL[profile.idType]} scan`"
+                    class="w-full rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
+                  >
+                </a>
+              </div>
+              <p v-else class="text-sm text-muted-foreground">No scan uploaded.</p>
             </CardContent>
           </Card>
 
