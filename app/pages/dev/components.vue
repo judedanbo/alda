@@ -36,6 +36,29 @@ const ffEmailError = computed(() =>
   ffEmail.value && !ffEmail.value.includes("@") ? "Enter a valid email address." : undefined,
 );
 
+// Date pickers state
+const dateValue = ref<string | null>(null);
+const dateTimeValue = ref<string | null>(null);
+const dateBoundedValue = ref<string | null>(null);
+const dateDisabledValue = ref<string | null>("2026-05-24");
+const rangeFrom = ref<string | null>(null);
+const rangeTo = ref<string | null>(null);
+const popoverDate = ref<string | null>(null);
+
+// NativeSelect / RadioGroup / Combobox / TagsInput state
+const nativeSelectValue = ref("greater-accra");
+const radioValue = ref("schedule_officer");
+const comboboxValue = ref<string>("");
+const comboboxOptions = [
+  { value: "ministry-of-finance", label: "Ministry of Finance" },
+  { value: "ministry-of-health", label: "Ministry of Health" },
+  { value: "ministry-of-education", label: "Ministry of Education" },
+  { value: "ghana-revenue-authority", label: "Ghana Revenue Authority" },
+  { value: "auditor-general", label: "Auditor General Department" },
+  { value: "bank-of-ghana", label: "Bank of Ghana" },
+];
+const tagsValue = ref<string[]>(["ghana", "compliance"]);
+
 // Compound component state
 const tabValue = ref("overview");
 const dialogOpen = ref(false);
@@ -45,7 +68,7 @@ const paginationPage = ref(1);
 const buttonVariants = ["default", "outline", "secondary", "ghost", "destructive", "link"] as const;
 const buttonSizes = ["xs", "sm", "default", "lg"] as const;
 const badgeVariants = ["default", "secondary", "destructive", "outline", "ghost", "link"] as const;
-const inputTypes = ["text", "email", "password", "number", "search", "date", "tel", "url"] as const;
+const inputTypes = ["text", "email", "password", "number", "search", "tel", "url"] as const;
 
 const tableRows = [
   { code: "ADLA-001", name: "Ama Mensah", status: "APPROVED" },
@@ -164,6 +187,102 @@ const avatarImage
       </p>
     </section>
 
+    <!-- DatePicker -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold text-foreground">
+        DatePicker
+      </h2>
+      <p class="text-sm text-muted-foreground">
+        Calendar-based date selector. Renders the same way across all browsers
+        (replaces native <code>&lt;input type="date"&gt;</code>).
+      </p>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div class="space-y-1">
+          <Label>Date (day granularity)</Label>
+          <DatePicker v-model="dateValue" block />
+          <p class="text-xs text-muted-foreground">
+            Bound value: {{ dateValue || "(empty)" }}
+          </p>
+        </div>
+        <div class="space-y-1">
+          <Label>Date + time</Label>
+          <DatePicker v-model="dateTimeValue" granularity="minute" block />
+          <p class="text-xs text-muted-foreground">
+            Bound value: {{ dateTimeValue || "(empty)" }}
+          </p>
+        </div>
+        <div class="space-y-1">
+          <Label>Min/max bounded (this year only)</Label>
+          <DatePicker
+            v-model="dateBoundedValue"
+            min="2026-01-01"
+            max="2026-12-31"
+            placeholder="Pick a 2026 date"
+            block
+          />
+        </div>
+        <div class="space-y-1">
+          <Label>Disabled</Label>
+          <DatePicker v-model="dateDisabledValue" disabled block />
+        </div>
+        <div class="space-y-1 sm:col-span-2">
+          <Label>Inline (no popover) — Calendar primitive</Label>
+          <div class="rounded-lg border bg-card w-fit">
+            <Calendar />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DateRangePicker -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold text-foreground">
+        DateRangePicker
+      </h2>
+      <p class="text-sm text-muted-foreground">
+        Two-month range selector for filter bars and reports.
+      </p>
+      <DateRangePicker
+        v-model:from="rangeFrom"
+        v-model:to="rangeTo"
+      />
+      <p class="text-xs text-muted-foreground">
+        From: {{ rangeFrom || "(empty)" }} — To: {{ rangeTo || "(empty)" }}
+      </p>
+    </section>
+
+    <!-- Popover -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold text-foreground">
+        Popover
+      </h2>
+      <p class="text-sm text-muted-foreground">
+        Standalone popover primitive — the foundation for DatePicker and any
+        floating panel UI.
+      </p>
+      <Popover>
+        <PopoverTrigger as-child>
+          <Button variant="outline">
+            Open popover
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent>
+          <div class="space-y-2">
+            <h4 class="text-sm font-semibold">
+              Dimensions
+            </h4>
+            <p class="text-xs text-muted-foreground">
+              Set padding and dimensions for the layer.
+            </p>
+            <div class="space-y-1">
+              <Label class="text-xs">Date</Label>
+              <DatePicker v-model="popoverDate" block />
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </section>
+
     <!-- FileInput -->
     <section class="space-y-4">
       <h2 class="text-lg font-semibold text-foreground">
@@ -206,6 +325,132 @@ const avatarImage
       </Select>
       <p class="text-xs text-muted-foreground">
         Selected: {{ selectValue || "(none)" }}
+      </p>
+    </section>
+
+    <!-- NativeSelect -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold text-foreground">
+        NativeSelect
+      </h2>
+      <p class="text-sm text-muted-foreground">
+        Styled wrapper around the native <code>&lt;select&gt;</code>. The
+        closed-state trigger matches our other inputs across browsers; the
+        open menu uses each browser's native picker (good for very long
+        lists and mobile UX).
+      </p>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div class="space-y-1">
+          <Label>Region</Label>
+          <NativeSelect v-model="nativeSelectValue">
+            <option value="greater-accra">
+              Greater Accra
+            </option>
+            <option value="ashanti">
+              Ashanti
+            </option>
+            <option value="northern">
+              Northern
+            </option>
+            <option value="volta">
+              Volta
+            </option>
+          </NativeSelect>
+        </div>
+        <div class="space-y-1">
+          <Label>Small + disabled</Label>
+          <NativeSelect size="sm" disabled>
+            <option>Disabled</option>
+          </NativeSelect>
+        </div>
+      </div>
+      <p class="text-xs text-muted-foreground">
+        Selected: {{ nativeSelectValue }}
+      </p>
+    </section>
+
+    <!-- RadioGroup -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold text-foreground">
+        RadioGroup
+      </h2>
+      <p class="text-sm text-muted-foreground">
+        Mutually-exclusive choices with consistent styling across browsers.
+      </p>
+      <RadioGroup v-model="radioValue">
+        <div class="flex items-center gap-2">
+          <RadioGroupItem id="role-applicant" value="applicant" />
+          <Label for="role-applicant">Applicant</Label>
+        </div>
+        <div class="flex items-center gap-2">
+          <RadioGroupItem id="role-officer" value="schedule_officer" />
+          <Label for="role-officer">Schedule Officer</Label>
+        </div>
+        <div class="flex items-center gap-2">
+          <RadioGroupItem id="role-legal" value="legal_unit" />
+          <Label for="role-legal">Legal Unit</Label>
+        </div>
+        <div class="flex items-center gap-2">
+          <RadioGroupItem id="role-admin" value="admin" />
+          <Label for="role-admin">Admin</Label>
+        </div>
+      </RadioGroup>
+      <p class="text-xs text-muted-foreground">
+        Selected: {{ radioValue }}
+      </p>
+    </section>
+
+    <!-- Combobox -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold text-foreground">
+        Combobox
+      </h2>
+      <p class="text-sm text-muted-foreground">
+        Searchable select with keyboard navigation. Use for long lists like
+        institutions, where typing-to-filter is more usable than scrolling.
+      </p>
+      <Combobox v-model="comboboxValue" :ignore-filter="false" class="w-64">
+        <ComboboxAnchor>
+          <ComboboxInput placeholder="Search institutions..." />
+          <ComboboxTrigger />
+        </ComboboxAnchor>
+        <ComboboxContent>
+          <ComboboxEmpty />
+          <ComboboxGroup>
+            <ComboboxLabel>Institutions</ComboboxLabel>
+            <ComboboxItem
+              v-for="opt in comboboxOptions"
+              :key="opt.value"
+              :value="opt.value"
+            >
+              {{ opt.label }}
+            </ComboboxItem>
+          </ComboboxGroup>
+        </ComboboxContent>
+      </Combobox>
+      <p class="text-xs text-muted-foreground">
+        Selected: {{ comboboxValue || "(none)" }}
+      </p>
+    </section>
+
+    <!-- TagsInput / MultiSelect -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold text-foreground">
+        TagsInput (MultiSelect)
+      </h2>
+      <p class="text-sm text-muted-foreground">
+        Chip-style tag input. Type a value and press Enter to add; click
+        the X (or press Backspace) to remove.
+      </p>
+      <TagsInput v-model="tagsValue" class="max-w-md">
+        <TagsInputItem v-for="tag in tagsValue" :key="tag" :value="tag">
+          <TagsInputItemText />
+          <TagsInputItemDelete />
+        </TagsInputItem>
+        <TagsInputInput placeholder="Add a tag..." />
+      </TagsInput>
+      <p class="text-xs text-muted-foreground">
+        Tags: {{ tagsValue.length ? tagsValue.join(", ") : "(none)" }}
       </p>
     </section>
 

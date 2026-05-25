@@ -265,17 +265,13 @@ const statuses = [
               </SelectItem>
             </SelectContent>
           </Select>
-          <Input
-            v-model="dateFrom"
-            type="date"
-            placeholder="From date"
-            @change="handleSearch"
-          />
-          <Input
-            v-model="dateTo"
-            type="date"
-            placeholder="To date"
-            @change="handleSearch"
+          <DateRangePicker
+            :from="dateFrom || null"
+            :to="dateTo || null"
+            placeholder="Filter by date"
+            block
+            @update:from="(v) => { dateFrom = v ?? ''; handleSearch(); }"
+            @update:to="(v) => { dateTo = v ?? ''; handleSearch(); }"
           />
           <div class="flex gap-2">
             <Button class="flex-1" @click="handleSearch">Search</Button>
