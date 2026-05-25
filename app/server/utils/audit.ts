@@ -2,6 +2,7 @@ import type { H3Event } from "h3";
 import { Prisma } from "@prisma/client";
 import prisma from "./prisma";
 import { extractClientIp } from "./request-meta";
+import { scrubAuditValues } from "./pii";
 
 export interface AuditLogData {
   userId?: string;
@@ -23,6 +24,12 @@ export async function createAuditLog(
   const userAgent = getHeader(event, "user-agent") || "unknown";
   const sessionId = getCookie(event, "session_id") || undefined;
 
+  // Mask known PII fields (Ghana Card numbers, full names, emails, phones,
+  // bucket keys) before persisting. Old rows written before this change
+  // still contain plaintext; new rows do not. See server/utils/pii.ts.
+  const scrubbedOld = scrubAuditValues(data.oldValues);
+  const scrubbedNew = scrubAuditValues(data.newValues);
+
   try {
     await prisma.auditLog.create({
       data: {
@@ -30,8 +37,8 @@ export async function createAuditLog(
         action: data.action,
         entityType: data.entityType,
         entityId: data.entityId,
-        oldValues: (data.oldValues ?? Prisma.JsonNull) as Prisma.InputJsonValue,
-        newValues: (data.newValues ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        oldValues: (scrubbedOld ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        newValues: (scrubbedNew ?? Prisma.JsonNull) as Prisma.InputJsonValue,
         ipAddress,
         userAgent,
         sessionId,
