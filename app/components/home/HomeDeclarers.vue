@@ -35,10 +35,11 @@ const branches: BranchTab[] = [
     label: 'Executive',
     icon: Landmark,
     roles: [
-      { icon: User, title: 'President and Vice President' },
+      { icon: User, title: 'President and Vice-President' },
       { icon: Briefcase, title: 'Ministers and Deputy Ministers' },
-      { icon: Users, title: 'Secretary to Cabinet' },
-      { icon: Building, title: 'Heads of Ministries' },
+      { icon: Users, title: 'Secretary to the Cabinet' },
+      { icon: Building, title: 'Heads of Ministries and government departments' },
+      { icon: User, title: 'Presidential Staffers and Aides' },
     ],
   },
   {
@@ -48,7 +49,6 @@ const branches: BranchTab[] = [
     roles: [
       { icon: User, title: 'Speaker and Deputy Speakers' },
       { icon: Users, title: 'Members of Parliament' },
-      { icon: Briefcase, title: 'Parliamentary Staff (senior)' },
     ],
   },
   {
@@ -57,8 +57,9 @@ const branches: BranchTab[] = [
     icon: Scale,
     roles: [
       { icon: Gavel, title: 'Chief Justice' },
-      { icon: Scale, title: 'Justices of Superior Courts' },
-      { icon: User, title: 'Regional Tribunal Chairmen' },
+      { icon: Scale, title: 'Justices of the Superior Court of Judicature' },
+      { icon: User, title: 'Chairmen of Regional Tribunals and judicial officers' },
+      { icon: Users, title: 'CHRAJ Commissioner and Deputies' },
     ],
   },
   {
@@ -66,29 +67,32 @@ const branches: BranchTab[] = [
     label: 'Public Enterprises',
     icon: Building2,
     roles: [
-      { icon: Users, title: 'Board Chairmen and Members' },
-      { icon: Briefcase, title: 'Managing Directors' },
-      { icon: User, title: 'Deputy Managing Directors' },
+      { icon: Users, title: 'Chairmen, MDs, Secretaries and GMs of state-controlled corporations' },
+      { icon: Briefcase, title: 'Governor, Bank of Ghana and Deputies' },
+      { icon: User, title: 'Chairmen of Electoral Commission, NCCE and Public Services Commission' },
+      { icon: Building, title: 'Members of Central, Regional and District Tender Boards' },
     ],
   },
   {
     id: 'security',
-    label: 'Security',
+    label: 'Security & Revenue',
     icon: ShieldCheck,
     roles: [
-      { icon: Swords, title: 'Police Service Officers' },
-      { icon: ShieldCheck, title: 'Armed Forces Officers' },
-      { icon: User, title: 'Immigration & Prisons Officers' },
+      { icon: Swords, title: 'Officers of the Police and Prison Services' },
+      { icon: ShieldCheck, title: 'Armed Forces officers seconded to civilian institutions' },
+      { icon: User, title: 'Immigration, Fire Service and CEPS officers (senior)' },
+      { icon: Briefcase, title: 'IRS Assistant Inspector of Taxes and above' },
     ],
   },
   {
     id: 'others',
-    label: 'Others',
+    label: 'Local & Others',
     icon: Globe,
     roles: [
-      { icon: Globe, title: 'Ambassadors & High Commissioners' },
-      { icon: GraduationCap, title: 'Heads of Educational Institutions' },
-      { icon: BookOpen, title: 'Members of Regulatory Bodies' },
+      { icon: Globe, title: 'Ambassadors and High Commissioners' },
+      { icon: User, title: 'District Chief Executives and MMDA presiding members' },
+      { icon: BookOpen, title: 'Heads, accountants, auditors, procurement and budget officers in MDAs and MMDAs' },
+      { icon: GraduationCap, title: 'Any public officer at or above the salary of a Director in the Civil Service' },
     ],
   },
 ]
@@ -102,8 +106,9 @@ const branches: BranchTab[] = [
           Who Must Declare?
         </h2>
         <p class="text-muted-foreground max-w-2xl mx-auto">
-          Under Article 286(5) of the 1992 Constitution, the following public
-          officials are required to declare their assets
+          Schedule I of Act 550 (1998), giving effect to Article 286(5) of the
+          1992 Constitution, lists the public offices required to declare
+          assets and liabilities. The Armed Forces are excluded.
         </p>
       </div>
 

@@ -5,8 +5,41 @@ export const glossaryTerms: GlossaryTerm[] = [
     id: "gl-article-286",
     term: "Article 286(5)",
     definition:
-      "The provision of Ghana's Constitution requiring specified public officers to declare their assets and liabilities. The portal exists to support this compliance process.",
+      "The provision of Chapter 24 of Ghana's 1992 Constitution requiring specified public officers to declare their assets and liabilities. The portal exists to support this compliance process.",
     aliases: ["asset declaration law"],
+  },
+  {
+    id: "gl-act-550",
+    term: "Act 550",
+    definition:
+      "The Public Office Holders (Declaration of Assets and Disqualification) Act, 1998. The statute that gives effect to Chapter 24 of the Constitution — setting out who must declare (Schedule I), what must be declared (Section 4), when (Section 1(4)), the form to use (Schedule II), and the consequences of contravention (Sections 7–8 and Part II).",
+    aliases: ["the Act", "declaration act", "1998 Act"],
+  },
+  {
+    id: "gl-schedule-i",
+    term: "Schedule I",
+    definition:
+      "The schedule of Act 550 that lists the public offices subject to declaration — the President and Vice-President, Speaker, MPs, Ministers, judges, Ambassadors, heads of MDAs and corporations, MMDA executives, senior revenue and security officers, and any public officer with a salary at or above that of a Director in the Civil Service.",
+  },
+  {
+    id: "gl-schedule-ii",
+    term: "Schedule II",
+    definition:
+      "The Declaration of Assets and Liability form referenced by Section 1(2) of Act 550. Inside the portal the same information is captured through the structured declaration workflow.",
+    aliases: ["declaration form"],
+  },
+  {
+    id: "gl-chraj",
+    term: "CHRAJ",
+    definition:
+      "The Commissioner for Human Rights and Administrative Justice. Under Section 8 of Act 550, allegations that a public officer has contravened the declaration requirements are made to CHRAJ for investigation. When the Commissioner is the subject, the complaint goes to the Chief Justice.",
+    aliases: ["Commissioner for Human Rights and Administrative Justice"],
+  },
+  {
+    id: "gl-disqualification",
+    term: "Disqualification",
+    definition:
+      "Under Part II of Act 550, a person who is the subject of an adverse commission-of-inquiry finding (unlawful acquisition, defrauding the State, prejudicial conduct, or a knowingly false declaration), or who is convicted of certain serious offences, does not qualify to hold any of the offices listed in Schedule I.",
   },
   {
     id: "gl-declaration",
