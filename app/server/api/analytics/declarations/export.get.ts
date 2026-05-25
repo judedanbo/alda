@@ -6,6 +6,7 @@ import {
   buildSealedHistoryWhere,
 } from "~/server/utils/analytics-filters";
 import { maskGhanaCard, maskAlternateId } from "~/server/utils/pii";
+import { decryptProfileIds } from "~/server/utils/pii-encryption";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -44,8 +45,8 @@ export default defineEventHandler(async (event) => {
             select: {
               fullName: true,
               idType: true,
-              ghanaCardNumber: true,
-              alternateIdNumber: true,
+              ghanaCardNumberCipher: true,
+              alternateIdNumberCipher: true,
               offices: {
                 select: { institution: { select: { name: true } } },
               },
@@ -84,10 +85,11 @@ export default defineEventHandler(async (event) => {
     // becoming a one-shot PII dump for any compromised officer/admin
     // account. Operations that genuinely need the unmasked value should
     // be handled through a separate, second-factor-gated workflow.
+    const decryptedApplicant = decryptProfileIds(decl.applicant);
     const rawIdNumber
       = decl.applicant.idType === "GHANA_CARD"
-        ? decl.applicant.ghanaCardNumber
-        : decl.applicant.alternateIdNumber;
+        ? decryptedApplicant.ghanaCardNumber
+        : decryptedApplicant.alternateIdNumber;
     const maskedIdNumber
       = decl.applicant.idType === "GHANA_CARD"
         ? maskGhanaCard(rawIdNumber)

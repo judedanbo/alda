@@ -1,6 +1,8 @@
 import type { H3Event } from "h3";
 import type { Prisma } from "@prisma/client";
 import prisma from "./prisma";
+import { hashPii } from "./pii-encryption";
+import { ID_NUMBER_PATTERNS } from "./validators";
 
 export interface AnalyticsFilters {
   dateFrom?: Date;
@@ -136,13 +138,27 @@ export function buildSealedHistoryWhere(
 
   if (filters.search) {
     const searchTerm = filters.search;
+    // National-ID columns are encrypted (C-5); exact-match hash lookup
+    // when the term looks like a canonical ID number.
+    const idCandidate = searchTerm.trim().toUpperCase();
+    const idMatches: Prisma.DeclarationWhereInput[] = [];
+    if (ID_NUMBER_PATTERNS.GHANA_CARD.test(idCandidate)) {
+      idMatches.push({ applicant: { ghanaCardNumberHash: hashPii(idCandidate) } });
+    } else {
+      for (const t of ["PASSPORT", "VOTER_ID", "DRIVERS_LICENSE", "NIA_RECEIPT"] as const) {
+        if (ID_NUMBER_PATTERNS[t].test(idCandidate)) {
+          idMatches.push({
+            applicant: { idType: t, alternateIdNumberHash: hashPii(idCandidate) },
+          });
+        }
+      }
+    }
     where.declaration = {
       ...where.declaration as Prisma.DeclarationWhereInput,
       OR: [
         { uniqueCode: { contains: searchTerm, mode: "insensitive" } },
         { applicant: { fullName: { contains: searchTerm, mode: "insensitive" } } },
-        { applicant: { ghanaCardNumber: { contains: searchTerm, mode: "insensitive" } } },
-        { applicant: { alternateIdNumber: { contains: searchTerm, mode: "insensitive" } } },
+        ...idMatches,
       ],
     };
   }

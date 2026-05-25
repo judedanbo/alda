@@ -65,6 +65,16 @@ export const PRODUCTION_REQUIRED_SECRETS: ReadonlyArray<RequiredSecret> = [
     envVar: "NOTIFICATIONS_SMS_WEBHOOK_SECRET",
     description: "Shared secret authenticating inbound SMS-provider webhooks",
   },
+  {
+    envVar: "PII_ENCRYPTION_KEY",
+    description: "AES-256-GCM key for at-rest encryption of national-ID columns (32 raw bytes hex-encoded)",
+    forbiddenLiteral: "00000000000000000000000000000000000000000000000000000000000000ff",
+  },
+  {
+    envVar: "PII_HMAC_KEY",
+    description: "HMAC-SHA256 key for deterministic hash columns used to look up encrypted national IDs (32 raw bytes hex-encoded)",
+    forbiddenLiteral: "00000000000000000000000000000000000000000000000000000000000000aa",
+  },
 ];
 
 export function validateRequiredSecrets(

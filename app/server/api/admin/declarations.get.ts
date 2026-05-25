@@ -1,4 +1,6 @@
 import prisma from "~/server/utils/prisma";
+import { hashPii, decryptProfileIds } from "~/server/utils/pii-encryption";
+import { ID_NUMBER_PATTERNS } from "~/server/utils/validators";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -35,11 +37,24 @@ export default defineEventHandler(async (event) => {
   const where: Record<string, unknown> = {};
 
   if (search) {
+    // National-ID columns are encrypted (C-5); substring search isn't
+    // possible. Exact-match hash lookup is added when the search term
+    // looks like a canonical ID number.
+    const idCandidate = search.trim().toUpperCase();
+    const idMatches: Record<string, unknown>[] = [];
+    if (ID_NUMBER_PATTERNS.GHANA_CARD.test(idCandidate)) {
+      idMatches.push({ applicant: { ghanaCardNumberHash: hashPii(idCandidate) } });
+    } else {
+      for (const t of ["PASSPORT", "VOTER_ID", "DRIVERS_LICENSE", "NIA_RECEIPT"] as const) {
+        if (ID_NUMBER_PATTERNS[t].test(idCandidate)) {
+          idMatches.push({ applicant: { idType: t, alternateIdNumberHash: hashPii(idCandidate) } });
+        }
+      }
+    }
     where.OR = [
       { uniqueCode: { contains: search, mode: "insensitive" } },
       { applicant: { fullName: { contains: search, mode: "insensitive" } } },
-      { applicant: { ghanaCardNumber: { contains: search, mode: "insensitive" } } },
-      { applicant: { alternateIdNumber: { contains: search, mode: "insensitive" } } },
+      ...idMatches,
     ];
   }
 
@@ -127,14 +142,17 @@ export default defineEventHandler(async (event) => {
         status: d.status,
         submittedAt: d.submittedAt?.toISOString() || null,
         createdAt: d.createdAt.toISOString(),
-        applicant: {
-          fullName: d.applicant.fullName,
-          idType: d.applicant.idType,
-          ghanaCardNumber: d.applicant.ghanaCardNumber,
-          alternateIdNumber: d.applicant.alternateIdNumber,
-          offices: d.applicant.offices,
-          user: d.applicant.user,
-        },
+        applicant: (() => {
+          const decrypted = decryptProfileIds(d.applicant);
+          return {
+            fullName: d.applicant.fullName,
+            idType: d.applicant.idType,
+            ghanaCardNumber: decrypted.ghanaCardNumber,
+            alternateIdNumber: decrypted.alternateIdNumber,
+            offices: d.applicant.offices,
+            user: d.applicant.user,
+          };
+        })(),
         formCollection: d.formCollections[0]
           ? {
               collectedAt: d.formCollections[0].collectedAt.toISOString(),

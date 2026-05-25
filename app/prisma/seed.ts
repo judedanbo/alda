@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { encryptPii, hashPii, canonicalizeId } from "../server/utils/pii-encryption";
 
 const prisma = new PrismaClient();
 
@@ -315,13 +316,15 @@ async function main() {
       const firstCategory = await prisma.publicOfficeCategory.findFirst();
 
       if (firstInstitution && firstCategory) {
+        const demoCardNumber = "GHA-000000001-0";
         const profile = await prisma.applicantProfile.upsert({
           where: { userId: applicantUser.id },
           update: {},
           create: {
             userId: applicantUser.id,
             fullName: "Kwame Asante",
-            ghanaCardNumber: "GHA-000000001-0",
+            ghanaCardNumberCipher: encryptPii(canonicalizeId(demoCardNumber)),
+            ghanaCardNumberHash: hashPii(demoCardNumber),
             ghanaCardFrontUrl: "https://placeholder.local/ghana-card-front.jpg",
             verificationStatus: "VERIFIED",
           },

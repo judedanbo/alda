@@ -11,6 +11,8 @@ const ALL_REAL = {
   MINIO_SECRET_KEY: "real-secret-key",
   ANALYTICS_IP_SALT: "real-ip-salt",
   NOTIFICATIONS_SMS_WEBHOOK_SECRET: "real-webhook-secret",
+  PII_ENCRYPTION_KEY: "33".repeat(32),
+  PII_HMAC_KEY: "44".repeat(32),
 };
 
 const ALL_FALLBACKS = Object.fromEntries(

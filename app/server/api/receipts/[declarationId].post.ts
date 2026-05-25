@@ -111,7 +111,10 @@ export default defineEventHandler(async (event) => {
     }));
 
   const { displayId, ID_TYPE_LABEL } = await import("~/server/utils/displayId");
-  const idView = displayId(declaration.applicant);
+  const { decryptProfileIds } = await import("~/server/utils/pii-encryption");
+  // Rehydrate the legacy `*Number` fields from cipher columns so displayId
+  // sees the plaintext it expects.
+  const idView = displayId(decryptProfileIds(declaration.applicant));
 
   // `generateReceiptPDF` returns the bucket key (the bucket is private; clients
   // get presigned URLs minted on read). The `pdfUrl` DB column continues to

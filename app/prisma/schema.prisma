@@ -140,16 +140,24 @@ model ApplicantProfile {
   userId             String             @unique @map("user_id") @db.Uuid
   fullName           String             @map("full_name") @db.VarChar(255)
   idType             IdDocumentType     @default(GHANA_CARD) @map("id_type")
-  ghanaCardNumber    String?            @unique @map("ghana_card_number") @db.VarChar(20)
-  ghanaCardFrontUrl  String?            @map("ghana_card_front_url") @db.Text
-  ghanaCardBackUrl   String?            @map("ghana_card_back_url") @db.Text
-  alternateIdNumber  String?            @map("alternate_id_number") @db.VarChar(64)
-  alternateIdScanUrl String?            @map("alternate_id_scan_url") @db.Text
-  alternateIdReason  AlternateIdReason? @map("alternate_id_reason")
-  alternateIdDetails String?            @map("alternate_id_details") @db.Text
-  createdAt          DateTime           @default(now()) @map("created_at")
-  updatedAt          DateTime           @updatedAt @map("updated_at")
-  verificationStatus VerificationStatus @default(PENDING_VERIFICATION) @map("verification_status")
+  // National-ID columns are encrypted at rest. The `*Cipher` column holds
+  // an AES-256-GCM envelope (see server/utils/pii-encryption.ts) and the
+  // `*Hash` column holds a deterministic HMAC-SHA256 over the canonical
+  // plaintext, which is what equality / uniqueness queries match against.
+  // The legacy plaintext columns (`ghana_card_number`, `alternate_id_number`)
+  // were dropped in the 20260526010000_pii_encryption_drop_plaintext migration.
+  ghanaCardNumberCipher   String? @map("ghana_card_number_cipher") @db.Text
+  ghanaCardNumberHash     String? @unique @map("ghana_card_number_hash") @db.VarChar(64)
+  ghanaCardFrontUrl       String? @map("ghana_card_front_url") @db.Text
+  ghanaCardBackUrl        String? @map("ghana_card_back_url") @db.Text
+  alternateIdNumberCipher String? @map("alternate_id_number_cipher") @db.Text
+  alternateIdNumberHash   String? @map("alternate_id_number_hash") @db.VarChar(64)
+  alternateIdScanUrl      String?            @map("alternate_id_scan_url") @db.Text
+  alternateIdReason       AlternateIdReason? @map("alternate_id_reason")
+  alternateIdDetails      String?            @map("alternate_id_details") @db.Text
+  createdAt               DateTime           @default(now()) @map("created_at")
+  updatedAt               DateTime           @updatedAt @map("updated_at")
+  verificationStatus      VerificationStatus @default(PENDING_VERIFICATION) @map("verification_status")
 
   // Relations
   user                User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -157,7 +165,7 @@ model ApplicantProfile {
   declarations        Declaration[]
   verificationReviews ApplicantVerificationReview[]
 
-  @@unique([idType, alternateIdNumber], name: "applicant_profiles_alt_id_key")
+  @@unique([idType, alternateIdNumberHash], name: "applicant_profiles_alt_id_hash_key")
   @@index([verificationStatus])
   @@index([idType])
   @@map("applicant_profiles")

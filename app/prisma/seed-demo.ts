@@ -1,6 +1,7 @@
 import { type Prisma, type DeclarationStatus, PrismaClient } from "@prisma/client";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
+import { encryptPii, hashPii, canonicalizeId } from "../server/utils/pii-encryption";
 
 const prisma = new PrismaClient();
 
@@ -459,7 +460,8 @@ async function main() {
           id: a.profileId,
           userId: a.userId,
           fullName: a.fullName,
-          ghanaCardNumber: a.ghanaCardNumber,
+          ghanaCardNumberCipher: encryptPii(canonicalizeId(a.ghanaCardNumber)),
+          ghanaCardNumberHash: hashPii(a.ghanaCardNumber),
           ghanaCardFrontUrl: `https://placeholder.local/demo/ghana-card-${a.ghanaCardNumber}-front.jpg`,
           ghanaCardBackUrl:
             Math.random() < 0.7

@@ -31,7 +31,17 @@ npm run test:unit        # vitest (single file: npx vitest run path/to/file)
 npm run test:e2e         # playwright
 
 npm run db:seed:demo     # tsx prisma/seed-demo.ts (richer demo data)
+npm run db:backfill:pii  # encrypt+hash existing national-ID rows; runs
+                         # BETWEEN the two PII-encryption migrations on a
+                         # system with pre-encryption data (no-op on fresh DBs)
 ```
+
+The PII-encryption migration ships as two sequential migrations
+(`20260526000000_pii_encryption_add_columns` and
+`20260526010000_pii_encryption_drop_plaintext`). On a system with
+existing applicant profiles, apply step 1, run `npm run db:backfill:pii`,
+then apply step 2. On a fresh dev DB, `prisma migrate reset` runs both
+back-to-back and the seed writes encrypted data directly.
 
 The full local stack (use this instead of running pieces individually):
 
