@@ -12,13 +12,16 @@ import { useAuthStore } from "~/stores/auth";
 
 definePageMeta({
   layout: "dashboard",
-  middleware: "auth",
 });
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const { currentRole, resolveRole } = useHelp();
+
+if (!authStore.isAuthenticated) {
+  setPageLayout("auth");
+}
 
 const validTabs = ["articles", "guides", "faq", "glossary"];
 

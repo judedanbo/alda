@@ -5,11 +5,14 @@ import { useAuthStore } from "~/stores/auth";
 
 definePageMeta({
   layout: "dashboard",
-  middleware: "auth",
 });
 
 const authStore = useAuthStore();
 const { currentRole } = useHelp();
+
+if (!authStore.isAuthenticated) {
+  setPageLayout("auth");
+}
 
 const filteredGlossary = computed(() =>
   authStore.isAdmin ? glossary : getGlossaryForRole(currentRole.value),
