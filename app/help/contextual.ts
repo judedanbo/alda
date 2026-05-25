@@ -4,6 +4,126 @@ import type { ContextualHelp } from "./types";
 // getContextualHelp() picks the most specific match. Patterns support ":param"
 // segments and a trailing "/*" wildcard.
 export const contextualHelp: ContextualHelp[] = [
+  // --- Auth (unauthenticated) ---------------------------------------------
+  {
+    routePattern: "/auth/login",
+    title: "Sign in",
+    summary: "Use the email and password you registered with.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Sign in with the email address you registered. If you have forgotten your password, use the 'Forgot password?' link to receive a reset email.",
+      },
+      {
+        type: "note",
+        variant: "info",
+        text: "Repeated failed sign-ins from the same network may be rate-limited for a short time.",
+      },
+      { type: "link", label: "Can't sign in? Contact support", to: "/contact" },
+    ],
+    articleIds: ["common-account", "common-welcome", "applicant-getting-started"],
+    guideIds: ["guide-applicant-register"],
+  },
+  {
+    routePattern: "/auth/register",
+    title: "Create your account",
+    summary: "Register with the email and phone the Legal Unit will use to identify you.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Use an email address and phone number you control — the Legal Unit verifies your registration against the details you enter here.",
+      },
+      {
+        type: "list",
+        items: [
+          "Phone must be in Ghana international format, starting with +233.",
+          "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, and a digit.",
+          "You must accept the terms of service to continue.",
+        ],
+      },
+      {
+        type: "paragraph",
+        text: "After you submit, we send a verification email. Once you verify your email and sign in, you complete your profile (personal details, Ghana Card, office), which the Legal Unit then reviews before you can create a declaration.",
+      },
+      {
+        type: "note",
+        variant: "warning",
+        text: "Use your real legal name on your profile — it must match your Ghana Card. The Legal Unit rejects registrations where these do not match.",
+      },
+      { type: "link", label: "Need help registering? Contact support", to: "/contact" },
+    ],
+    articleIds: [
+      "applicant-getting-started",
+      "common-account",
+      "applicant-profile",
+      "applicant-verification",
+    ],
+    guideIds: ["guide-applicant-register", "guide-applicant-profile"],
+  },
+  {
+    routePattern: "/auth/forgot-password",
+    title: "Forgot your password",
+    summary: "We will email you a single-use reset link.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Enter the email address you registered with. If an account exists for that address, we send a password reset link to it.",
+      },
+      {
+        type: "note",
+        variant: "tip",
+        text: "Reset links expire after a short time. If your link no longer works, request a new one from this page.",
+      },
+      {
+        type: "paragraph",
+        text: "If no email arrives after a few minutes, check your spam folder. Still nothing? Contact support so we can confirm the address on file.",
+      },
+      { type: "link", label: "Contact support", to: "/contact" },
+    ],
+    articleIds: ["common-account"],
+    guideIds: ["guide-applicant-register"],
+  },
+  {
+    routePattern: "/auth/reset-password",
+    title: "Set a new password",
+    summary: "Choose a password that meets every requirement on the checklist.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Your new password must satisfy every item on the strength checklist — at least 8 characters, an uppercase letter, a lowercase letter, and a digit. Both fields must match before you can submit.",
+      },
+      {
+        type: "note",
+        variant: "info",
+        text: "Reset links are single-use. After you set a new password, the link cannot be reused — request a fresh one if you need to reset again.",
+      },
+      { type: "link", label: "Link expired or not working? Contact support", to: "/contact" },
+    ],
+    articleIds: ["common-account"],
+  },
+  {
+    routePattern: "/auth/verify-email",
+    title: "Verify your email",
+    summary: "We confirm your email address using the link we sent you.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "This page checks the verification token from the email link. Verification happens automatically — you do not need to enter anything.",
+      },
+      {
+        type: "list",
+        items: [
+          "Loading: we are checking the token.",
+          "Success: your email is verified — you can now sign in.",
+          "Error: the link has expired or has already been used. Sign in to request a new verification email from your dashboard.",
+        ],
+      },
+      { type: "link", label: "Still having trouble? Contact support", to: "/contact" },
+    ],
+    articleIds: ["common-account", "applicant-getting-started"],
+    guideIds: ["guide-applicant-register"],
+  },
+
   // --- Applicant -----------------------------------------------------------
   {
     routePattern: "/applicant/dashboard",

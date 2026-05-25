@@ -1,5 +1,8 @@
 <script setup lang="ts">
-// Auth layout for login, register, etc.
+import { CircleHelpIcon } from "lucide-vue-next";
+import { useHelpStore } from "~/stores/help";
+
+const helpStore = useHelpStore();
 </script>
 
 <template>
@@ -19,7 +22,16 @@
           <p class="text-muted-foreground">Audit Service</p>
           <p class="text-sm text-muted-foreground">Republic of Ghana</p>
         </div>
-        <div class="ml-auto">
+        <div class="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            data-tour="help-button"
+            aria-label="Help for this page"
+            class="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            @click="helpStore.openContextual()"
+          >
+            <CircleHelpIcon class="w-5 h-5" />
+          </button>
           <AppThemeSwitcherButton />
         </div>
       </div>
@@ -57,5 +69,7 @@
         </NuxtLink>
       </div>
     </footer>
+
+    <HelpSheet />
   </div>
 </template>

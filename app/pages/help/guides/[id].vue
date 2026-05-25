@@ -5,12 +5,15 @@ import { useAuthStore } from "~/stores/auth";
 
 definePageMeta({
   layout: "dashboard",
-  middleware: "auth",
 });
 
 const route = useRoute();
 const authStore = useAuthStore();
 const { currentRole } = useHelp();
+
+if (!authStore.isAuthenticated) {
+  setPageLayout("auth");
+}
 
 const guide = computed(() => {
   const found = getGuideById(route.params.id as string);
