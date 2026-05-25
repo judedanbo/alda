@@ -16,7 +16,7 @@
 import { timingSafeEqual } from "node:crypto";
 import type { H3Event } from "h3";
 import prisma from "~/server/utils/prisma";
-import type { DeliveryStatus } from "@prisma/client";
+import type { DeliveryStatus, Prisma } from "@prisma/client";
 
 export function getWebhookSecret(): string | null {
   return process.env.NOTIFICATIONS_SMS_WEBHOOK_SECRET || null;
@@ -71,17 +71,12 @@ export async function applyDeliveryUpdate(
   status: DeliveryStatus,
   rawProviderPayload: unknown,
 ): Promise<void> {
-  const data: {
-    status: DeliveryStatus;
-    deliveredAt: Date | null;
-    providerResponse: { webhook: unknown };
-  } = {
-    status,
-    deliveredAt: status === "DELIVERED" ? new Date() : null,
-    providerResponse: { webhook: rawProviderPayload },
-  };
   await prisma.notificationDeliveryLog.update({
     where: { id: logId },
-    data,
+    data: {
+      status,
+      deliveredAt: status === "DELIVERED" ? new Date() : null,
+      providerResponse: { webhook: rawProviderPayload as Prisma.InputJsonValue },
+    },
   });
 }
