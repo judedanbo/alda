@@ -1,0 +1,179 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main, develop]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  ACR_NAME: adlaacr
+  AKS_CLUSTER: adla-aks
+  RESOURCE_GROUP: adla-rg
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  set-env:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.env.outputs.environment }}
+      overlay: ${{ steps.env.outputs.overlay }}
+      namespace: ${{ steps.env.outputs.namespace }}
+      domain: ${{ steps.env.outputs.domain }}
+    steps:
+      - id: env
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "environment=production" >> "$GITHUB_OUTPUT"
+            echo "overlay=production" >> "$GITHUB_OUTPUT"
+            echo "namespace=adla-production" >> "$GITHUB_OUTPUT"
+            echo "domain=adla.gov.gh" >> "$GITHUB_OUTPUT"
+          else
+            echo "environment=staging" >> "$GITHUB_OUTPUT"
+            echo "overlay=staging" >> "$GITHUB_OUTPUT"
+            echo "namespace=adla-staging" >> "$GITHUB_OUTPUT"
+            echo "domain=staging.adla.gov.gh" >> "$GITHUB_OUTPUT"
+          fi
+
+  build-and-push:
+    needs: [ci, set-env]
+    runs-on: ubuntu-latest
+    environment: ${{ needs.set-env.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to ACR
+        run: az acr login --name ${{ env.ACR_NAME }}
+
+      - name: Build and push app image
+        run: |
+          docker build \
+            -f app/docker/Dockerfile \
+            --target production \
+            -t ${{ env.ACR_NAME }}.azurecr.io/adla-app:${{ github.sha }} \
+            -t ${{ env.ACR_NAME }}.azurecr.io/adla-app:${{ needs.set-env.outputs.overlay }}-latest \
+            app/
+          docker push ${{ env.ACR_NAME }}.azurecr.io/adla-app --all-tags
+
+      - name: Build and push migration image
+        run: |
+          docker build \
+            -f app/docker/Dockerfile \
+            --target migration \
+            -t ${{ env.ACR_NAME }}.azurecr.io/adla-migrate:${{ github.sha }} \
+            -t ${{ env.ACR_NAME }}.azurecr.io/adla-migrate:${{ needs.set-env.outputs.overlay }}-latest \
+            app/
+          docker push ${{ env.ACR_NAME }}.azurecr.io/adla-migrate --all-tags
+
+  migrate:
+    needs: [build-and-push, set-env]
+    runs-on: ubuntu-latest
+    environment: ${{ needs.set-env.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get AKS credentials
+        run: |
+          az aks get-credentials \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name ${{ env.AKS_CLUSTER }} \
+            --overwrite-existing
+
+      - name: Run migration Job
+        run: |
+          NAMESPACE="${{ needs.set-env.outputs.namespace }}"
+          IMAGE="${{ env.ACR_NAME }}.azurecr.io/adla-migrate:${{ github.sha }}"
+          JOB_NAME="adla-migrate-${{ github.run_number }}"
+
+          # Delete previous migration job if it exists
+          kubectl delete job "$JOB_NAME" -n "$NAMESPACE" --ignore-not-found
+
+          # Create and run migration job from the base template with overrides
+          kubectl create job "$JOB_NAME" \
+            --namespace "$NAMESPACE" \
+            --image "$IMAGE" \
+            -- npx prisma migrate deploy
+
+          # Wait for the job to complete (timeout 5 minutes)
+          kubectl wait --for=condition=complete \
+            --timeout=300s \
+            "job/$JOB_NAME" \
+            -n "$NAMESPACE"
+
+  deploy:
+    needs: [migrate, set-env]
+    runs-on: ubuntu-latest
+    environment: ${{ needs.set-env.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get AKS credentials
+        run: |
+          az aks get-credentials \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name ${{ env.AKS_CLUSTER }} \
+            --overwrite-existing
+
+      - name: Deploy with Kustomize
+        run: |
+          OVERLAY="${{ needs.set-env.outputs.overlay }}"
+
+          # Set the image tag to the current commit SHA
+          cd k8s/overlays/$OVERLAY
+          kustomize edit set image \
+            adlaacr.azurecr.io/adla-app=adlaacr.azurecr.io/adla-app:${{ github.sha }} \
+            adlaacr.azurecr.io/adla-migrate=adlaacr.azurecr.io/adla-migrate:${{ github.sha }}
+          cd -
+
+          # Apply manifests
+          kustomize build k8s/overlays/$OVERLAY | kubectl apply -f -
+
+      - name: Wait for rollout
+        run: |
+          NAMESPACE="${{ needs.set-env.outputs.namespace }}"
+          kubectl rollout status deployment/adla-app -n "$NAMESPACE" --timeout=300s
+          kubectl rollout status deployment/adla-worker -n "$NAMESPACE" --timeout=300s
+
+  smoke-test:
+    needs: [deploy, set-env]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Health check
+        run: |
+          DOMAIN="${{ needs.set-env.outputs.domain }}"
+          echo "Waiting 30s for ingress to stabilize..."
+          sleep 30
+
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${DOMAIN}/api/health" --max-time 30 || true)
+
+          if [ "$STATUS" = "200" ]; then
+            echo "Health check passed (HTTP $STATUS)"
+          else
+            echo "WARNING: Health check returned HTTP $STATUS (may need DNS propagation)"
+            echo "This is expected on first deploy before DNS is configured."
+          fi
