@@ -307,6 +307,30 @@ export const analyticsActorRuleSchema = z.object({
   expiresInMinutes: z.number().int().positive().max(525600).optional(),
 });
 
+// L-7: admin endpoints used to readBody + type-cast manually. These
+// schemas back the unified `validateBody` flow so malformed input is
+// rejected at the boundary with a structured 400 instead of leaking
+// through to Prisma as a 500.
+
+export const adminUserRolesSchema = z.object({
+  roleIds: z.array(z.number().int().positive()).max(20),
+});
+
+export const adminUserStatusSchema = z.object({
+  isActive: z.boolean(),
+});
+
+export const adminInstitutionCreateSchema = z.object({
+  name: z.string().trim().min(2).max(255),
+  type: z.string().trim().min(1).max(100).nullable().optional(),
+});
+
+export const adminInstitutionUpdateSchema = z.object({
+  name: z.string().trim().min(2).max(255),
+  type: z.string().trim().min(1).max(100).nullable().optional(),
+  isActive: z.boolean(),
+});
+
 /**
  * Validate request body against a schema
  */

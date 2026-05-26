@@ -1,5 +1,6 @@
 import prisma from "~/server/utils/prisma";
 import { logAction } from "~/server/utils/audit";
+import { validateBody, adminInstitutionCreateSchema } from "~/server/utils/validators";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -25,18 +26,10 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const body = await readBody(event);
-  const { name, type } = body as { name: string; type: string | null };
-
-  if (!name || typeof name !== "string" || name.trim().length === 0) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: "Institution name is required",
-    });
-  }
+  const { name, type } = await validateBody(event, adminInstitutionCreateSchema);
 
   const existing = await prisma.institution.findFirst({
-    where: { name: { equals: name.trim(), mode: "insensitive" } },
+    where: { name: { equals: name, mode: "insensitive" } },
   });
 
   if (existing) {
@@ -48,8 +41,8 @@ export default defineEventHandler(async (event) => {
 
   const institution = await prisma.institution.create({
     data: {
-      name: name.trim(),
-      type: type || null,
+      name,
+      type: type ?? null,
     },
   });
 

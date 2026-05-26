@@ -1,4 +1,4 @@
-import jwt, { type SignOptions } from "jsonwebtoken";
+import jwt, { type SignOptions, type VerifyOptions } from "jsonwebtoken";
 import type { H3Event } from "h3";
 
 export interface JwtPayload {
@@ -12,6 +12,19 @@ export interface TokenPair {
   refreshToken: string;
 }
 
+// L-2: tag every token we mint with audience + issuer claims, and require
+// the matching claims on verification. If the JWT_SECRET is ever shared
+// with a sibling service (or stolen and reused against this one), tokens
+// minted elsewhere fail with `JsonWebTokenError: jwt audience invalid`
+// instead of silently authenticating.
+const JWT_ISSUER = "adla-auth";
+const JWT_AUDIENCE = "adla";
+
+const VERIFY_OPTIONS: VerifyOptions = {
+  audience: JWT_AUDIENCE,
+  issuer: JWT_ISSUER,
+};
+
 /**
  * Generate an access token
  */
@@ -19,6 +32,8 @@ export function generateAccessToken(payload: JwtPayload): string {
   const config = useRuntimeConfig();
   const options: SignOptions = {
     expiresIn: (config.jwtExpiresIn || "15m") as SignOptions["expiresIn"],
+    audience: JWT_AUDIENCE,
+    issuer: JWT_ISSUER,
   };
   return jwt.sign(payload, config.jwtSecret, options);
 }
@@ -30,6 +45,8 @@ export function generateRefreshToken(payload: JwtPayload): string {
   const config = useRuntimeConfig();
   const options: SignOptions = {
     expiresIn: (config.jwtRefreshExpiresIn || "7d") as SignOptions["expiresIn"],
+    audience: JWT_AUDIENCE,
+    issuer: JWT_ISSUER,
   };
   return jwt.sign(payload, config.jwtRefreshSecret, options);
 }
@@ -50,7 +67,7 @@ export function generateTokenPair(payload: JwtPayload): TokenPair {
 export function verifyAccessToken(token: string): JwtPayload | null {
   try {
     const config = useRuntimeConfig();
-    return jwt.verify(token, config.jwtSecret) as JwtPayload;
+    return jwt.verify(token, config.jwtSecret, VERIFY_OPTIONS) as JwtPayload;
   } catch {
     return null;
   }
@@ -62,7 +79,7 @@ export function verifyAccessToken(token: string): JwtPayload | null {
 export function verifyRefreshToken(token: string): JwtPayload | null {
   try {
     const config = useRuntimeConfig();
-    return jwt.verify(token, config.jwtRefreshSecret) as JwtPayload;
+    return jwt.verify(token, config.jwtRefreshSecret, VERIFY_OPTIONS) as JwtPayload;
   } catch {
     return null;
   }

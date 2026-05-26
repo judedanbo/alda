@@ -1,5 +1,6 @@
 import prisma from "~/server/utils/prisma";
 import { logAction } from "~/server/utils/audit";
+import { validateBody, adminUserStatusSchema } from "~/server/utils/validators";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -26,9 +27,6 @@ export default defineEventHandler(async (event) => {
   }
 
   const userId = getRouterParam(event, "id");
-  const body = await readBody(event);
-  const { isActive } = body as { isActive: boolean };
-
   if (!userId) {
     throw createError({
       statusCode: 400,
@@ -36,12 +34,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  if (typeof isActive !== "boolean") {
-    throw createError({
-      statusCode: 400,
-      statusMessage: "isActive must be a boolean",
-    });
-  }
+  const { isActive } = await validateBody(event, adminUserStatusSchema);
 
   // Prevent admin from deactivating themselves
   if (userId === auth.userId && !isActive) {
