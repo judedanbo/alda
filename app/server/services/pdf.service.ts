@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import { uploadBuffer } from "./storage.service";
 
@@ -380,7 +381,11 @@ function formatDateTime(date: Date): string {
 
 export function generateReceiptNumber(): string {
   const year = new Date().getFullYear();
-  const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-  const sequence = Date.now().toString().slice(-6);
+  // 6 hex chars (~24 bits of entropy) of cryptographically-strong randomness
+  // — replaces a Math.random() + Date.now().slice(-6) combo that an attacker
+  // could approximate from the wall clock alone. The "RCP-YYYY-..." shape
+  // is unchanged.
+  const random = randomBytes(3).toString("hex").toUpperCase();
+  const sequence = randomBytes(3).toString("hex").toUpperCase();
   return `RCP-${year}-${sequence}-${random}`;
 }
