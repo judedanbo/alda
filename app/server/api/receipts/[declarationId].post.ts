@@ -4,6 +4,7 @@ import { generateReceiptPDF, generateReceiptNumber } from "~/server/services/pdf
 import { sendNotification } from "~/server/services/notification.service";
 import { payloads } from "~/server/notifications/payloads";
 import { presignStored } from "~/server/services/storage.service";
+import { assertOfficerCanActOnDeclaration } from "~/server/utils/officer-scope";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -84,6 +85,10 @@ export default defineEventHandler(async (event) => {
   const existingReceipt = await prisma.receipt.findFirst({
     where: { declarationId },
   });
+
+  // H-3: schedule officers can only seal declarations whose form was
+  // collected at an office they're assigned to. Admins bypass.
+  await assertOfficerCanActOnDeclaration(event, declarationId);
 
   if (existingReceipt) {
     throw createError({

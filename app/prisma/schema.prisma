@@ -46,6 +46,7 @@ model User {
   verificationReviews      ApplicantVerificationReview[] @relation("VerificationReviewedBy")
   formReissuesRequested    FormReissueRequest[]          @relation("ReissueRequestedBy")
   formReissuesReviewed     FormReissueRequest[]          @relation("ReissueReviewedBy")
+  assignedOffices          UserCollectionOffice[]
 
   @@map("users")
 }
@@ -379,10 +380,28 @@ model CollectionOffice {
   createdAt DateTime             @default(now()) @map("created_at")
 
   // Relations
-  formCollections FormCollection[]
-  formReturns     Declaration[]    @relation("FormReturnedTo")
+  formCollections   FormCollection[]
+  formReturns       Declaration[]          @relation("FormReturnedTo")
+  assignedOfficers  UserCollectionOffice[]
 
   @@map("collection_offices")
+}
+
+/// Many-to-many: schedule officers (and admins, though admins bypass) are
+/// scoped to specific collection offices for write actions. See H-3 in
+/// docs/security-assessment.md and the `assertOfficerCanActOn*` helpers in
+/// server/utils/officer-scope.ts.
+model UserCollectionOffice {
+  userId             String   @map("user_id") @db.Uuid
+  collectionOfficeId String   @map("collection_office_id") @db.Uuid
+  assignedAt         DateTime @default(now()) @map("assigned_at")
+
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collectionOffice CollectionOffice @relation(fields: [collectionOfficeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, collectionOfficeId])
+  @@index([collectionOfficeId])
+  @@map("user_collection_offices")
 }
 
 model FormCollection {

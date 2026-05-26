@@ -3,6 +3,7 @@ import { validateBody, approveReviewSchema } from "~/server/utils/validators";
 import { logAction, AuditActions } from "~/server/utils/audit";
 import { sendNotification } from "~/server/services/notification.service";
 import { payloads } from "~/server/notifications/payloads";
+import { assertOfficerCanActOnDeclaration } from "~/server/utils/officer-scope";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -61,6 +62,10 @@ export default defineEventHandler(async (event) => {
       statusMessage: `Cannot approve. ${declaration.sectionReviews.length} section issue(s) are still unresolved.`,
     });
   }
+
+  // H-3: schedule officers can only approve declarations whose form was
+  // collected at an office they're assigned to. Admins bypass.
+  await assertOfficerCanActOnDeclaration(event, data.declarationId);
 
   const result = await prisma.$transaction(async (tx) => {
     const review = await tx.review.create({

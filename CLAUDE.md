@@ -82,6 +82,7 @@ Roles in the system are exactly: `applicant`, `schedule_officer`, `legal_unit`, 
 - `login.post.ts` runs `bcrypt.compare` against a constant dummy hash on the user-not-found path, so timing doesn't leak which emails exist.
 - `RefreshToken` carries `familyId` + `consumedAt`. Refresh marks the old token consumed (no delete) and chains a new token in the same family. Presenting a consumed token wipes the family and audit-logs `REFRESH_TOKEN_REPLAY_DETECTED` — both the attacker and the legitimate client must re-authenticate.
 - `server/utils/rate-limit.ts` no longer fails open when its KV throws; a tiny per-process Map applies conservative caps (auth: 5/min, write: 20/min, default: 60/min) so a Redis blip degrades to per-instance limits.
+- `schedule_officer` users are scoped to specific `CollectionOffice`(s) via the `UserCollectionOffice` junction. `server/utils/officer-scope.ts` exports `assertOfficerCanActOnOffice` (body-supplied office) and `assertOfficerCanActOnDeclaration` (office derived from the declaration's most-recent `FormCollection`); call one or the other from every write endpoint a schedule officer can hit. Admins bypass; legal_unit is unaffected.
 
 ### Prisma client is a singleton
 

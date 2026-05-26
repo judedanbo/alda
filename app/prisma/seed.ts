@@ -307,6 +307,34 @@ async function main() {
       console.log(`✅ Created ${label} user: ${email} (password: password123)`);
     }
 
+    // H-3: scope dev officers to specific CollectionOffices so the
+    // assertOfficerCanActOn* helpers don't bounce every action in dev.
+    // officer@ → HQ (Accra); officer2@ → Kumasi Regional. Admins bypass
+    // scoping, so admin@ doesn't need an assignment.
+    const hqOffice = await prisma.collectionOffice.findFirst({
+      where: { name: "GAS Headquarters, Accra" },
+    });
+    const kumasiOffice = await prisma.collectionOffice.findFirst({
+      where: { name: "Kumasi Regional Office" },
+    });
+    const officer1 = await prisma.user.findUnique({ where: { email: "officer@adla.gov.gh" } });
+    const officer2 = await prisma.user.findUnique({ where: { email: "officer2@adla.gov.gh" } });
+    if (hqOffice && officer1) {
+      await prisma.userCollectionOffice.upsert({
+        where: { userId_collectionOfficeId: { userId: officer1.id, collectionOfficeId: hqOffice.id } },
+        update: {},
+        create: { userId: officer1.id, collectionOfficeId: hqOffice.id },
+      });
+    }
+    if (kumasiOffice && officer2) {
+      await prisma.userCollectionOffice.upsert({
+        where: { userId_collectionOfficeId: { userId: officer2.id, collectionOfficeId: kumasiOffice.id } },
+        update: {},
+        create: { userId: officer2.id, collectionOfficeId: kumasiOffice.id },
+      });
+    }
+    console.log("✅ Assigned seeded officers to collection offices (H-3 scoping)");
+
     const applicantUser = await prisma.user.findUnique({
       where: { email: "applicant@adla.gov.gh" },
     });
