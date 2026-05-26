@@ -80,7 +80,7 @@ export default defineEventHandler(async (event) => {
       newValues: { reason: "account_locked", unlockAt: lockState.unlockAt },
     });
     const retryAfterMs = Math.max(1000, Date.parse(lockState.unlockAt!) - Date.now());
-    setResponseHeader(event, "Retry-After", String(Math.ceil(retryAfterMs / 1000)));
+    setResponseHeader(event, "Retry-After", Math.ceil(retryAfterMs / 1000));
     throw createError({
       statusCode: 429,
       statusMessage: "Too Many Requests",
