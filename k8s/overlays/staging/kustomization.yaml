@@ -7,7 +7,6 @@ resources:
   - ../../base
 
 patches:
-  - path: namespace-patch.yaml
   - path: configmap-patch.yaml
   - path: ingress-patch.yaml
   - path: secret-provider-patch.yaml
