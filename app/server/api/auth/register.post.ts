@@ -61,7 +61,10 @@ export default defineEventHandler(async (event) => {
   }
 
   // Hash password
-  const passwordHash = await bcrypt.hash(password, 12);
+  // L-1: bcrypt cost 13 (one doubling above OWASP's high-security baseline
+  // of 12). Argon2id is the modern recommendation but bcryptjs without a
+  // new dependency keeps the surface tight.
+  const passwordHash = await bcrypt.hash(password, 13);
 
   // Create user with applicant role
   const user = await prisma.user.create({

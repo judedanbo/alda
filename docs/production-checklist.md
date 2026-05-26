@@ -36,6 +36,7 @@ These have working defaults; tune for the deployment shape.
 | `MINIO_USE_SSL` | `false` | `true` whenever the Nuxt-to-MinIO link crosses a network segment. |
 | `SECURITY_CSP_ENFORCE` | `false` (CSP ships report-only) | Flip to `true` once browser DevTools shows no CSP violations on production traffic for ~24h. |
 | `REDIS_URL` | unset → in-memory analytics store | Always set in multi-instance deploys — the in-memory fallback works per-pod only and the rate limiter's local fail-closed fallback (H-1) is much tighter than the normal limits. |
+| `REQUIRE_EMAIL_VERIFICATION_FOR_LOGIN` | `false` | Flip to `true` once the email-verification flow is reliable (delivery + retry). When on, `POST /api/auth/login` returns 403 for accounts with `emailVerified=false`. |
 
 ## 3. Deploy sequence for the PII-encryption migration
 
