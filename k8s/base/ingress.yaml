@@ -13,10 +13,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - staging.adla.gov.gh
+        - staging-alda.audit.gov.gh
       secretName: adla-tls
   rules:
-    - host: staging.adla.gov.gh
+    - host: staging-alda.audit.gov.gh
       http:
         paths:
           - path: /

@@ -3,5 +3,5 @@ kind: ConfigMap
 metadata:
   name: adla-config
 data:
-  APP_URL: "https://staging.adla.gov.gh"
+  APP_URL: "https://staging-alda.audit.gov.gh"
   MINIO_ENDPOINT: ""

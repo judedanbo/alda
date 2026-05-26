@@ -7,10 +7,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - adla.gov.gh
+        - alda.audit.gov.gh
       secretName: adla-production-tls
   rules:
-    - host: adla.gov.gh
+    - host: alda.audit.gov.gh
       http:
         paths:
           - path: /

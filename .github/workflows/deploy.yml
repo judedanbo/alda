@@ -31,12 +31,12 @@ jobs:
             echo "environment=production" >> "$GITHUB_OUTPUT"
             echo "overlay=production" >> "$GITHUB_OUTPUT"
             echo "namespace=adla-production" >> "$GITHUB_OUTPUT"
-            echo "domain=adla.gov.gh" >> "$GITHUB_OUTPUT"
+            echo "domain=alda.audit.gov.gh" >> "$GITHUB_OUTPUT"
           else
             echo "environment=staging" >> "$GITHUB_OUTPUT"
             echo "overlay=staging" >> "$GITHUB_OUTPUT"
             echo "namespace=adla-staging" >> "$GITHUB_OUTPUT"
-            echo "domain=staging.adla.gov.gh" >> "$GITHUB_OUTPUT"
+            echo "domain=staging-alda.audit.gov.gh" >> "$GITHUB_OUTPUT"
           fi
 
   build-and-push:
