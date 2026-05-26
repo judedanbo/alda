@@ -106,6 +106,19 @@ export default defineNuxtConfig({
       maxAttempts: envNum(process.env.NOTIFICATIONS_MAX_ATTEMPTS, 3),
     },
 
+    // Durable audit-log dispatch (M-10). `createAuditLog` enqueues a
+    // BullMQ job that the worker (server/plugins/audit-worker.ts)
+    // drains with retries; persistent failures land in BullMQ's
+    // failed-set for operator review. When the queue is disabled OR
+    // the enqueue throws, the helper falls back to an inline best-
+    // effort write to preserve request availability.
+    audit: {
+      queueEnabled: envBool(process.env.AUDIT_QUEUE_ENABLED, !!process.env.REDIS_URL),
+      workerEnabled: envBool(process.env.AUDIT_WORKER_ENABLED, true),
+      workerConcurrency: envNum(process.env.AUDIT_WORKER_CONCURRENCY, 2),
+      maxAttempts: envNum(process.env.AUDIT_MAX_ATTEMPTS, 3),
+    },
+
     // Web analytics, abuse detection & rate limiting (server-only).
     // Consumed via the typed helper in server/utils/analytics-config.ts.
     analytics: {
