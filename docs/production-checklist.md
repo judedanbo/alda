@@ -37,6 +37,10 @@ These have working defaults; tune for the deployment shape.
 | `SECURITY_CSP_ENFORCE` | `false` (CSP ships report-only) | Flip to `true` once browser DevTools shows no CSP violations on production traffic for ~24h. |
 | `REDIS_URL` | unset → in-memory analytics store | Always set in multi-instance deploys — the in-memory fallback works per-pod only and the rate limiter's local fail-closed fallback (H-1) is much tighter than the normal limits. |
 | `REQUIRE_EMAIL_VERIFICATION_FOR_LOGIN` | `false` | Flip to `true` once the email-verification flow is reliable (delivery + retry). When on, `POST /api/auth/login` returns 403 for accounts with `emailVerified=false`. |
+| `AUDIT_QUEUE_ENABLED` | `true` when `REDIS_URL` set | Durable audit-log writes via BullMQ (M-10). Off → inline best-effort write only. Production should never run with this off. |
+| `AUDIT_WORKER_ENABLED` | `true` | Set `false` on web-only pods that shouldn't run a worker. |
+| `AUDIT_WORKER_CONCURRENCY` | `2` | Audit writes are short DB inserts; bump if a worker pod is the bottleneck. |
+| `AUDIT_MAX_ATTEMPTS` | `3` | Retries before the job lands in BullMQ's `failed` set. |
 
 ## 3. Deploy sequence for the PII-encryption migration
 
@@ -147,6 +151,20 @@ the fallback cap. Restart Redis; normal limits resume.
 # 90/min; the per-user-per-group divisor (M-7) makes the user-side
 # 30/min. Hit the endpoint 31 times in one minute from a single
 # authenticated officer account — expect a 429 on the 31st.
+```
+
+### Durable audit-log queue (M-10)
+
+```sh
+# 1. Tail logs on boot — expect `[audit-worker] worker started`.
+# 2. Stop the audit worker process (in a deploy that runs web + worker
+#    separately). Trigger an audit event (a login). The web pod returns
+#    success; the job sits in `bull:audit-logs:wait`.
+# 3. Restart the worker. The job drains and the row appears in
+#    audit_logs with createdAt matching the original request time
+#    (not the worker's wall clock).
+# 4. `redis-cli LLEN bull:audit-logs:failed` should be 0 on a healthy
+#    run; non-zero means the DLQ is doing its job.
 ```
 
 ## 5. After the smoke checks
