@@ -8,14 +8,15 @@ echo ""
 echo "Enter values for each secret (leave blank to skip):"
 echo ""
 
-read -rp "DATABASE_URL: " DATABASE_URL
-read -rp "JWT_SECRET: " JWT_SECRET
-read -rp "JWT_REFRESH_SECRET: " JWT_REFRESH_SECRET
-read -rp "REDIS_URL: " REDIS_URL
-read -rp "MINIO_ACCESS_KEY: " MINIO_ACCESS_KEY
-read -rp "MINIO_SECRET_KEY: " MINIO_SECRET_KEY
-read -rp "SMTP_PASS: " SMTP_PASS
-read -rp "ANALYTICS_IP_SALT: " ANALYTICS_IP_SALT
+read -rsp "DATABASE_URL: " DATABASE_URL; echo
+read -rsp "JWT_SECRET: " JWT_SECRET; echo
+read -rsp "JWT_REFRESH_SECRET: " JWT_REFRESH_SECRET; echo
+read -rsp "REDIS_URL: " REDIS_URL; echo
+read -rsp "MINIO_ACCESS_KEY: " MINIO_ACCESS_KEY; echo
+read -rsp "MINIO_SECRET_KEY: " MINIO_SECRET_KEY; echo
+read -rsp "SMTP_USER: " SMTP_USER; echo
+read -rsp "SMTP_PASS: " SMTP_PASS; echo
+read -rsp "ANALYTICS_IP_SALT: " ANALYTICS_IP_SALT; echo
 
 kubectl create secret generic adla-secrets \
   --namespace "$NAMESPACE" \
@@ -25,6 +26,7 @@ kubectl create secret generic adla-secrets \
   --from-literal="REDIS_URL=${REDIS_URL}" \
   --from-literal="MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}" \
   --from-literal="MINIO_SECRET_KEY=${MINIO_SECRET_KEY}" \
+  --from-literal="SMTP_USER=${SMTP_USER}" \
   --from-literal="SMTP_PASS=${SMTP_PASS}" \
   --from-literal="ANALYTICS_IP_SALT=${ANALYTICS_IP_SALT}" \
   --dry-run=client -o yaml | kubectl apply -f -

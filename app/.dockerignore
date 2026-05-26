@@ -1,3 +1,15 @@
 node_modules
 .nuxt
 .output
+.data
+.nitro
+.cache
+
+# Secrets — never embed in image layers
+.env
+.env.*
+
+# Test artifacts
+coverage
+playwright-report
+test-results

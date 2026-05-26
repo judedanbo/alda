@@ -14,3 +14,15 @@ package-lock.json
 
 # Stray root-level dependency/cache dir (real node_modules is in app/)
 node_modules/
+
+# Credentials and TLS material
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.env
+kubeconfig
+.kubeconfig
+infra/credentials*
+infra/*.txt
