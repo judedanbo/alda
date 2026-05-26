@@ -3,6 +3,7 @@ import { validateBody, sectionReviewSchema } from "~/server/utils/validators";
 import { logAction, AuditActions } from "~/server/utils/audit";
 import { sendNotification } from "~/server/services/notification.service";
 import { payloads } from "~/server/notifications/payloads";
+import { assertOfficerCanActOnDeclaration } from "~/server/utils/officer-scope";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -59,6 +60,10 @@ export default defineEventHandler(async (event) => {
       statusMessage: `Cannot review. Declaration status is ${declaration.status}, expected SUBMITTED or UNDER_REVIEW.`,
     });
   }
+
+  // H-3: schedule officers can only review declarations whose form was
+  // collected at an office they're assigned to. Admins bypass.
+  await assertOfficerCanActOnDeclaration(event, data.declarationId);
 
   const allAcceptable = data.sections.every((s) => s.isAcceptable);
 

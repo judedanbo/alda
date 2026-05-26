@@ -1,4 +1,6 @@
 import prisma from "~/server/utils/prisma";
+import { presignStored } from "~/server/services/storage.service";
+import { decryptProfileIds, hashPii } from "~/server/utils/pii-encryption";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -45,41 +47,52 @@ export default defineEventHandler(async (event) => {
   }
 
   // Cross-check the applicant's identity document against every other
-  // applicant profile. For Ghana Card profiles we match on the unique
-  // card number; for alternate-ID profiles we match on (idType, number)
-  // so a passport number can't collide with a coincidental voter ID.
-  // The DB enforces uniqueness; surfacing the check anyway gives
-  // reviewers explicit confirmation and protects against drift.
+  // applicant profile. National-ID columns are encrypted, so we look up
+  // by the HMAC hash column rather than the cipher (which is random per
+  // row). The displayed `number` is the decrypted value of this profile.
   const isGhanaCard = profile.idType === "GHANA_CARD";
+  const decryptedSelf = decryptProfileIds(profile);
   const normalizedNumber = (
-    isGhanaCard ? profile.ghanaCardNumber : profile.alternateIdNumber
+    isGhanaCard ? decryptedSelf.ghanaCardNumber : decryptedSelf.alternateIdNumber
   )?.trim().toUpperCase() ?? "";
 
-  const matches = normalizedNumber
+  const matchesRaw = normalizedNumber
     ? await prisma.applicantProfile.findMany({
       where: {
         ...(isGhanaCard
-          ? { ghanaCardNumber: normalizedNumber }
-          : { idType: profile.idType, alternateIdNumber: normalizedNumber }),
+          ? { ghanaCardNumberHash: hashPii(normalizedNumber) }
+          : { idType: profile.idType, alternateIdNumberHash: hashPii(normalizedNumber) }),
         NOT: { id: profile.id },
       },
       select: {
         id: true,
         fullName: true,
         idType: true,
-        ghanaCardNumber: true,
-        alternateIdNumber: true,
+        ghanaCardNumberCipher: true,
+        alternateIdNumberCipher: true,
         verificationStatus: true,
         createdAt: true,
         user: { select: { email: true } },
       },
     })
     : [];
+  const matches = matchesRaw.map((m) => decryptProfileIds(m));
+
+  // The bucket is private; re-sign stored keys into short-lived URLs so
+  // the reviewer can render the Ghana Card / alternate-ID scans.
+  const [ghanaCardFrontUrl, ghanaCardBackUrl, alternateIdScanUrl] = await Promise.all([
+    presignStored(profile.ghanaCardFrontUrl),
+    presignStored(profile.ghanaCardBackUrl),
+    presignStored(profile.alternateIdScanUrl),
+  ]);
 
   return {
     success: true,
     data: {
-      ...profile,
+      ...decryptedSelf,
+      ghanaCardFrontUrl,
+      ghanaCardBackUrl,
+      alternateIdScanUrl,
       idCheck: {
         idType: profile.idType,
         number: normalizedNumber,

@@ -16,8 +16,11 @@ export interface NotificationCopy {
 
 export const payloads = {
   uniqueCodeGenerated(args: { uniqueCode: string; name: string }): NotificationCopy {
+    // M-5: the title becomes the email Subject (notification.service.ts).
+    // Keep the code out of the subject — bodies/metadata still carry it
+    // for in-app rendering.
     return {
-      title: `Your Declaration Code: ${args.uniqueCode}`,
+      title: "Your Declaration Code Is Ready",
       message: `Your unique declaration code is ${args.uniqueCode}. Keep this code safe for tracking your declaration.`,
       metadata: { uniqueCode: args.uniqueCode, name: args.name },
     };

@@ -1,4 +1,6 @@
 import prisma from "~/server/utils/prisma";
+import { presignStored } from "~/server/services/storage.service";
+import { decryptProfileIds } from "~/server/utils/pii-encryption";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -91,8 +93,21 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  // Re-sign every receipt PDF key on the way out. The bucket is private,
+  // so the raw `pdfUrl` column holds a key and needs a fresh presigned URL.
+  const signedReceipts = await Promise.all(
+    declaration.receipts.map(async (r) => ({
+      ...r,
+      pdfUrl: await presignStored(r.pdfUrl),
+    })),
+  );
+
   return {
     success: true,
-    data: declaration,
+    data: {
+      ...declaration,
+      applicant: decryptProfileIds(declaration.applicant),
+      receipts: signedReceipts,
+    },
   };
 });

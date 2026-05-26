@@ -1,5 +1,7 @@
+import { randomUUID } from "node:crypto";
 import prisma from "~/server/utils/prisma";
 import { verifyRefreshToken, generateTokenPair, getTokenExpiry } from "~/server/utils/jwt";
+import { createAuditLog, AuditActions } from "~/server/utils/audit";
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -47,8 +49,38 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  // Replay detection. A token whose row has `consumedAt` set was already
+  // rotated out — presenting it again means either the legitimate browser
+  // is re-trying after a network blip OR an attacker who stole the old
+  // token is using it. We can't distinguish, so we err on the side of
+  // safety: tear down every token in the family and force re-login.
+  if (storedToken.consumedAt) {
+    if (storedToken.familyId) {
+      await prisma.refreshToken.deleteMany({
+        where: { familyId: storedToken.familyId },
+      });
+    } else {
+      // Pre-migration token with no familyId — be conservative and wipe
+      // every refresh token for this user.
+      await prisma.refreshToken.deleteMany({
+        where: { userId: storedToken.userId },
+      });
+    }
+    await createAuditLog(event, {
+      userId: storedToken.userId,
+      action: AuditActions.REFRESH_TOKEN_REPLAY_DETECTED,
+      entityType: "refresh_token",
+      entityId: storedToken.id,
+      newValues: { familyId: storedToken.familyId },
+    });
+    throw createError({
+      statusCode: 401,
+      statusMessage: "Unauthorized",
+      message: "Refresh token has already been used. Please log in again.",
+    });
+  }
+
   if (storedToken.expiresAt < new Date()) {
-    // Delete expired token
     await prisma.refreshToken.delete({
       where: { id: storedToken.id },
     });
@@ -82,18 +114,24 @@ export default defineEventHandler(async (event) => {
     roles,
   });
 
-  // Delete old refresh token and create new one
-  await prisma.refreshToken.delete({
-    where: { id: storedToken.id },
-  });
-
-  await prisma.refreshToken.create({
-    data: {
-      userId: storedToken.user.id,
-      token: tokens.refreshToken,
-      expiresAt: getTokenExpiry(config.jwtRefreshExpiresIn || "7d"),
-    },
-  });
+  // Mark the consumed token (don't delete — replay detection above needs
+  // to find it) and issue a fresh row in the same family. Pre-migration
+  // tokens get a brand-new familyId here.
+  const familyId = storedToken.familyId ?? randomUUID();
+  await prisma.$transaction([
+    prisma.refreshToken.update({
+      where: { id: storedToken.id },
+      data: { consumedAt: new Date() },
+    }),
+    prisma.refreshToken.create({
+      data: {
+        userId: storedToken.user.id,
+        token: tokens.refreshToken,
+        familyId,
+        expiresAt: getTokenExpiry(config.jwtRefreshExpiresIn || "7d"),
+      },
+    }),
+  ]);
 
   return {
     success: true,

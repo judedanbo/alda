@@ -5,6 +5,8 @@ import {
   getRoleScope,
   buildSealedHistoryWhere,
 } from "~/server/utils/analytics-filters";
+import { maskGhanaCard, maskAlternateId } from "~/server/utils/pii";
+import { decryptProfileIds } from "~/server/utils/pii-encryption";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -43,8 +45,8 @@ export default defineEventHandler(async (event) => {
             select: {
               fullName: true,
               idType: true,
-              ghanaCardNumber: true,
-              alternateIdNumber: true,
+              ghanaCardNumberCipher: true,
+              alternateIdNumberCipher: true,
               offices: {
                 select: { institution: { select: { name: true } } },
               },
@@ -79,14 +81,25 @@ export default defineEventHandler(async (event) => {
         ((row.createdAt.getTime() - decl.createdAt.getTime()) / 86400000) * 10,
       ) / 10;
 
+    // The ID number is masked in the export to keep this endpoint from
+    // becoming a one-shot PII dump for any compromised officer/admin
+    // account. Operations that genuinely need the unmasked value should
+    // be handled through a separate, second-factor-gated workflow.
+    const decryptedApplicant = decryptProfileIds(decl.applicant);
+    const rawIdNumber
+      = decl.applicant.idType === "GHANA_CARD"
+        ? decryptedApplicant.ghanaCardNumber
+        : decryptedApplicant.alternateIdNumber;
+    const maskedIdNumber
+      = decl.applicant.idType === "GHANA_CARD"
+        ? maskGhanaCard(rawIdNumber)
+        : maskAlternateId(rawIdNumber);
+
     return {
       code: decl.uniqueCode,
       applicant: decl.applicant.fullName,
       idType: decl.applicant.idType,
-      idNumber:
-        decl.applicant.idType === "GHANA_CARD"
-          ? decl.applicant.ghanaCardNumber
-          : decl.applicant.alternateIdNumber,
+      idNumber: maskedIdNumber,
       institutions,
       collectionOffice: office?.name ?? "",
       region: office?.region ?? "",

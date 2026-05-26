@@ -42,8 +42,9 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Hash new password
-  const passwordHash = await bcrypt.hash(password, 12);
+  // Hash new password. L-1: bcrypt cost 13 must match the cost used at
+  // register time so resets don't downgrade hash strength.
+  const passwordHash = await bcrypt.hash(password, 13);
 
   // Update user password and mark token as used
   await prisma.$transaction([

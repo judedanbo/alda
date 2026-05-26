@@ -1,5 +1,8 @@
 import prisma from "~/server/utils/prisma";
 import type { FormReissueStatus } from "@prisma/client";
+import { presignStored } from "~/server/services/storage.service";
+import { decryptProfileIds, hashPii } from "~/server/utils/pii-encryption";
+import { ID_NUMBER_PATTERNS } from "~/server/utils/validators";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -21,11 +24,25 @@ export default defineEventHandler(async (event) => {
   }
 
   if (search) {
+    // National-ID columns are encrypted (C-5); exact-match hash lookup
+    // when the search term looks like a canonical ID number.
+    const idCandidate = search.trim().toUpperCase();
+    const idMatches: Record<string, unknown>[] = [];
+    if (ID_NUMBER_PATTERNS.GHANA_CARD.test(idCandidate)) {
+      idMatches.push({ declaration: { applicant: { ghanaCardNumberHash: hashPii(idCandidate) } } });
+    } else {
+      for (const t of ["PASSPORT", "VOTER_ID", "DRIVERS_LICENSE", "NIA_RECEIPT"] as const) {
+        if (ID_NUMBER_PATTERNS[t].test(idCandidate)) {
+          idMatches.push({
+            declaration: { applicant: { idType: t, alternateIdNumberHash: hashPii(idCandidate) } },
+          });
+        }
+      }
+    }
     where.OR = [
       { declaration: { uniqueCode: { contains: search, mode: "insensitive" } } },
       { declaration: { applicant: { fullName: { contains: search, mode: "insensitive" } } } },
-      { declaration: { applicant: { ghanaCardNumber: { contains: search, mode: "insensitive" } } } },
-      { declaration: { applicant: { alternateIdNumber: { contains: search, mode: "insensitive" } } } },
+      ...idMatches,
     ];
   }
 
@@ -39,8 +56,8 @@ export default defineEventHandler(async (event) => {
               select: {
                 fullName: true,
                 idType: true,
-                ghanaCardNumber: true,
-                alternateIdNumber: true,
+                ghanaCardNumberCipher: true,
+                alternateIdNumberCipher: true,
                 user: { select: { email: true } },
               },
             },
@@ -56,10 +73,22 @@ export default defineEventHandler(async (event) => {
     prisma.formReissueRequest.count({ where }),
   ]);
 
+  // Re-sign letterScanUrl per row and decrypt the nested applicant IDs.
+  const signedRequests = await Promise.all(
+    requests.map(async (r) => ({
+      ...r,
+      letterScanUrl: await presignStored(r.letterScanUrl),
+      declaration: {
+        ...r.declaration,
+        applicant: decryptProfileIds(r.declaration.applicant),
+      },
+    })),
+  );
+
   return {
     success: true,
     data: {
-      requests,
+      requests: signedRequests,
       pagination: {
         page,
         limit,

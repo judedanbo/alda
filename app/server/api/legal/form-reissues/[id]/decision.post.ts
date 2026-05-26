@@ -5,6 +5,7 @@ import {
   notifyFormReissueApproved,
   notifyFormReissueDeclined,
 } from "~/server/services/notification.service";
+import { presignStored } from "~/server/services/storage.service";
 
 const approverLabels: Record<string, string> = {
   AUDITOR_GENERAL: "the Auditor General",
@@ -125,6 +126,9 @@ export default defineEventHandler(async (event) => {
   return {
     success: true,
     message: isApproved ? "Reissue approved" : "Reissue declined",
-    data: updatedRequest,
+    data: {
+      ...updatedRequest,
+      letterScanUrl: await presignStored(updatedRequest.letterScanUrl),
+    },
   };
 });

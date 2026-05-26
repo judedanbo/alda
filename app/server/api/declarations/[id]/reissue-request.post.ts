@@ -72,25 +72,40 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const [reissueRequest] = await prisma.$transaction([
-    prisma.formReissueRequest.create({
-      data: {
-        declarationId: id,
-        requestedById: auth.userId,
-        status: "PENDING",
-        applicantNote: data.applicantNote,
-      },
-    }),
-    prisma.declarationStatusHistory.create({
-      data: {
-        declarationId: id,
-        status: "FORM_COLLECTED",
-        changedById: auth.userId,
-        notes:
-          "Applicant reported the collected form lost; reissue requested (offline Auditor General approval pending)",
-      },
-    }),
-  ]);
+  // M-2: a partial unique index on (declaration_id) WHERE status='PENDING'
+  // closes the race between the pre-check above and this insert. P2002
+  // on the create means a concurrent request won — same 409 either way.
+  let reissueRequest;
+  try {
+    [reissueRequest] = await prisma.$transaction([
+      prisma.formReissueRequest.create({
+        data: {
+          declarationId: id,
+          requestedById: auth.userId,
+          status: "PENDING",
+          applicantNote: data.applicantNote,
+        },
+      }),
+      prisma.declarationStatusHistory.create({
+        data: {
+          declarationId: id,
+          status: "FORM_COLLECTED",
+          changedById: auth.userId,
+          notes:
+            "Applicant reported the collected form lost; reissue requested (offline Auditor General approval pending)",
+        },
+      }),
+    ]);
+  } catch (err) {
+    if (err && typeof err === "object" && "code" in err && (err as { code: string }).code === "P2002") {
+      throw createError({
+        statusCode: 409,
+        statusMessage: "Conflict",
+        message: "A reissue request is already pending for this declaration.",
+      });
+    }
+    throw err;
+  }
 
   await logAction({
     userId: auth.userId,

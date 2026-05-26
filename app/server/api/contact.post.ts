@@ -1,5 +1,6 @@
 import { z } from "zod";
 import prisma from "~/server/utils/prisma";
+import { extractClientIp } from "~/server/utils/request-meta";
 import { sendContactAcknowledgment } from "~/server/services/email.service";
 
 const contactSchema = z.object({
@@ -34,9 +35,7 @@ export default defineEventHandler(async (event) => {
   const { name, email, phone, category, subject, message } = result.data;
 
   // Get client information
-  const ipAddress = getHeader(event, "x-forwarded-for")?.split(",")[0]?.trim()
-    || getHeader(event, "x-real-ip")
-    || "unknown";
+  const ipAddress = extractClientIp(event);
   const userAgent = getHeader(event, "user-agent") || "unknown";
 
   try {

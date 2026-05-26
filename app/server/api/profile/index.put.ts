@@ -1,11 +1,14 @@
 import prisma from "~/server/utils/prisma";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { presignStored } from "~/server/services/storage.service";
 import { z } from "zod";
 
+// Fields hold MinIO bucket keys (e.g. "ghana-cards/<userId>/front.jpg"),
+// not URLs; the bucket is private and reads re-sign via `presignStored`.
 const updateProfileSchema = z.object({
-  ghanaCardFrontUrl: z.string().url().optional(),
-  ghanaCardBackUrl: z.string().url().optional(),
-  alternateIdScanUrl: z.string().url().optional(),
+  ghanaCardFrontUrl: z.string().min(1).max(500).optional(),
+  ghanaCardBackUrl: z.string().min(1).max(500).optional(),
+  alternateIdScanUrl: z.string().min(1).max(500).optional(),
 });
 
 export default defineEventHandler(async (event) => {
@@ -67,9 +70,21 @@ export default defineEventHandler(async (event) => {
     newValues: result.data,
   });
 
+  // Re-sign the stored keys into short-lived URLs for client preview.
+  const [ghanaCardFrontUrl, ghanaCardBackUrl, alternateIdScanUrl] = await Promise.all([
+    presignStored(updated.ghanaCardFrontUrl),
+    presignStored(updated.ghanaCardBackUrl),
+    presignStored(updated.alternateIdScanUrl),
+  ]);
+
   return {
     success: true,
     message: "Profile updated successfully",
-    data: updated,
+    data: {
+      ...updated,
+      ghanaCardFrontUrl,
+      ghanaCardBackUrl,
+      alternateIdScanUrl,
+    },
   };
 });
