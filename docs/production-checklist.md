@@ -140,6 +140,15 @@ curl -X POST -H "Authorization: Bearer <token>" \
 Stop the Redis container. Hit `/api/health` ~60 times — expect 429 after
 the fallback cap. Restart Redis; normal limits resume.
 
+### Verify-by-code cap (M-9)
+
+```sh
+# /api/verify/<code> is now classified separately. The IP-side cap is
+# 90/min; the per-user-per-group divisor (M-7) makes the user-side
+# 30/min. Hit the endpoint 31 times in one minute from a single
+# authenticated officer account — expect a 429 on the 31st.
+```
+
 ## 5. After the smoke checks
 
 - Enable CSP enforce mode: set `SECURITY_CSP_ENFORCE=true` and redeploy.

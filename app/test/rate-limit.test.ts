@@ -81,4 +81,11 @@ describe("classifyRouteGroup", () => {
     expect(classifyRouteGroup("GET", "/api/declarations")).toBeNull();
     expect(classifyRouteGroup("GET", "/api/admin/stats")).toBeNull();
   });
+
+  it("M-9: caps /api/verify/<code> at 90/min/IP (→ 30/min/user via M-7 divisor)", () => {
+    const g = classifyRouteGroup("GET", "/api/verify/ADLA-20260601-AB123");
+    expect(g?.name).toBe("verify");
+    expect(g?.limit).toBe(90);
+    expect(g?.windowMs).toBe(60_000);
+  });
 });

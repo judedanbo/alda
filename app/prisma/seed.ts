@@ -4,7 +4,29 @@ import { encryptPii, hashPii, canonicalizeId } from "../server/utils/pii-encrypt
 
 const prisma = new PrismaClient();
 
+/**
+ * M-8: refuse to run in production. The seed creates demo accounts with
+ * a hardcoded password (`password123`) — running it against a prod DB
+ * would either drop those credentials onto the live system or wedge the
+ * idempotent `upsert`s into prod data. The escape hatch is for the rare
+ * case where an operator genuinely needs to seed a prod-but-empty DB
+ * (initial deploy); they set the env var explicitly to acknowledge the
+ * risk.
+ */
+function assertNotProduction(scriptName: string): void {
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_SEED_IN_PRODUCTION !== "true") {
+    console.error(
+      `Refusing to run ${scriptName} in production. This script creates ` +
+      "demo accounts with a hardcoded password. If you genuinely need to " +
+      "run it against a production database, set ALLOW_SEED_IN_PRODUCTION=true " +
+      "in the environment — but you almost certainly should not.",
+    );
+    process.exit(1);
+  }
+}
+
 async function main() {
+  assertNotProduction("prisma/seed.ts");
   console.log("🌱 Starting database seed...");
 
   // Seed Roles

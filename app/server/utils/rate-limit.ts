@@ -61,6 +61,7 @@ const FALLBACK_LIMITS: Record<string, number> = {
   "ip:auth": 5,
   "ip:upload": 6,
   "ip:write": 20,
+  "ip:verify": 10,
   "ip:default": 60,
   "user:default": 60,
 };
@@ -73,6 +74,7 @@ function fallbackLimitFor(key: string, normalLimit: number): number {
   if (key.startsWith("ip:") && key.includes(":auth")) cls = "ip:auth";
   else if (key.startsWith("ip:") && key.includes(":upload")) cls = "ip:upload";
   else if (key.startsWith("ip:") && key.includes(":write")) cls = "ip:write";
+  else if (key.startsWith("ip:") && key.includes(":verify")) cls = "ip:verify";
   else if (key.startsWith("ip:")) cls = "ip:default";
   else if (key.startsWith("user:")) cls = "user:default";
   return Math.min(normalLimit, FALLBACK_LIMITS[cls] ?? FALLBACK_LIMITS["ip:default"]!);
@@ -173,7 +175,7 @@ export async function checkRateLimit(
   }
 }
 
-export type RouteGroupName = "auth" | "upload" | "write" | "default";
+export type RouteGroupName = "auth" | "upload" | "write" | "verify" | "default";
 
 export interface RouteGroup {
   name: RouteGroupName;
@@ -194,6 +196,13 @@ export function classifyRouteGroup(method: string, path: string): RouteGroup | n
   }
   if (path.startsWith("/api/upload")) {
     return { name: "upload", limit: rl.uploadPer5Min, windowMs: 300_000 };
+  }
+  if (path.startsWith("/api/verify/")) {
+    // M-9: code-verification lookups by Legal Unit / Schedule Officer /
+    // admin. Even with the per-IP limit, a compromised account could
+    // iterate codes via the lax per-user budget. Group cap at 90/min/IP;
+    // the rate-limit-user middleware (M-7) divides by 3 → 30/min/user.
+    return { name: "verify", limit: 90, windowMs: 60_000 };
   }
   if (m === "POST" || m === "PUT" || m === "PATCH" || m === "DELETE") {
     return { name: "write", limit: rl.writePerMin, windowMs: 60_000 };

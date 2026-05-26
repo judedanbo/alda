@@ -1,3 +1,4 @@
+import { randomInt } from "node:crypto";
 import prisma from "~/server/utils/prisma";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
 import { sendSms } from "~/server/services/sms.service";
@@ -7,12 +8,12 @@ const CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const RESEND_THROTTLE_MS = 60 * 1000; // 60 seconds
 
 function generateNumericCode(digits = 6): string {
-  // Crypto-random integer in [0, 10^digits), zero-padded.
+  // M-4: `randomInt(max)` uses rejection sampling internally, so the
+  // distribution is uniform over [0, 10^digits) — no modulo bias like the
+  // old `getRandomValues % max` implementation (which slightly favoured
+  // the low end of the range).
   const max = 10 ** digits;
-  const buf = new Uint32Array(1);
-  crypto.getRandomValues(buf);
-  const n = buf[0]! % max;
-  return n.toString().padStart(digits, "0");
+  return randomInt(max).toString().padStart(digits, "0");
 }
 
 export default defineEventHandler(async (event) => {
