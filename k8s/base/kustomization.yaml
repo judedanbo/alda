@@ -12,7 +12,6 @@ resources:
   - configmap.yaml
   - limit-range.yaml
   - resource-quota.yaml
-  - secret-provider-class.yaml
   - deployment-app.yaml
   - deployment-worker.yaml
   - service-app.yaml

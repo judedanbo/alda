@@ -9,9 +9,9 @@ permissions:
   contents: read
 
 env:
-  ACR_NAME: adlaacr
-  AKS_CLUSTER: adla-aks
-  RESOURCE_GROUP: adla-rg
+  ACR_NAME: regisry
+  AKS_CLUSTER: infosys
+  RESOURCE_GROUP: infosys
 
 jobs:
   ci:
@@ -146,8 +146,8 @@ jobs:
           # Set the image tag to the current commit SHA
           cd k8s/overlays/$OVERLAY
           kustomize edit set image \
-            adlaacr.azurecr.io/adla-app=adlaacr.azurecr.io/adla-app:${{ github.sha }} \
-            adlaacr.azurecr.io/adla-migrate=adlaacr.azurecr.io/adla-migrate:${{ github.sha }}
+            regisry.azurecr.io/adla-app=regisry.azurecr.io/adla-app:${{ github.sha }} \
+            regisry.azurecr.io/adla-migrate=regisry.azurecr.io/adla-migrate:${{ github.sha }}
           cd -
 
           # Apply manifests

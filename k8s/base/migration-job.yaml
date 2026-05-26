@@ -17,7 +17,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: migrate
-          image: adlaacr.azurecr.io/adla-migrate:latest
+          image: regisry.azurecr.io/adla-migrate:latest
           envFrom:
             - secretRef:
                 name: adla-secrets
@@ -28,14 +28,3 @@ spec:
             limits:
               cpu: 256m
               memory: 512Mi
-          volumeMounts:
-            - name: secrets-store
-              mountPath: /mnt/secrets-store
-              readOnly: true
-      volumes:
-        - name: secrets-store
-          csi:
-            driver: secrets-store.csi.k8s.io
-            readOnly: true
-            volumeAttributes:
-              secretProviderClass: adla-kv

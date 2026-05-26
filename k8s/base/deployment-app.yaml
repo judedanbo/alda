@@ -25,7 +25,7 @@ spec:
       serviceAccountName: default
       containers:
         - name: app
-          image: adlaacr.azurecr.io/adla-app:latest
+          image: regisry.azurecr.io/adla-app:latest
           ports:
             - containerPort: 3000
               protocol: TCP
@@ -59,14 +59,3 @@ spec:
               port: 3000
             periodSeconds: 30
             failureThreshold: 3
-          volumeMounts:
-            - name: secrets-store
-              mountPath: /mnt/secrets-store
-              readOnly: true
-      volumes:
-        - name: secrets-store
-          csi:
-            driver: secrets-store.csi.k8s.io
-            readOnly: true
-            volumeAttributes:
-              secretProviderClass: adla-kv

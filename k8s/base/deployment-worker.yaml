@@ -25,7 +25,7 @@ spec:
       serviceAccountName: default
       containers:
         - name: worker
-          image: adlaacr.azurecr.io/adla-app:latest
+          image: regisry.azurecr.io/adla-app:latest
           envFrom:
             - configMapRef:
                 name: adla-config
@@ -49,14 +49,3 @@ spec:
               port: 3000
             periodSeconds: 30
             failureThreshold: 3
-          volumeMounts:
-            - name: secrets-store
-              mountPath: /mnt/secrets-store
-              readOnly: true
-      volumes:
-        - name: secrets-store
-          csi:
-            driver: secrets-store.csi.k8s.io
-            readOnly: true
-            volumeAttributes:
-              secretProviderClass: adla-kv

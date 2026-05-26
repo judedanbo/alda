@@ -9,11 +9,10 @@ resources:
 patches:
   - path: configmap-patch.yaml
   - path: ingress-patch.yaml
-  - path: secret-provider-patch.yaml
   - path: replica-patch.yaml
 
 images:
-  - name: adlaacr.azurecr.io/adla-app
+  - name: regisry.azurecr.io/adla-app
     newTag: production-latest
-  - name: adlaacr.azurecr.io/adla-migrate
+  - name: regisry.azurecr.io/adla-migrate
     newTag: production-latest
