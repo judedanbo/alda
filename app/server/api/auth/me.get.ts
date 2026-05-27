@@ -1,4 +1,5 @@
 import prisma from "~/server/utils/prisma";
+import { decryptProfileIds } from "~/server/utils/pii-encryption";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -57,7 +58,7 @@ export default defineEventHandler(async (event) => {
         ? {
             id: user.applicantProfile.id,
             fullName: user.applicantProfile.fullName,
-            ghanaCardNumber: user.applicantProfile.ghanaCardNumber,
+            ghanaCardNumber: decryptProfileIds(user.applicantProfile).ghanaCardNumber,
             offices: user.applicantProfile.offices,
             verificationStatus: user.applicantProfile.verificationStatus,
           }

@@ -1,5 +1,8 @@
 import prisma from "~/server/utils/prisma";
 import type { VerificationStatus } from "@prisma/client";
+import { presignStored } from "~/server/services/storage.service";
+import { decryptProfileIds, hashPii } from "~/server/utils/pii-encryption";
+import { ID_NUMBER_PATTERNS } from "~/server/utils/validators";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -21,11 +24,26 @@ export default defineEventHandler(async (event) => {
   }
 
   if (search) {
+    // National-ID columns are encrypted; substring search is no longer
+    // possible. If the search term looks like a full canonical ID number
+    // (matches one of the validator patterns), include an exact-match
+    // hash lookup as an OR branch alongside the name/email substring
+    // matches. Otherwise we just search name + email.
+    const idCandidate = search.trim().toUpperCase();
+    const idMatches: Record<string, unknown>[] = [];
+    if (ID_NUMBER_PATTERNS.GHANA_CARD.test(idCandidate)) {
+      idMatches.push({ ghanaCardNumberHash: hashPii(idCandidate) });
+    } else {
+      for (const t of ["PASSPORT", "VOTER_ID", "DRIVERS_LICENSE", "NIA_RECEIPT"] as const) {
+        if (ID_NUMBER_PATTERNS[t].test(idCandidate)) {
+          idMatches.push({ idType: t, alternateIdNumberHash: hashPii(idCandidate) });
+        }
+      }
+    }
     where.OR = [
       { fullName: { contains: search, mode: "insensitive" } },
-      { ghanaCardNumber: { contains: search, mode: "insensitive" } },
-      { alternateIdNumber: { contains: search, mode: "insensitive" } },
       { user: { email: { contains: search, mode: "insensitive" } } },
+      ...idMatches,
     ];
   }
 
@@ -57,10 +75,22 @@ export default defineEventHandler(async (event) => {
     prisma.applicantProfile.count({ where }),
   ]);
 
+  const signedProfiles = await Promise.all(
+    profiles.map(async (p) => {
+      const [ghanaCardFrontUrl, ghanaCardBackUrl, alternateIdScanUrl] = await Promise.all([
+        presignStored(p.ghanaCardFrontUrl),
+        presignStored(p.ghanaCardBackUrl),
+        presignStored(p.alternateIdScanUrl),
+      ]);
+      const decrypted = decryptProfileIds(p);
+      return { ...decrypted, ghanaCardFrontUrl, ghanaCardBackUrl, alternateIdScanUrl };
+    }),
+  );
+
   return {
     success: true,
     data: {
-      profiles,
+      profiles: signedProfiles,
       pagination: {
         page,
         limit,

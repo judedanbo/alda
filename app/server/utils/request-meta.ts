@@ -1,5 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { H3Event } from "h3";
+import { ipInCidr } from "./ai-agents";
+import { getAnalyticsConfig } from "./analytics-config";
 
 /**
  * Request metadata helpers shared by traffic capture, abuse scoring and rate
@@ -8,21 +10,63 @@ import type { H3Event } from "h3";
  */
 
 /**
- * Extracts the client IP. The header precedence mirrors `audit.ts` exactly
- * (`x-forwarded-for` first hop, then `x-real-ip`) so traffic events and audit
- * logs always agree; a socket fallback is added for robustness.
+ * Normalises an IP for storage / comparison. Strips IPv6 zone IDs (`%eth0`)
+ * and unwraps IPv4-mapped IPv6 addresses (`::ffff:1.2.3.4` → `1.2.3.4`) so a
+ * dual-stack client doesn't end up in two different rate-limit buckets.
  */
-export function extractClientIp(event: H3Event): string {
-  const forwarded = getHeader(event, "x-forwarded-for")?.split(",")[0]?.trim();
-  if (forwarded) return forwarded;
+export function normalizeIp(ip: string): string {
+  if (!ip) return ip;
+  const stripped = ip.split("%")[0]!.trim();
+  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(stripped);
+  return mapped && mapped[1] ? mapped[1] : stripped;
+}
+
+function isTrusted(ip: string, trustedProxies: string[]): boolean {
+  return trustedProxies.some((cidr) => ipInCidr(ip, cidr));
+}
+
+/**
+ * Extract the client IP, gating `X-Forwarded-For` / `X-Real-IP` on a trusted-
+ * proxy list. The socket peer is the source of truth: forwarding headers are
+ * honored ONLY when the immediate peer matches a CIDR in
+ * `runtimeConfig.analytics.trustedProxies` (set via the
+ * `ANALYTICS_TRUSTED_PROXIES` env var). Default = empty list = trust nothing.
+ *
+ * When the peer is trusted, the `X-Forwarded-For` chain is walked
+ * right-to-left, dropping trusted hops, returning the first untrusted hop —
+ * so an attacker's leftmost spoof cannot impersonate the real client.
+ *
+ * The trust list is parameterised for testability; production callers omit
+ * it and pick up the resolved config.
+ */
+export function extractClientIp(
+  event: H3Event,
+  trustedProxies: string[] = getAnalyticsConfig().trustedProxies,
+): string {
+  const socketRaw = event.node?.req?.socket?.remoteAddress;
+  const socket = socketRaw ? normalizeIp(socketRaw) : "";
+
+  // Bare deployment (no proxies declared) or peer isn't a known proxy:
+  // ignore all forwarding headers. Socket peer is the only honest value.
+  if (trustedProxies.length === 0 || !socket || !isTrusted(socket, trustedProxies)) {
+    return socket || "unknown";
+  }
+
+  const xff = getHeader(event, "x-forwarded-for");
+  if (xff) {
+    const chain = xff.split(",").map((s) => normalizeIp(s)).filter(Boolean);
+    // Walk right-to-left: drop trusted hops until the first untrusted one.
+    for (let i = chain.length - 1; i >= 0; i--) {
+      if (!isTrusted(chain[i]!, trustedProxies)) return chain[i]!;
+    }
+    // Every hop in the chain was trusted — the leftmost is the original client.
+    if (chain.length > 0) return chain[0]!;
+  }
 
   const real = getHeader(event, "x-real-ip");
-  if (real) return real.trim();
+  if (real) return normalizeIp(real);
 
-  const socket = event.node?.req?.socket?.remoteAddress;
-  if (socket) return socket;
-
-  return "unknown";
+  return socket;
 }
 
 /** Salted SHA-256 of an IP — the long-term, non-reversible identifier. */

@@ -50,6 +50,68 @@ interface WindowState {
 }
 
 /**
+ * In-process fallback counters used when shared storage (Redis or the
+ * in-memory driver) throws. Per-pod / per-process state; the caps are
+ * deliberately tight because the only reason to enter this branch is "we
+ * lost shared state" — better to over-throttle than to open the door.
+ * `min(normalLimit, FALLBACK_LIMITS[group])` guarantees the fallback can
+ * never be weaker than the configured limit.
+ */
+const FALLBACK_LIMITS: Record<string, number> = {
+  "ip:auth": 5,
+  "ip:upload": 6,
+  "ip:write": 20,
+  "ip:verify": 10,
+  "ip:default": 60,
+  "user:default": 60,
+};
+const FALLBACK_WINDOW_MS = 60_000;
+const fallbackBuckets = new Map<string, { winStart: number; count: number }>();
+
+function fallbackLimitFor(key: string, normalLimit: number): number {
+  // Pick a fallback class from the key's prefix; otherwise fall back to "default".
+  let cls = "ip:default";
+  if (key.startsWith("ip:") && key.includes(":auth")) cls = "ip:auth";
+  else if (key.startsWith("ip:") && key.includes(":upload")) cls = "ip:upload";
+  else if (key.startsWith("ip:") && key.includes(":write")) cls = "ip:write";
+  else if (key.startsWith("ip:") && key.includes(":verify")) cls = "ip:verify";
+  else if (key.startsWith("ip:")) cls = "ip:default";
+  else if (key.startsWith("user:")) cls = "user:default";
+  return Math.min(normalLimit, FALLBACK_LIMITS[cls] ?? FALLBACK_LIMITS["ip:default"]!);
+}
+
+function localFallbackCheck(key: string, normalLimit: number): RateLimitResult {
+  const limit = fallbackLimitFor(key, normalLimit);
+  const now = Date.now();
+  const winStart = now - (now % FALLBACK_WINDOW_MS);
+  const bucket = fallbackBuckets.get(key);
+  let count = bucket && bucket.winStart === winStart ? bucket.count : 0;
+  const allowed = count + 1 <= limit;
+  if (allowed) {
+    count += 1;
+    fallbackBuckets.set(key, { winStart, count });
+  }
+  const resetMs = FALLBACK_WINDOW_MS - (now - winStart);
+  return {
+    allowed,
+    limit,
+    remaining: Math.max(0, limit - count),
+    resetMs,
+    retryAfterMs: allowed ? 0 : Math.max(1000, resetMs),
+  };
+}
+
+/** Test-only: drop the per-process fallback buckets. */
+export function _resetFallbackBucketsForTests(): void {
+  fallbackBuckets.clear();
+}
+
+/** Test-only: snapshot the per-process fallback bucket count for a key. */
+export function _peekFallbackBucketForTests(key: string): { winStart: number; count: number } | undefined {
+  return fallbackBuckets.get(key);
+}
+
+/**
  * Evaluates (and, unless `peek`, consumes) one unit of a sliding-window
  * limiter. Fails open: any storage error yields an `allowed` result.
  */
@@ -105,12 +167,15 @@ export async function checkRateLimit(
       retryAfterMs: allowed ? 0 : Math.max(1000, resetMs),
     };
   } catch (error) {
-    console.error(`[rate-limit] check failed for ${key} — failing open:`, error);
-    return { allowed: true, limit, remaining: limit, resetMs: windowMs, retryAfterMs: 0 };
+    // Shared storage failed. Fall *closed* via a tiny per-process bucket
+    // with a conservative cap — preserves the basic rate-limit guarantee
+    // during a Redis outage instead of opening the floodgates.
+    console.error(`[rate-limit] storage failed for ${key} — applying local fallback:`, error);
+    return localFallbackCheck(key, limit);
   }
 }
 
-export type RouteGroupName = "auth" | "upload" | "write" | "default";
+export type RouteGroupName = "auth" | "upload" | "write" | "verify" | "default";
 
 export interface RouteGroup {
   name: RouteGroupName;
@@ -131,6 +196,13 @@ export function classifyRouteGroup(method: string, path: string): RouteGroup | n
   }
   if (path.startsWith("/api/upload")) {
     return { name: "upload", limit: rl.uploadPer5Min, windowMs: 300_000 };
+  }
+  if (path.startsWith("/api/verify/")) {
+    // M-9: code-verification lookups by Legal Unit / Schedule Officer /
+    // admin. Even with the per-IP limit, a compromised account could
+    // iterate codes via the lax per-user budget. Group cap at 90/min/IP;
+    // the rate-limit-user middleware (M-7) divides by 3 → 30/min/user.
+    return { name: "verify", limit: 90, windowMs: 60_000 };
   }
   if (m === "POST" || m === "PUT" || m === "PATCH" || m === "DELETE") {
     return { name: "write", limit: rl.writePerMin, windowMs: 60_000 };

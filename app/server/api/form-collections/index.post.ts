@@ -3,6 +3,7 @@ import { validateBody, formCollectionRecordSchema } from "~/server/utils/validat
 import { logAction, AuditActions } from "~/server/utils/audit";
 import { sendNotification } from "~/server/services/notification.service";
 import { payloads } from "~/server/notifications/payloads";
+import { assertOfficerCanActOnOffice } from "~/server/utils/officer-scope";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -82,6 +83,10 @@ export default defineEventHandler(async (event) => {
       statusMessage: "Invalid or inactive collection office",
     });
   }
+
+  // H-3: schedule officers can only act on offices they're assigned to.
+  // Admins bypass.
+  await assertOfficerCanActOnOffice(event, data.collectionOfficeId);
 
   // Create form collection and update declaration status
   const [formCollection] = await prisma.$transaction([

@@ -35,12 +35,23 @@ function safeEqual(a: string | undefined, b: string): boolean {
 }
 
 /**
- * Compares the request's claimed secret to the configured one. Returns
- * true when no secret is configured (dev-friendly), false on mismatch.
+ * Compares the request's claimed secret to the configured one.
+ *
+ * - In production: the secret MUST be configured (the C-1 startup gate
+ *   already refuses to boot otherwise). If it ever isn't, refuse the
+ *   webhook rather than accepting anonymous deliveries. M-3 from
+ *   docs/security-assessment.md.
+ * - In dev / test: missing secret accepts any caller, so the SMS-provider
+ *   localhost callback doesn't need a copy of the production key.
  */
 export function verifyWebhookSecret(event: H3Event): boolean {
   const configured = getWebhookSecret();
-  if (!configured) return true; // dev: accept; production should set the env var
+  if (!configured) {
+    // Production deploys without the secret set: explicitly refuse, even
+    // though the C-1 gate should have prevented startup. Defence in depth.
+    if (process.env.NODE_ENV === "production") return false;
+    return true; // dev / test only
+  }
   const headerSecret = getHeader(event, "x-webhook-secret");
   const query = getQuery(event);
   const querySecret = typeof query.secret === "string" ? query.secret : undefined;

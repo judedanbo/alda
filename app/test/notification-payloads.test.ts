@@ -7,9 +7,10 @@ import { describe, expect, it } from "vitest";
 const { payloads } = await import("~/server/notifications/payloads");
 
 describe("payloads.uniqueCodeGenerated", () => {
-  it("includes the code in the title and message", () => {
+  it("keeps the code OUT of the title (M-5) but in the message + metadata", () => {
     const p = payloads.uniqueCodeGenerated({ uniqueCode: "ADLA-X1", name: "Jane" });
-    expect(p.title).toContain("ADLA-X1");
+    // Title becomes the email Subject downstream — it must not leak the code.
+    expect(p.title).not.toContain("ADLA-X1");
     expect(p.message).toContain("ADLA-X1");
     expect(p.metadata).toEqual({ uniqueCode: "ADLA-X1", name: "Jane" });
   });

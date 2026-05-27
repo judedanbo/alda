@@ -115,7 +115,9 @@ export async function sendUniqueCodeEmail(
 ): Promise<boolean> {
   return sendEmail({
     to,
-    subject: `Your Declaration Code: ${uniqueCode}`,
+    // M-5: keep the declaration code OUT of the email Subject header,
+    // which is logged plaintext by every mail-server hop. Body retains it.
+    subject: `Your Declaration Code Is Ready`,
     template: "unique-code",
     data: {
       name,

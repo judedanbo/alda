@@ -1,5 +1,6 @@
 import prisma from "~/server/utils/prisma";
 import { logAction } from "~/server/utils/audit";
+import { validateBody, adminInstitutionUpdateSchema } from "~/server/utils/validators";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -26,13 +27,6 @@ export default defineEventHandler(async (event) => {
   }
 
   const institutionId = getRouterParam(event, "id");
-  const body = await readBody(event);
-  const { name, type, isActive } = body as {
-    name: string;
-    type: string | null;
-    isActive: boolean;
-  };
-
   if (!institutionId) {
     throw createError({
       statusCode: 400,
@@ -40,12 +34,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  if (!name || typeof name !== "string" || name.trim().length === 0) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: "Institution name is required",
-    });
-  }
+  const { name, type, isActive } = await validateBody(event, adminInstitutionUpdateSchema);
 
   const existing = await prisma.institution.findUnique({
     where: { id: institutionId },
@@ -61,7 +50,7 @@ export default defineEventHandler(async (event) => {
   // Check for duplicate name (excluding current institution)
   const duplicate = await prisma.institution.findFirst({
     where: {
-      name: { equals: name.trim(), mode: "insensitive" },
+      name: { equals: name, mode: "insensitive" },
       id: { not: institutionId },
     },
   });
@@ -76,9 +65,9 @@ export default defineEventHandler(async (event) => {
   const institution = await prisma.institution.update({
     where: { id: institutionId },
     data: {
-      name: name.trim(),
-      type: type || null,
-      isActive: isActive ?? existing.isActive,
+      name,
+      type: type ?? null,
+      isActive,
     },
   });
 

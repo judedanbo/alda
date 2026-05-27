@@ -1,5 +1,6 @@
 import prisma from "~/server/utils/prisma";
 import { logAction } from "~/server/utils/audit";
+import { validateBody, adminUserRolesSchema } from "~/server/utils/validators";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -26,9 +27,6 @@ export default defineEventHandler(async (event) => {
   }
 
   const userId = getRouterParam(event, "id");
-  const body = await readBody(event);
-  const { roleIds } = body as { roleIds: number[] };
-
   if (!userId) {
     throw createError({
       statusCode: 400,
@@ -36,12 +34,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  if (!Array.isArray(roleIds)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: "roleIds must be an array",
-    });
-  }
+  const { roleIds } = await validateBody(event, adminUserRolesSchema);
 
   const targetUser = await prisma.user.findUnique({
     where: { id: userId },
