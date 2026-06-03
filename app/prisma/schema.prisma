@@ -47,6 +47,7 @@ model User {
   formReissuesRequested    FormReissueRequest[]          @relation("ReissueRequestedBy")
   formReissuesReviewed     FormReissueRequest[]          @relation("ReissueReviewedBy")
   assignedOffices          UserCollectionOffice[]
+  documentVersions         DocumentVersion[]             @relation("DocumentVersionCreator")
 
   @@map("users")
 }
@@ -483,6 +484,54 @@ model Receipt {
   generator   User        @relation("GeneratedBy", fields: [generatedBy], references: [id])
 
   @@map("receipts")
+}
+
+// ============================================
+// Document Templates & Versioned PDFs (Admin)
+// ============================================
+
+model DocumentTemplate {
+  id             String   @id @default(uuid()) @db.Uuid
+  key            String   @unique @db.VarChar(100)
+  title          String   @db.VarChar(255)
+  category       String?  @db.VarChar(100)
+  sourceMarkdown String   @map("source_markdown") @db.Text
+  sourcePath     String?  @map("source_path") @db.VarChar(255)
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  versions DocumentVersion[]
+
+  @@map("document_templates")
+}
+
+model DocumentVersion {
+  id             String                @id @default(uuid()) @db.Uuid
+  templateId     String                @map("template_id") @db.Uuid
+  versionNumber  Int                   @map("version_number")
+  status         DocumentVersionStatus @default(PUBLISHED)
+  fieldValues    Json                  @map("field_values")
+  filledMarkdown String?               @map("filled_markdown") @db.Text
+  pdfKey         String?               @map("pdf_key") @db.Text
+  createdBy      String                @map("created_by") @db.Uuid
+  createdAt      DateTime              @default(now()) @map("created_at")
+
+  // Relations
+  template DocumentTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  creator  User             @relation("DocumentVersionCreator", fields: [createdBy], references: [id])
+
+  @@unique([templateId, versionNumber])
+  @@index([templateId])
+  @@map("document_versions")
+}
+
+enum DocumentVersionStatus {
+  DRAFT
+  PUBLISHED
+
+  @@map("document_version_status")
 }
 
 // ============================================

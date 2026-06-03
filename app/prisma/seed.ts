@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { encryptPii, hashPii, canonicalizeId } from "../server/utils/pii-encryption";
+import { seedDocumentTemplates } from "./seed-document-templates";
 
 const prisma = new PrismaClient();
 
@@ -399,6 +400,8 @@ async function main() {
       }
     }
   }
+
+  await seedDocumentTemplates(prisma);
 
   console.log("\n🎉 Database seed completed successfully!");
 }

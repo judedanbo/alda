@@ -332,6 +332,17 @@ export const adminInstitutionUpdateSchema = z.object({
 });
 
 /**
+ * Document template version creation (admin). `fieldValues` is keyed by the
+ * TbdField id returned from the template detail endpoint; values are the
+ * replacements for each `[TBD]` placeholder.
+ */
+export const createDocumentVersionSchema = z.object({
+  fieldValues: z.record(z.string(), z.string().max(2000)).default({}),
+  status: z.enum(["DRAFT", "PUBLISHED"]).default("PUBLISHED"),
+});
+export type CreateDocumentVersionInput = z.infer<typeof createDocumentVersionSchema>;
+
+/**
  * Validate request body against a schema
  */
 export async function validateBody<T extends z.ZodSchema>(

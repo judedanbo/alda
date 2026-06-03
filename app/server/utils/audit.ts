@@ -155,6 +155,10 @@ export const AuditActions = {
   FORM_REISSUE_APPROVED: "form_reissue_approved",
   FORM_REISSUE_DECLINED: "form_reissue_declined",
 
+  // Document templates (admin-generated versioned PDFs)
+  DOCUMENT_VERSION_CREATED: "document_version_created",
+  DOCUMENT_DOWNLOADED: "document_downloaded",
+
   // Notifications
   NOTIFICATION_TEST_SENT: "notification_test_sent",
 

@@ -183,6 +183,12 @@ export default defineNuxtConfig({
     esbuild: {
       options: { target: "es2022" },
     },
+    // pdfmake/pdfkit resolve standard-font AFM data via dynamic requires that
+    // don't survive Rollup bundling — keep them external so they're loaded from
+    // node_modules at runtime (server-side PDF generation only).
+    externals: {
+      external: ["pdfmake"],
+    },
     experimental: {
       tasks: true,
     },

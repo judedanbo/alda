@@ -89,6 +89,7 @@ const navigation = computed<NavItem[]>(() => {
       { name: "Users", href: "/admin/users", icon: "users", tour: "nav-users" },
       { name: "Institutions", href: "/admin/institutions", icon: "building", tour: "nav-institutions" },
       { name: "Categories", href: "/admin/categories", icon: "tag", tour: "nav-categories" },
+      { name: "Doc Templates", href: "/admin/document-templates", icon: "file-text", tour: "nav-doc-templates" },
       { name: "Audit Logs", href: "/admin/audit-logs", icon: "shield", tour: "nav-audit-logs" },
       { name: "Compliance", href: "/admin/compliance", icon: "clipboard-check", tour: "nav-compliance" },
       { name: "Analytics", href: "/admin/analytics", icon: "bar-chart", tour: "nav-analytics" },
