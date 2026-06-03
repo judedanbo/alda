@@ -57,6 +57,11 @@ SP 800-53**) and the **Ghana** regulatory regime:
 | [`security-awareness-training-policy.md`](./security-awareness-training-policy.md) | Awareness & training (N1) |
 | [`confidentiality-nda-agreement.md`](./confidentiality-nda-agreement.md) | Confidentiality/NDA template (N2) |
 | [`remote-working-policy.md`](./remote-working-policy.md) | Remote access/endpoint (B10) |
+| [`architecture.md`](./architecture.md) | System architecture (D1), topology (D2), PII data-flow (C5) |
+| [`data-model.md`](./data-model.md) | ERD + data dictionary (D3) |
+| [`api-inventory.md`](./api-inventory.md) | API/interface inventory (D5) |
+| [`integration-control-documents.md`](./integration-control-documents.md) | Integration control docs (D6) |
+| [`diagrams/`](./diagrams/) | Mermaid sources + exported SVGs for all architecture/ERD diagrams |
 
 Pre-existing artifacts referenced below:
 
@@ -113,7 +118,7 @@ Pre-existing artifacts referenced below:
 | C2 | DPC registration certificate (Data Controller) | To create | **Act 843 filing** — register as data controller; obtain certificate. |
 | C3 | Data Protection Impact Assessment (DPIA) | Drafted | `dpia.md`. |
 | C4 | Records of Processing Activities (RoPA) | Drafted | `ropa.md`. |
-| C5 | Data flow diagrams | Partial | Narrative flows in `dpia.md` §8 App.D + `ropa.md`; **diagram `[TBD]`**. |
+| C5 | Data flow diagrams | Drafted | PII data-flow diagram in `architecture.md` §5 (+ `dpia.md` §8 App.D). |
 | C6 | Lawful basis / consent records | Partial | Assessed in DPIA §4.1 / RoPA per activity; **final basis confirmation `[TBD]`**. |
 | C7 | Data Subject Rights (DSAR) procedure | Drafted | `dsar-procedure.md`. |
 | C8 | Breach notification procedure | Drafted | `incident-response-plan.md` §6-7 (DPC/CSA timelines + templates). |
@@ -127,12 +132,12 @@ Pre-existing artifacts referenced below:
 
 | # | Document | Status | Notes for ADLA |
 | --- | --- | --- | --- |
-| D1 | System architecture document | Partial | `CLAUDE.md` + plan; auditor-facing doc with diagrams `[TBD]`. |
-| D2 | Network/infrastructure topology diagram | To create | Trust zones, ingress, data stores, external services. |
-| D3 | Data model / ERD & data dictionary | Partial | `schema.prisma` + DPIA App.A inventory; generate ERD `[TBD]`. |
-| D4 | Workflow / state-machine specification | Exists | `CLAUDE.md`, plan, and flowchart PDF. |
-| D5 | API inventory / interface specification | Partial | Routes under `app/server/api/`; endpoint catalogue `[TBD]`. |
-| D6 | Integration / interface control documents | Partial | Interfaces in RoPA recipients + KMP webhook secret; formal ICD `[TBD]`. |
+| D1 | System architecture document | Drafted | `architecture.md` — context, component, deployment, decisions (Mermaid + SVG). |
+| D2 | Network/infrastructure topology diagram | Drafted | `architecture.md` §4 — trust zones, web/worker pods, data stores, external services. |
+| D3 | Data model / ERD & data dictionary | Drafted | `data-model.md` — 6 cluster ERDs + PII-flagged dictionary. |
+| D4 | Workflow / state-machine specification | Exists | `CLAUDE.md`, plan, flowchart PDF; also `architecture.md` §6. |
+| D5 | API inventory / interface specification | Drafted | `api-inventory.md` — full endpoint catalogue with roles. |
+| D6 | Integration / interface control documents | Drafted | `integration-control-documents.md` — one ICD per external system. |
 | D7 | Environment / configuration specification | Exists | `.env.example` + `production-checklist.md` + startup gate. |
 | D8 | Software Bill of Materials (SBOM) | Partial | Lockfile; **generate formal SBOM + license inventory `[TBD]`** (vuln/patch open item). |
 | D9 | Capacity / performance plan | To create | Sizing for DB, Redis, worker concurrency. |
@@ -282,8 +287,9 @@ PII audit and needs **action, not authoring**:
    takeover) — verify or formally accept before go-live.
 8. **Production readiness sign-off / ATO** (O2, O4) and provider hosting
    attestation (M1).
-9. **Remaining diagrams/specs:** architecture + topology + ERD + API catalogue +
-   SBOM (D1-D3, D5, D8) and a standalone STRIDE threat model (G4).
+9. **Remaining specs:** generate an SBOM (D8) and a standalone STRIDE threat
+   model (G4). *(Architecture, topology, ERD, and API catalogue — D1-D3/D5 —
+   are now drafted in `architecture.md`, `data-model.md`, `api-inventory.md`.)*
 
 > **Strong position.** The codebase already implements most *technical* controls
 > (PII encryption, audit logging, layered rate limiting, RBAC with officer

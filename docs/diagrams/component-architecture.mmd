@@ -1,0 +1,39 @@
+graph TB
+  Client["Nuxt client<br/>Vue 3 / Pinia / shadcn-vue<br/>authFetch (Bearer JWT)"]
+  Edge["Reverse proxy / TLS edge"]
+  Client -->|HTTPS| Edge
+
+  subgraph nitro["Nitro server (app/server)"]
+    direction TB
+    M1["00.security<br/>IP rate-limit, abuse, AI policy"]
+    M2["01.security-headers<br/>CSP / HSTS / headers"]
+    M3["auth<br/>JWT verify + role prefixes"]
+    M4["rate-limit-user<br/>per-user limits"]
+    M1 --> M2 --> M3 --> M4
+
+    RH["Route handlers<br/>app/server/api/** (~98 routes)"]
+    M4 --> RH
+
+    UTIL["Utils<br/>validators / audit / jwt /<br/>pii-encryption / officer-scope"]
+    SVC["Services<br/>notification / email / sms /<br/>storage / pdf"]
+    RH --> UTIL
+    RH --> SVC
+
+    PLUG["Plugins / workers<br/>config-validation, audit-worker,<br/>notification-worker, traffic"]
+    TASK["Scheduled tasks<br/>analytics rollup/prune,<br/>notifications prune"]
+  end
+
+  PG[("PostgreSQL<br/>Prisma")]
+  RD[("Redis<br/>BullMQ + analytics KV")]
+  OS[("MinIO / object storage")]
+  SMTP[/"SMTP"/]
+  SMS[/"SMS gateways"/]
+
+  UTIL --> PG
+  SVC --> PG
+  SVC --> OS
+  SVC --> SMTP
+  SVC --> SMS
+  PLUG --> RD
+  TASK --> PG
+  RH --> RD

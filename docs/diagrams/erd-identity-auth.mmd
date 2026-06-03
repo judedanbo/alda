@@ -1,0 +1,47 @@
+erDiagram
+  USER ||--o{ USER_ROLE : has
+  ROLE ||--o{ USER_ROLE : grants
+  USER ||--o{ REFRESH_TOKEN : owns
+  USER ||--o{ PASSWORD_RESET_TOKEN : owns
+  USER ||--o{ EMAIL_VERIFICATION_TOKEN : owns
+  USER ||--o{ PHONE_VERIFICATION_TOKEN : owns
+  USER ||--o| APPLICANT_PROFILE : "has (1:1)"
+
+  USER {
+    uuid id PK
+    string email "PII, unique"
+    string passwordHash "secret (bcrypt)"
+    string phone "PII, unique, optional"
+    bool emailVerified
+    bool phoneVerified
+    bool isActive
+  }
+  ROLE {
+    int id PK
+    string name "applicant|schedule_officer|legal_unit|admin"
+  }
+  USER_ROLE {
+    uuid userId FK
+    int roleId FK
+  }
+  REFRESH_TOKEN {
+    uuid id PK
+    uuid userId FK
+    string token "secret, unique"
+    uuid familyId "rotation family"
+    datetime consumedAt "replay detection"
+    datetime expiresAt
+  }
+  PASSWORD_RESET_TOKEN {
+    uuid id PK
+    string token "secret"
+  }
+  EMAIL_VERIFICATION_TOKEN {
+    uuid id PK
+    string token "secret"
+  }
+  PHONE_VERIFICATION_TOKEN {
+    uuid id PK
+    string code "secret (OTP)"
+    int attempts
+  }

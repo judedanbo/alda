@@ -1,0 +1,46 @@
+erDiagram
+  USER ||--o| APPLICANT_PROFILE : has
+  APPLICANT_PROFILE ||--o{ APPLICANT_VERIFICATION_REVIEW : "reviewed by"
+  APPLICANT_PROFILE ||--o{ APPLICANT_OFFICE : declares
+  PUBLIC_OFFICE_CATEGORY ||--o{ APPLICANT_OFFICE : categorizes
+  INSTITUTION ||--o{ APPLICANT_OFFICE : "employer (optional)"
+  USER ||--o{ APPLICANT_VERIFICATION_REVIEW : "reviewer"
+
+  APPLICANT_PROFILE {
+    uuid id PK
+    uuid userId FK "unique"
+    string fullName "PII"
+    enum idType "GHANA_CARD|PASSPORT|..."
+    string ghanaCardNumberCipher "PII, AES-256-GCM"
+    string ghanaCardNumberHash "PII, HMAC, unique"
+    string ghanaCardFrontUrl "PII, image"
+    string ghanaCardBackUrl "PII, image"
+    string alternateIdNumberCipher "PII, encrypted"
+    string alternateIdNumberHash "PII, HMAC"
+    string alternateIdScanUrl "PII, image"
+    enum verificationStatus
+  }
+  APPLICANT_VERIFICATION_REVIEW {
+    uuid id PK
+    uuid applicantId FK
+    uuid reviewerId FK
+    enum status
+    string reason
+  }
+  APPLICANT_OFFICE {
+    uuid id PK
+    uuid profileId FK
+    string designation "PII"
+    int officeCategoryId FK
+    uuid institutionId FK
+  }
+  PUBLIC_OFFICE_CATEGORY {
+    int id PK
+    string name
+    string articleReference
+  }
+  INSTITUTION {
+    uuid id PK
+    string name
+    string type
+  }
