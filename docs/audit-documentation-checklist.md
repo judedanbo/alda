@@ -62,6 +62,7 @@ SP 800-53**) and the **Ghana** regulatory regime:
 | [`api-inventory.md`](./api-inventory.md) | API/interface inventory (D5) |
 | [`integration-control-documents.md`](./integration-control-documents.md) | Integration control docs (D6) |
 | [`diagrams/`](./diagrams/) | Mermaid sources + exported SVGs for all architecture/ERD diagrams |
+| [`sbom.md`](./sbom.md) + [`sbom/`](./sbom/) | Software Bill of Materials (D8) + license compliance (L4) |
 
 Pre-existing artifacts referenced below:
 
@@ -139,7 +140,7 @@ Pre-existing artifacts referenced below:
 | D5 | API inventory / interface specification | Drafted | `api-inventory.md` — full endpoint catalogue with roles. |
 | D6 | Integration / interface control documents | Drafted | `integration-control-documents.md` — one ICD per external system. |
 | D7 | Environment / configuration specification | Exists | `.env.example` + `production-checklist.md` + startup gate. |
-| D8 | Software Bill of Materials (SBOM) | Partial | Lockfile; **generate formal SBOM + license inventory `[TBD]`** (vuln/patch open item). |
+| D8 | Software Bill of Materials (SBOM) | Drafted | `sbom.md` + `sbom/*.json` (CycloneDX + SPDX, 982 components); regenerate on dependency change. |
 | D9 | Capacity / performance plan | To create | Sizing for DB, Redis, worker concurrency. |
 
 ## E. Identity & Access Management
@@ -231,7 +232,7 @@ Pre-existing artifacts referenced below:
 | L1 | Vendor / third-party register | To create | Hosting, SMS, email, managed data stores. |
 | L2 | Vendor security due-diligence records | To create | Per provider. |
 | L3 | Contracts & SLAs (incl. DPAs) | To create | **Needs vendor engagement** (see C9). |
-| L4 | OSS / license compliance report | Partial | From lockfile; generate inventory `[TBD]` (SBOM, D8). |
+| L4 | OSS / license compliance report | Drafted | `sbom.md` §3 — license distribution (~99% permissive); 2 UNKNOWN to confirm. |
 | L5 | Supply-chain integrity controls | Partial | vuln/patch §1-2 + `deprecated-packages-migration.md`. |
 
 ## M. Physical & Environmental / Hosting
@@ -287,9 +288,9 @@ PII audit and needs **action, not authoring**:
    takeover) — verify or formally accept before go-live.
 8. **Production readiness sign-off / ATO** (O2, O4) and provider hosting
    attestation (M1).
-9. **Remaining specs:** generate an SBOM (D8) and a standalone STRIDE threat
-   model (G4). *(Architecture, topology, ERD, and API catalogue — D1-D3/D5 —
-   are now drafted in `architecture.md`, `data-model.md`, `api-inventory.md`.)*
+9. **Remaining spec:** a standalone STRIDE threat model (G4). *(Architecture,
+   topology, ERD, API catalogue, and SBOM — D1-D3/D5/D8 — are now drafted in
+   `architecture.md`, `data-model.md`, `api-inventory.md`, `sbom.md`.)*
 
 > **Strong position.** The codebase already implements most *technical* controls
 > (PII encryption, audit logging, layered rate limiting, RBAC with officer
