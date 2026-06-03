@@ -26,10 +26,11 @@ SP 800-53**) and the **Ghana** regulatory regime:
 - `To create` — no current artifact; typically requires external action
   (filing, third party, vendor) or evidence from an actual activity.
 
-> **At a glance.** The governance-documentation suite has largely been drafted:
-> 21 documents now exist as standalone drafts. The remaining gaps are mostly
-> **execution and external action** — an independent penetration test, DPC
-> registration, processor DPAs, management sign-off, and operational evidence
+> **At a glance.** The full governance, privacy, architecture, and assurance
+> suite now exists as standalone drafts (see the index below). The remaining
+> gaps are mostly **execution and external action** — an independent
+> penetration test, DPC registration, processor DPAs, management sign-off, and
+> operational evidence
 > (restore tests, access reviews, training records) — not further drafting.
 
 ## Documents produced in this effort

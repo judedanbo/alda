@@ -7,6 +7,9 @@
 > lifecycle: [`key-management-procedure.md`](./key-management-procedure.md);
 > processor data-protection: [`ropa.md`](./ropa.md) §Appendix C.
 
+**Document control:** Version 0.1 (draft) · Owner `[TBD]` (ISO / Engineering
+lead) · Reviewed 2026-06-03 · Update when an external interface changes.
+
 All credentials are injected via `runtimeConfig` (`nuxt.config.ts`) from the
 secret store; the startup gate (`00.config-validation.ts`) blocks boot in
 production if a required secret is missing or a placeholder.

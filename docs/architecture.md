@@ -10,6 +10,10 @@
 > **Diagrams** are shown inline as Mermaid (renders on GitHub) and exported as
 > SVG under [`docs/diagrams/`](./diagrams/) for offline viewing.
 
+**Document control:** Version 0.1 (draft) · Owner `[TBD]` (ISO / Engineering
+lead) · Reviewed 2026-06-03 · Living reference derived from the codebase —
+update on significant architecture change.
+
 ---
 
 ## 1. Overview

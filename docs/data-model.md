@@ -10,6 +10,10 @@
 > under [`docs/diagrams/`](./diagrams/). Only key fields are shown per entity;
 > the data dictionary below each diagram flags sensitive columns.
 
+**Document control:** Version 0.1 (draft) · Owner `[TBD]` (ISO / Engineering
+lead) · Reviewed 2026-06-03 · Generated from `app/prisma/schema.prisma` —
+regenerate on schema change.
+
 ---
 
 ## 1. Identity & Authentication

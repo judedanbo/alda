@@ -7,6 +7,10 @@
 > [`integration-control-documents.md`](./integration-control-documents.md);
 > architecture context in [`architecture.md`](./architecture.md).
 
+**Document control:** Version 0.1 (draft) · Owner `[TBD]` (ISO / Engineering
+lead) · Reviewed 2026-06-03 · Living reference derived from `app/server/api/**` —
+update when routes change.
+
 ---
 
 ## 1. Authentication & authorization model
