@@ -63,6 +63,7 @@ SP 800-53**) and the **Ghana** regulatory regime:
 | [`integration-control-documents.md`](./integration-control-documents.md) | Integration control docs (D6) |
 | [`diagrams/`](./diagrams/) | Mermaid sources + exported SVGs for all architecture/ERD diagrams |
 | [`sbom.md`](./sbom.md) + [`sbom/`](./sbom/) | Software Bill of Materials (D8) + license compliance (L4) |
+| [`threat-model.md`](./threat-model.md) | STRIDE threat model (G4) |
 
 Pre-existing artifacts referenced below:
 
@@ -176,7 +177,7 @@ Pre-existing artifacts referenced below:
 | G1 | Application security assessment | Exists | `security-assessment.md`. |
 | G2 | Penetration test report (independent) | To create | **High priority — third party** (RR-20). |
 | G3 | Vulnerability scan reports (DAST/SCA) | Partial | vuln/patch policy defines cadence; **run + attach scans `[TBD]`**. |
-| G4 | Threat model document | Partial | `security-assessment.md` + DPIA §5; standalone STRIDE `[TBD]`. |
+| G4 | Threat model document | Drafted | `threat-model.md` — STRIDE over the DFD, mapped to risk register. |
 | G5 | Remediation tracker / POA&M | Drafted | `risk-register.md` (RR-01..20 with treatment/owners). |
 | G6 | Input-validation & output-encoding standard | Drafted | secure-development §3. |
 | G7 | File-upload security controls doc | Partial | secure-development + data-classification; standalone doc `[TBD]`. |
@@ -288,9 +289,10 @@ PII audit and needs **action, not authoring**:
    takeover) — verify or formally accept before go-live.
 8. **Production readiness sign-off / ATO** (O2, O4) and provider hosting
    attestation (M1).
-9. **Remaining spec:** a standalone STRIDE threat model (G4). *(Architecture,
-   topology, ERD, API catalogue, and SBOM — D1-D3/D5/D8 — are now drafted in
-   `architecture.md`, `data-model.md`, `api-inventory.md`, `sbom.md`.)*
+9. *(All draftable specs are now complete: architecture, topology, ERD, API
+   catalogue, SBOM, and the STRIDE threat model — D1-D3/D5/D8/G4 — in
+   `architecture.md`, `data-model.md`, `api-inventory.md`, `sbom.md`,
+   `threat-model.md`.)*
 
 > **Strong position.** The codebase already implements most *technical* controls
 > (PII encryption, audit logging, layered rate limiting, RBAC with officer
