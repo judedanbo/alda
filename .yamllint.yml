@@ -1,0 +1,16 @@
+# yamllint config for the Kubernetes manifests (see .github/workflows/k8s-lint.yml).
+# Cosmetic rules are relaxed to warnings/disabled so only genuine problems
+# (syntax errors, bad indentation, trailing whitespace, duplicate keys) fail CI.
+extends: default
+
+rules:
+  # Our manifests start with a leading comment block, not a `---` marker.
+  document-start: disable
+  # Kubernetes env values and label selectors legitimately run long; surface
+  # over-long lines as a warning (non-failing) rather than an error.
+  line-length:
+    max: 120
+    level: warning
+  # ConfigMap data values like "true"/"false" are quoted strings on purpose.
+  truthy:
+    check-keys: false
