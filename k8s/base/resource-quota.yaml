@@ -4,11 +4,14 @@ metadata:
   name: adla-quota
   labels:
     app.kubernetes.io/part-of: adla
+    app.kubernetes.io/component: infra
 spec:
   hard:
-    requests.cpu: "4"
-    requests.memory: 8Gi
-    limits.cpu: "8"
-    limits.memory: 16Gi
+    # headroom for the in-cluster data tier (postgres/redis/minio) plus the
+    # app/worker pods and HPA scale-up
+    requests.cpu: "6"
+    requests.memory: 12Gi
+    limits.cpu: "12"
+    limits.memory: 20Gi
     pods: "20"
-    services: "5"
+    services: "8"

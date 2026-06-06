@@ -4,3 +4,4 @@ metadata:
   name: adla-staging
   labels:
     app.kubernetes.io/part-of: adla
+    app.kubernetes.io/component: infra

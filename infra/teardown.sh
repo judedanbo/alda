@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# DEPRECATED — companion to provision.sh. The standard deployment uses in-cluster
+# StatefulSets, not Azure managed services, so there is normally nothing here to
+# tear down. Kept for reference / optional fallback only.
+
 # Deletes ADLA managed services individually (safe for shared resource groups).
 
 RESOURCE_GROUP="${RESOURCE_GROUP:-infosys}"

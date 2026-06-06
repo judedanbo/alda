@@ -4,6 +4,7 @@ metadata:
   name: adla-limits
   labels:
     app.kubernetes.io/part-of: adla
+    app.kubernetes.io/component: infra
 spec:
   limits:
     - type: Container

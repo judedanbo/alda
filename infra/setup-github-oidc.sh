@@ -5,9 +5,9 @@ set -euo pipefail
 GITHUB_ORG="${GITHUB_ORG:-judedanbo}"
 GITHUB_REPO="${GITHUB_REPO:-alda}"
 APP_NAME="${APP_NAME:-adla-github-deploy}"
-RESOURCE_GROUP="${RESOURCE_GROUP:-adla-rg}"
-ACR_NAME="${ACR_NAME:-adlaacr}"
-AKS_CLUSTER="${AKS_CLUSTER:-adla-aks}"
+RESOURCE_GROUP="${RESOURCE_GROUP:-infosys}"
+ACR_NAME="${ACR_NAME:-regisry}"
+AKS_CLUSTER="${AKS_CLUSTER:-infosys}"
 
 echo "==> Creating Azure AD app registration: $APP_NAME"
 APP_ID=$(az ad app create --display-name "$APP_NAME" --query appId -o tsv)
@@ -70,15 +70,8 @@ az role assignment create \
   --scope "$AKS_ID" \
   --output none
 
-az keyvault set-policy --name adla-staging-kv \
-  --object-id "$SP_OBJECT_ID" \
-  --secret-permissions get list \
-  --output none
-
-az keyvault set-policy --name adla-production-kv \
-  --object-id "$SP_OBJECT_ID" \
-  --secret-permissions get list \
-  --output none
+# Note: secrets are delivered as plain kubectl Secrets (infra/create-secrets.sh),
+# so no Azure Key Vault access is required.
 
 TENANT_ID=$(az account show --query tenantId -o tsv)
 

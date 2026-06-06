@@ -1,22 +1,70 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Creates the adla-secrets Secret for a namespace, generating strong values for
+# every secret the app's production boot gate requires
+# (app/server/utils/config-validation.ts) plus the credentials the in-cluster
+# Postgres/Redis/MinIO StatefulSets are initialized with.
+#
+# Values are GENERATED ONCE here so DATABASE_URL/MINIO creds can never drift from
+# what the data tier is initialized with. Override any value by exporting it
+# before running (e.g. SMTP_PASS=... ./create-secrets.sh adla-staging).
+#
+# Usage: ./create-secrets.sh <namespace>   (e.g. adla-staging or adla-production)
+
 NAMESPACE="${1:?Usage: $0 <namespace> (e.g. adla-staging or adla-production)}"
 
-echo "==> Creating secrets in namespace: $NAMESPACE"
-echo ""
-echo "Enter values for each secret (leave blank to skip):"
-echo ""
+# Environment name = namespace minus the "adla-" prefix (staging | production).
+ENVIRONMENT="${NAMESPACE#adla-}"
 
-read -rsp "DATABASE_URL: " DATABASE_URL; echo
-read -rsp "JWT_SECRET: " JWT_SECRET; echo
-read -rsp "JWT_REFRESH_SECRET: " JWT_REFRESH_SECRET; echo
-read -rsp "REDIS_URL: " REDIS_URL; echo
-read -rsp "MINIO_ACCESS_KEY: " MINIO_ACCESS_KEY; echo
-read -rsp "MINIO_SECRET_KEY: " MINIO_SECRET_KEY; echo
-read -rsp "SMTP_USER: " SMTP_USER; echo
-read -rsp "SMTP_PASS: " SMTP_PASS; echo
-read -rsp "ANALYTICS_IP_SALT: " ANALYTICS_IP_SALT; echo
+# Refuse to clobber an existing secret unless FORCE=1. Rotating POSTGRES_PASSWORD
+# here would NOT change an already-initialized Postgres (it reads the password
+# only on first PVC init) → the app would then fail to authenticate.
+if kubectl get secret adla-secrets -n "$NAMESPACE" >/dev/null 2>&1 && [ "${FORCE:-0}" != "1" ]; then
+  echo "ERROR: adla-secrets already exists in $NAMESPACE." >&2
+  echo "Re-run with FORCE=1 to overwrite — but note rotating POSTGRES_PASSWORD" >&2
+  echo "breaks the existing Postgres PVC unless you ALTER USER inside Postgres." >&2
+  exit 1
+fi
+
+gen() { openssl rand -hex "${1:-32}"; }
+
+# 6 random chars from [a-z0-9] (e.g. r5g0ud). Reads a fixed block from urandom so
+# the pipe never closes early under `set -o pipefail`.
+rand_suffix() { LC_ALL=C head -c 256 /dev/urandom | LC_ALL=C tr -dc 'a-z0-9' | cut -c1-6; }
+
+# Boot-gate secrets (PII keys are 32 raw bytes => 64 hex chars)
+JWT_SECRET="${JWT_SECRET:-$(gen 64)}"
+JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-$(gen 64)}"
+ANALYTICS_IP_SALT="${ANALYTICS_IP_SALT:-$(gen 32)}"
+NOTIFICATIONS_SMS_WEBHOOK_SECRET="${NOTIFICATIONS_SMS_WEBHOOK_SECRET:-$(gen 32)}"
+PII_ENCRYPTION_KEY="${PII_ENCRYPTION_KEY:-$(gen 32)}"
+PII_HMAC_KEY="${PII_HMAC_KEY:-$(gen 32)}"
+
+# MinIO creds — these double as the MinIO root user/password (projected into the
+# StatefulSet via secretKeyRef), so they are the single source of truth.
+MINIO_ACCESS_KEY="${MINIO_ACCESS_KEY:-adla$(gen 6)}"
+MINIO_SECRET_KEY="${MINIO_SECRET_KEY:-$(gen 24)}"
+
+# Postgres creds — initialize the in-cluster Postgres StatefulSet.
+# User/DB carry the environment name; production additionally gets a random
+# 6-char suffix on the DB (e.g. adla-production-r5g0ud).
+POSTGRES_USER="${POSTGRES_USER:-adla-${ENVIRONMENT}}"
+if [ "$ENVIRONMENT" = "production" ]; then
+  POSTGRES_DB="${POSTGRES_DB:-adla-${ENVIRONMENT}-$(rand_suffix)}"
+else
+  POSTGRES_DB="${POSTGRES_DB:-adla-${ENVIRONMENT}}"
+fi
+POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-$(gen 24)}"   # hex => URL-safe
+
+# Connection URLs point at the in-cluster Service DNS names and are DERIVED from
+# the generated credentials above so they always match.
+DATABASE_URL="${DATABASE_URL:-postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@adla-postgres:5432/${POSTGRES_DB}?schema=public}"
+REDIS_URL="${REDIS_URL:-redis://adla-redis:6379}"
+
+# Optional SMTP creds (not boot-gated; leave blank to defer email).
+SMTP_USER="${SMTP_USER:-}"
+SMTP_PASS="${SMTP_PASS:-}"
 
 kubectl create secret generic adla-secrets \
   --namespace "$NAMESPACE" \
@@ -26,13 +74,21 @@ kubectl create secret generic adla-secrets \
   --from-literal="REDIS_URL=${REDIS_URL}" \
   --from-literal="MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}" \
   --from-literal="MINIO_SECRET_KEY=${MINIO_SECRET_KEY}" \
+  --from-literal="POSTGRES_USER=${POSTGRES_USER}" \
+  --from-literal="POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" \
+  --from-literal="POSTGRES_DB=${POSTGRES_DB}" \
+  --from-literal="ANALYTICS_IP_SALT=${ANALYTICS_IP_SALT}" \
+  --from-literal="NOTIFICATIONS_SMS_WEBHOOK_SECRET=${NOTIFICATIONS_SMS_WEBHOOK_SECRET}" \
+  --from-literal="PII_ENCRYPTION_KEY=${PII_ENCRYPTION_KEY}" \
+  --from-literal="PII_HMAC_KEY=${PII_HMAC_KEY}" \
   --from-literal="SMTP_USER=${SMTP_USER}" \
   --from-literal="SMTP_PASS=${SMTP_PASS}" \
-  --from-literal="ANALYTICS_IP_SALT=${ANALYTICS_IP_SALT}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 echo ""
-echo "==> Secret 'adla-secrets' created/updated in namespace $NAMESPACE"
+echo "==> Secret 'adla-secrets' created in namespace $NAMESPACE"
+echo "    (values are stored only in the cluster; not printed here)"
 echo ""
-echo "To update a single secret value later:"
-echo "  kubectl edit secret adla-secrets -n $NAMESPACE"
+echo "SMTP_USER/SMTP_PASS are blank — add them later WITHOUT rotating other keys:"
+echo "  kubectl patch secret adla-secrets -n $NAMESPACE --type merge \\"
+echo "    -p '{\"stringData\":{\"SMTP_USER\":\"...\",\"SMTP_PASS\":\"...\"}}'"

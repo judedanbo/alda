@@ -1,0 +1,59 @@
+# OPTIONAL manual utility. The app's storage.service.ts ensureBucket() already
+# creates the bucket lazily before the first upload, so this Job is not wired
+# into the kustomization (Jobs are immutable and the overlay is applied more
+# than once per deploy). Run it by hand if you want the bucket to exist up front:
+#   kubectl apply -f k8s/base/minio-init-job.yaml -n <namespace>
+# The part-of label is baked in so the NetworkPolicy admits it without kustomize.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: adla-minio-init
+  labels:
+    app.kubernetes.io/name: adla-minio-init
+    app.kubernetes.io/component: storage-init
+    app.kubernetes.io/part-of: adla
+spec:
+  backoffLimit: 5
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: adla-minio-init
+        app.kubernetes.io/component: storage-init
+        app.kubernetes.io/part-of: adla
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: mc
+          image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+          env:
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: adla-secrets
+                  key: MINIO_ACCESS_KEY
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: adla-secrets
+                  key: MINIO_SECRET_KEY
+          # idempotent: wait for MinIO, register alias, create the bucket if absent.
+          # The app's ensureBucket() also creates it on boot — this just guarantees
+          # the bucket exists before the first request.
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              until mc alias set local http://adla-minio:9000 "$MINIO_ACCESS_KEY" "$MINIO_SECRET_KEY"; do
+                echo "waiting for adla-minio..."; sleep 3
+              done
+              mc mb --ignore-existing local/adla-uploads
+              echo "bucket adla-uploads ready"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
