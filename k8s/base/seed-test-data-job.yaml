@@ -1,0 +1,39 @@
+# Manual utility — loads the 250-applicant demo dataset (prisma/seed-demo.ts).
+# STAGING ONLY: infra/seed.sh refuses to run this against production. Run via:
+#   infra/seed.sh staging test-data
+# Intentionally NOT in kustomization.yaml. part-of: adla baked in for NetworkPolicy.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: adla-seed-test-data
+  labels:
+    app.kubernetes.io/name: adla-seed-test-data
+    app.kubernetes.io/component: seed
+    app.kubernetes.io/part-of: adla
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: adla-seed-test-data
+        app.kubernetes.io/component: seed
+        app.kubernetes.io/part-of: adla
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: seed-demo
+          image: regisry.azurecr.io/adla-migrate:latest
+          command: ["npx", "tsx", "prisma/seed-demo.ts"]
+          envFrom:
+            - configMapRef:
+                name: adla-config
+            - secretRef:
+                name: adla-secrets
+          resources:
+            requests:
+              cpu: 256m
+              memory: 512Mi
+            limits:
+              cpu: 512m
+              memory: 1Gi
