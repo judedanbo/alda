@@ -54,10 +54,10 @@ Secrets; TLS is issued by cert-manager; ingress is served by ingress-nginx.
 ```
 k8s/
 ├── base/                       # shared manifests (kustomize base)
-│   ├── namespace.yaml
+│   ├── namespace.yaml          # bootstrap only (NOT in kustomization)
 │   ├── configmap.yaml          # adla-config (non-secret env)
-│   ├── limit-range.yaml
-│   ├── resource-quota.yaml
+│   ├── limit-range.yaml        # bootstrap only (NOT in kustomization)
+│   ├── resource-quota.yaml     # bootstrap only (NOT in kustomization)
 │   ├── statefulset-postgres.yaml
 │   ├── statefulset-redis.yaml
 │   ├── statefulset-minio.yaml
@@ -117,11 +117,17 @@ images:
 az aks update --resource-group infosys --name infosys --attach-acr regisry
 ```
 
-## Step 2 — Create the namespaces
+## Step 2 — Create the namespaces and apply guardrails
+
+Namespaces, ResourceQuota, and LimitRange are **cluster-admin / platform
+guardrails**, applied once at bootstrap (the deploy pipeline runs with a
+namespace-scoped identity and cannot create or modify them — see Step 4):
 
 ```bash
-kubectl create namespace adla-staging
-kubectl create namespace adla-production
+for ns in adla-staging adla-production; do
+  kubectl create namespace "$ns" --dry-run=client -o yaml | kubectl apply -f -
+  kubectl apply -n "$ns" -f k8s/base/resource-quota.yaml -f k8s/base/limit-range.yaml
+done
 ```
 
 ## Step 3 — Point DNS at the ingress
@@ -138,12 +144,30 @@ the prerequisites:
 
 ## Step 4 — Configure GitHub Actions OIDC (for CI/CD deploys)
 
-Creates the Azure AD app + federated credentials and prints the three values to
-register as GitHub secrets:
+Creates the Azure AD app + federated credentials, grants **least-privilege**
+access, and prints the three values to register as GitHub secrets:
 
 ```bash
 ./infra/setup-github-oidc.sh          # defaults: RG/AKS=infosys, ACR=regisry
 ```
+
+The deploy identity is scoped, **not** cluster-admin. The script grants:
+- `AcrPush` on `regisry` (build-and-push),
+- `Azure Kubernetes Service Cluster User Role` on the cluster (fetch the
+  non-admin kubeconfig only — no data-plane power on its own),
+- namespace-scoped Kubernetes admin on `adla-staging` + `adla-production`.
+
+How that last grant is applied depends on the cluster's Kubernetes authz:
+- **Azure RBAC for Kubernetes enabled** → the script assigns the
+  *"Azure Kubernetes Service RBAC Admin"* role scoped to each namespace
+  (`<aks-id>/namespaces/<ns>`) automatically.
+- **Native Kubernetes RBAC** → the script prints `kubectl create rolebinding`
+  commands; run them **as a cluster admin** to bind the SP to the built-in
+  `admin` ClusterRole in each namespace, e.g.:
+  ```bash
+  kubectl create rolebinding adla-deployer -n adla-staging \
+    --clusterrole=admin --user=<SP_OBJECT_ID>
+  ```
 
 Add the printed values as **repository secrets**
 (`Settings → Secrets and variables → Actions`):
@@ -321,6 +345,11 @@ kubectl edit pvc data-adla-postgres-0 -n <ns>   # raise spec.resources.requests.
 
 ## Known notes & follow-ups
 
+- **The deploy identity is namespace-scoped, not cluster-admin** — it can manage
+  workloads + NetworkPolicy in `adla-staging`/`adla-production` only. It cannot
+  create namespaces or write ResourceQuota/LimitRange, so those are applied once
+  at bootstrap (Step 2) by a cluster admin. Raising a quota later is a deliberate
+  operator action, not something a compromised pipeline can do.
 - **Staging host is `ttaging-alda.audit.gov.gh`** — a deliberate temporary match for
   the current (typo'd) DNS record. Correct it to `staging-alda.audit.gov.gh` in
   `overlays/staging/{ingress-patch,configmap-patch}.yaml` and `deploy.yml`'s

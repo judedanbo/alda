@@ -8,10 +8,7 @@ labels:
     includeSelectors: true
 
 resources:
-  - namespace.yaml
   - configmap.yaml
-  - limit-range.yaml
-  - resource-quota.yaml
   - statefulset-postgres.yaml
   - statefulset-redis.yaml
   - statefulset-minio.yaml
@@ -21,7 +18,12 @@ resources:
   - hpa-app.yaml
   - ingress.yaml
   - network-policy.yaml
-  # migration-job.yaml and minio-init-job.yaml are intentionally NOT listed:
-  # Jobs are immutable and the overlay is applied more than once per deploy.
-  # The migration runs as a uniquely-named per-run Job from deploy.yml; the
-  # MinIO bucket is created lazily by the app (storage.service.ts ensureBucket).
+  # Intentionally NOT listed here:
+  # - namespace.yaml / resource-quota.yaml / limit-range.yaml: cluster-scoped or
+  #   cluster-policy objects applied once at bootstrap by a cluster admin. The
+  #   deploy pipeline runs with a NAMESPACE-SCOPED identity (least privilege) and
+  #   cannot create a Namespace or write ResourceQuota/LimitRange.
+  # - migration-job.yaml / minio-init-job.yaml: Jobs are immutable and the overlay
+  #   is applied more than once per deploy. Migration runs as a uniquely-named
+  #   per-run Job from deploy.yml; the MinIO bucket is created lazily by the app
+  #   (storage.service.ts ensureBucket).

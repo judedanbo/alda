@@ -1,3 +1,7 @@
+# Bootstrap-managed (NOT in kustomization). Applied once per namespace by a
+# cluster admin: `kubectl apply -n <ns> -f k8s/base/resource-quota.yaml`.
+# ResourceQuota is a platform guardrail; the namespace-scoped deploy identity
+# (K8s `admin` / Azure "RBAC Admin") cannot write it by design.
 apiVersion: v1
 kind: ResourceQuota
 metadata:

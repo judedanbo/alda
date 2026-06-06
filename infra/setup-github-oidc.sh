@@ -51,11 +51,37 @@ az role assignment create \
   --scope "$ACR_ID" \
   --output none
 
+# Fetch the (non-admin) kubeconfig. This grants listClusterUserCredential ONLY —
+# it carries no Kubernetes data-plane permissions on its own.
 az role assignment create \
   --assignee "$SP_OBJECT_ID" \
-  --role "Azure Kubernetes Service Cluster Admin Role" \
+  --role "Azure Kubernetes Service Cluster User Role" \
   --scope "$AKS_ID" \
   --output none
+
+# Data-plane access scoped to the two app namespaces only (least privilege —
+# the deploy identity gets NO cluster-admin and NO reach outside these).
+NAMESPACES="adla-staging adla-production"
+AZURE_RBAC=$(az aks show --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER" \
+  --query "aadProfile.enableAzureRBAC" -o tsv 2>/dev/null || echo "")
+
+if [ "$AZURE_RBAC" = "true" ]; then
+  echo "==> Azure RBAC for Kubernetes enabled — assigning namespace-scoped roles"
+  for ns in $NAMESPACES; do
+    az role assignment create \
+      --assignee "$SP_OBJECT_ID" \
+      --role "Azure Kubernetes Service RBAC Admin" \
+      --scope "${AKS_ID}/namespaces/${ns}" \
+      --output none
+  done
+else
+  echo "==> Azure RBAC for Kubernetes NOT enabled (native K8s RBAC)."
+  echo "    Run these as a CLUSTER ADMIN to grant namespace-scoped access:"
+  for ns in $NAMESPACES; do
+    echo "      kubectl create rolebinding adla-deployer -n ${ns} \\"
+    echo "        --clusterrole=admin --user=${SP_OBJECT_ID}"
+  done
+fi
 
 # Note: secrets are delivered as plain kubectl Secrets (infra/create-secrets.sh),
 # so no Azure Key Vault access is required.
