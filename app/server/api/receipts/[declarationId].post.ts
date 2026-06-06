@@ -3,6 +3,8 @@ import { logAction } from "~/server/utils/audit";
 import { generateReceiptPDF, generateReceiptNumber } from "~/server/services/pdf.service";
 import { sendNotification } from "~/server/services/notification.service";
 import { payloads } from "~/server/notifications/payloads";
+import { presignStored } from "~/server/services/storage.service";
+import { assertOfficerCanActOnDeclaration } from "~/server/utils/officer-scope";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -84,6 +86,10 @@ export default defineEventHandler(async (event) => {
     where: { declarationId },
   });
 
+  // H-3: schedule officers can only seal declarations whose form was
+  // collected at an office they're assigned to. Admins bypass.
+  await assertOfficerCanActOnDeclaration(event, declarationId);
+
   if (existingReceipt) {
     throw createError({
       statusCode: 400,
@@ -110,9 +116,16 @@ export default defineEventHandler(async (event) => {
     }));
 
   const { displayId, ID_TYPE_LABEL } = await import("~/server/utils/displayId");
-  const idView = displayId(declaration.applicant);
+  const { decryptProfileIds } = await import("~/server/utils/pii-encryption");
+  // Rehydrate the legacy `*Number` fields from cipher columns so displayId
+  // sees the plaintext it expects.
+  const idView = displayId(decryptProfileIds(declaration.applicant));
 
-  const pdfUrl = await generateReceiptPDF({
+  // `generateReceiptPDF` returns the bucket key (the bucket is private; clients
+  // get presigned URLs minted on read). The `pdfUrl` DB column continues to
+  // hold whatever identifier the upload helper returns — historically an
+  // absolute URL, now a key. `presignStored` tolerates both shapes.
+  const pdfKey = await generateReceiptPDF({
     receiptNumber,
     declarationCode: declaration.uniqueCode,
     applicantName: declaration.applicant.fullName,
@@ -132,7 +145,7 @@ export default defineEventHandler(async (event) => {
         declarationId,
         receiptNumber,
         generatedBy: auth.userId,
-        pdfUrl,
+        pdfUrl: pdfKey,
       },
     }),
     prisma.declaration.update({
@@ -155,11 +168,12 @@ export default defineEventHandler(async (event) => {
     action: "RECEIPT_GENERATED",
     entityType: "receipt",
     entityId: receipt.id,
-    newValues: { declarationId, receiptNumber, pdfUrl },
+    newValues: { declarationId, receiptNumber, pdfKey },
     event,
   });
 
-  // Send notification to applicant
+  // Send notification to applicant. The metadata captures the key; any
+  // in-app surface that renders the link should re-sign via presignStored.
   if (declaration.applicant.user) {
     const user = declaration.applicant.user;
 
@@ -171,19 +185,20 @@ export default defineEventHandler(async (event) => {
         receiptNumber,
         name: declaration.applicant.fullName,
         declarationId,
-        pdfUrl,
+        pdfUrl: pdfKey,
       }),
       dedupeKey: receiptNumber,
     });
   }
 
+  const previewUrl = await presignStored(pdfKey);
   return {
     success: true,
     message: "Receipt generated successfully",
     data: {
       receipt: {
         ...receipt,
-        pdfUrl,
+        pdfUrl: previewUrl,
       },
     },
   };

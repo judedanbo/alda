@@ -31,16 +31,22 @@ onMounted(async () => {
 
 // Form state — covers both the Ghana Card path and the alternate-ID path.
 // The active fields depend on form.idType; inactive fields are ignored on submit.
+// `*Url` fields hold MinIO bucket keys (durable, persistable). The matching
+// `*PreviewUrl` fields hold short-lived presigned URLs minted by the upload
+// endpoint for immediate dropzone preview. Only the keys are submitted.
 const form = reactive({
   fullName: "",
   idType: "GHANA_CARD" as IdType,
   // Ghana Card path
   ghanaCardNumber: "",
   ghanaCardFrontUrl: "",
+  ghanaCardFrontPreviewUrl: "",
   ghanaCardBackUrl: "",
+  ghanaCardBackPreviewUrl: "",
   // Alternate-ID path
   alternateIdNumber: "",
   alternateIdScanUrl: "",
+  alternateIdScanPreviewUrl: "",
   alternateIdReason: "" as AltReason | "",
   alternateIdDetails: "",
 });
@@ -156,17 +162,19 @@ const uploadGhanaCard = async (file: File, side: "front" | "back") => {
     formData.append("file", file);
     formData.append("side", side);
 
-    const response = await authFetch<{ success: boolean; data: { url: string } }>("/api/upload/ghana-card", {
+    const response = await authFetch<{ success: boolean; data: { key: string; url: string } }>("/api/upload/ghana-card", {
       method: "POST",
       body: formData,
     });
 
     if (response.success) {
       if (side === "front") {
-        form.ghanaCardFrontUrl = response.data.url;
+        form.ghanaCardFrontUrl = response.data.key;
+        form.ghanaCardFrontPreviewUrl = response.data.url;
         clearFieldError("ghanaCardFront");
       } else {
-        form.ghanaCardBackUrl = response.data.url;
+        form.ghanaCardBackUrl = response.data.key;
+        form.ghanaCardBackPreviewUrl = response.data.url;
       }
     }
   } catch (err: unknown) {
@@ -185,13 +193,14 @@ const uploadAlternateIdScan = async (file: File) => {
     formData.append("file", file);
     formData.append("idType", form.idType);
 
-    const response = await authFetch<{ success: boolean; data: { url: string } }>("/api/upload/alternate-id", {
+    const response = await authFetch<{ success: boolean; data: { key: string; url: string } }>("/api/upload/alternate-id", {
       method: "POST",
       body: formData,
     });
 
     if (response.success) {
-      form.alternateIdScanUrl = response.data.url;
+      form.alternateIdScanUrl = response.data.key;
+      form.alternateIdScanPreviewUrl = response.data.url;
       clearFieldError("alternateIdScan");
     }
   } catch (err: unknown) {
@@ -671,7 +680,7 @@ const handleSubmit = async () => {
                 label="Ghana Card Front"
                 required
                 :uploading="uploadingFront"
-                :image-url="form.ghanaCardFrontUrl"
+                :image-url="form.ghanaCardFrontPreviewUrl"
                 image-alt="Ghana Card Front"
                 :error="fieldErrors.ghanaCardFront"
                 help-text="JPG or PNG. Click, press Enter, or drop a file."
@@ -687,7 +696,7 @@ const handleSubmit = async () => {
               <AppFileUploadDropzone
                 label="Ghana Card Back (Optional)"
                 :uploading="uploadingBack"
-                :image-url="form.ghanaCardBackUrl"
+                :image-url="form.ghanaCardBackPreviewUrl"
                 image-alt="Ghana Card Back"
                 help-text="JPG or PNG. Click, press Enter, or drop a file."
                 success-text="Back uploaded successfully"
@@ -705,7 +714,7 @@ const handleSubmit = async () => {
                 :label="`${ID_TYPE_LABEL[form.idType]} Scan`"
                 required
                 :uploading="uploadingAlternate"
-                :image-url="form.alternateIdScanUrl"
+                :image-url="form.alternateIdScanPreviewUrl"
                 :image-alt="`${ID_TYPE_LABEL[form.idType]} Scan`"
                 :error="fieldErrors.alternateIdScan"
                 help-text="JPG or PNG of your ID. A clear photo of the page showing your name and number is fine."

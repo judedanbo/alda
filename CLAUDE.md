@@ -31,7 +31,17 @@ npm run test:unit        # vitest (single file: npx vitest run path/to/file)
 npm run test:e2e         # playwright
 
 npm run db:seed:demo     # tsx prisma/seed-demo.ts (richer demo data)
+npm run db:backfill:pii  # encrypt+hash existing national-ID rows; runs
+                         # BETWEEN the two PII-encryption migrations on a
+                         # system with pre-encryption data (no-op on fresh DBs)
 ```
+
+The PII-encryption migration ships as two sequential migrations
+(`20260526000000_pii_encryption_add_columns` and
+`20260526010000_pii_encryption_drop_plaintext`). On a system with
+existing applicant profiles, apply step 1, run `npm run db:backfill:pii`,
+then apply step 2. On a fresh dev DB, `prisma migrate reset` runs both
+back-to-back and the seed writes encrypted data directly.
 
 The full local stack (use this instead of running pieces individually):
 
@@ -66,6 +76,14 @@ Token shape (`JwtPayload`): `{ userId, email, roles: string[] }`. Tokens are sig
 
 Roles in the system are exactly: `applicant`, `schedule_officer`, `legal_unit`, `admin`. Add new role checks by extending both middleware files together.
 
+**Auth hardening that lives alongside the middleware**:
+
+- `app/server/utils/auth-lockout.ts` — per-account login-failure counter + cool-down lock (10 failures in 15 min → 60-minute lock). `login.post.ts` consults it before the bcrypt compare; storage is the existing analytics KV (Redis or in-memory).
+- `login.post.ts` runs `bcrypt.compare` against a constant dummy hash on the user-not-found path, so timing doesn't leak which emails exist.
+- `RefreshToken` carries `familyId` + `consumedAt`. Refresh marks the old token consumed (no delete) and chains a new token in the same family. Presenting a consumed token wipes the family and audit-logs `REFRESH_TOKEN_REPLAY_DETECTED` — both the attacker and the legitimate client must re-authenticate.
+- `server/utils/rate-limit.ts` no longer fails open when its KV throws; a tiny per-process Map applies conservative caps (auth: 5/min, write: 20/min, default: 60/min) so a Redis blip degrades to per-instance limits.
+- `schedule_officer` users are scoped to specific `CollectionOffice`(s) via the `UserCollectionOffice` junction. `server/utils/officer-scope.ts` exports `assertOfficerCanActOnOffice` (body-supplied office) and `assertOfficerCanActOnDeclaration` (office derived from the declaration's most-recent `FormCollection`); call one or the other from every write endpoint a schedule officer can hit. Admins bypass; legal_unit is unaffected.
+
 ### Prisma client is a singleton
 
 Always import via `import prisma from "~/server/utils/prisma"`. Constructing `new PrismaClient()` elsewhere will leak connections in dev (HMR re-imports). The singleton attaches itself to `globalThis` outside production for that reason.
@@ -77,7 +95,7 @@ The schema in `app/prisma/schema.prisma` uses `@map`/`@@map` to translate camelC
 State-changing endpoints follow a consistent pattern: validate auth → validate body → mutate via Prisma → write an audit log → trigger a notification. Use the shared utilities rather than reimplementing:
 
 - **Request validation**: `app/server/utils/validators.ts` — `validateBody(event, schema)` parses `readBody()` against a Zod schema and throws a 400 with `error.flatten()` on failure. All Zod schemas for the domain live in this file; add new ones here rather than inline in route handlers.
-- `app/server/utils/audit.ts` — `createAuditLog(event, { userId, action, entityType, entityId, oldValues?, newValues? })` plus an `AuditActions` enum. Call it on every state transition; `audit_logs` is a compliance requirement, not a debug aid.
+- `app/server/utils/audit.ts` — `createAuditLog(event, { userId, action, entityType, entityId, oldValues?, newValues? })` plus an `AuditActions` enum. Call it on every state transition; `audit_logs` is a compliance requirement, not a debug aid. When Redis is configured, the helper publishes to the `audit-logs` BullMQ queue drained by `server/plugins/audit-worker.ts` with retries; persistent failures sit in BullMQ's `failed`-set (7 days) for operator review. Falls back to an inline best-effort write when the queue is off or the enqueue throws.
 - `app/server/utils/code-generator.ts` — `generateUniqueCode()` for declaration codes (with collision retry at the call site).
 - `app/server/services/notification.service.ts` — high-level helpers like `notifyUniqueCodeGenerated`. The service fans out to `email.service.ts` / `sms.service.ts` based on `NotificationPreference` and writes `NotificationDeliveryLog` rows. Don't call `email.service` or `sms.service` directly from route handlers.
 - `app/server/services/storage.service.ts` — MinIO uploads (Ghana Card images, receipt PDFs).

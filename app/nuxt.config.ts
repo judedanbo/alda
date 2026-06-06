@@ -78,6 +78,7 @@ export default defineNuxtConfig({
     // MinIO
     minioEndpoint: process.env.MINIO_ENDPOINT || "localhost",
     minioPort: parseInt(process.env.MINIO_PORT || "9000"),
+    minioUseSSL: envBool(process.env.MINIO_USE_SSL, false),
     minioAccessKey: process.env.MINIO_ACCESS_KEY || "minioadmin",
     minioSecretKey: process.env.MINIO_SECRET_KEY || "minioadmin",
     minioBucket: process.env.MINIO_BUCKET || "adla-uploads",
@@ -105,6 +106,19 @@ export default defineNuxtConfig({
       maxAttempts: envNum(process.env.NOTIFICATIONS_MAX_ATTEMPTS, 3),
     },
 
+    // Durable audit-log dispatch (M-10). `createAuditLog` enqueues a
+    // BullMQ job that the worker (server/plugins/audit-worker.ts)
+    // drains with retries; persistent failures land in BullMQ's
+    // failed-set for operator review. When the queue is disabled OR
+    // the enqueue throws, the helper falls back to an inline best-
+    // effort write to preserve request availability.
+    audit: {
+      queueEnabled: envBool(process.env.AUDIT_QUEUE_ENABLED, !!process.env.REDIS_URL),
+      workerEnabled: envBool(process.env.AUDIT_WORKER_ENABLED, true),
+      workerConcurrency: envNum(process.env.AUDIT_WORKER_CONCURRENCY, 2),
+      maxAttempts: envNum(process.env.AUDIT_MAX_ATTEMPTS, 3),
+    },
+
     // Web analytics, abuse detection & rate limiting (server-only).
     // Consumed via the typed helper in server/utils/analytics-config.ts.
     analytics: {
@@ -114,6 +128,13 @@ export default defineNuxtConfig({
       aiDetectionEnabled: envBool(process.env.ANALYTICS_AI_DETECTION_ENABLED, true),
       rateLimitEnabled: envBool(process.env.ANALYTICS_RATE_LIMIT_ENABLED, true),
       ipSalt: process.env.ANALYTICS_IP_SALT || "change-this-analytics-ip-salt-in-production",
+      // Comma-separated CIDRs (IPv4/IPv6) whose `X-Forwarded-For` is honored.
+      // Empty = trust no forwarding headers; use the socket peer. See
+      // server/utils/request-meta.ts:extractClientIp.
+      trustedProxies: (process.env.ANALYTICS_TRUSTED_PROXIES || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
       respectDnt: envBool(process.env.ANALYTICS_RESPECT_DNT, true),
       retentionDays: envNum(process.env.ANALYTICS_RETENTION_DAYS, 30),
       rollupRetentionDays: envNum(process.env.ANALYTICS_ROLLUP_RETENTION_DAYS, 365),

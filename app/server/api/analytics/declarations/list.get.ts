@@ -4,6 +4,8 @@ import {
   getRoleScope,
   buildSealedHistoryWhere,
 } from "~/server/utils/analytics-filters";
+import { presignStored } from "~/server/services/storage.service";
+import { decryptProfileIds } from "~/server/utils/pii-encryption";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -46,8 +48,8 @@ export default defineEventHandler(async (event) => {
               select: {
                 fullName: true,
                 idType: true,
-                ghanaCardNumber: true,
-                alternateIdNumber: true,
+                ghanaCardNumberCipher: true,
+                alternateIdNumberCipher: true,
                 offices: {
                   select: {
                     institution: { select: { name: true } },
@@ -75,7 +77,7 @@ export default defineEventHandler(async (event) => {
     }),
   ]);
 
-  const items = rows.map((row) => {
+  const items = await Promise.all(rows.map(async (row) => {
     const decl = row.declaration;
     const sealedAt = row.createdAt;
     const codeGeneratedAt = decl.createdAt;
@@ -93,6 +95,7 @@ export default defineEventHandler(async (event) => {
     const uniqueInstitutions = [...new Set(institutions)];
 
     const receipt = decl.receipts[0];
+    const decryptedApplicant = decryptProfileIds(decl.applicant);
 
     return {
       id: decl.id,
@@ -101,8 +104,8 @@ export default defineEventHandler(async (event) => {
       idType: decl.applicant.idType,
       idNumber:
         decl.applicant.idType === "GHANA_CARD"
-          ? decl.applicant.ghanaCardNumber
-          : decl.applicant.alternateIdNumber,
+          ? decryptedApplicant.ghanaCardNumber
+          : decryptedApplicant.alternateIdNumber,
       institutions: uniqueInstitutions,
       collectionOfficeName: collectionOffice?.name ?? null,
       collectionOfficeRegion: collectionOffice?.region ?? null,
@@ -110,9 +113,9 @@ export default defineEventHandler(async (event) => {
       processingDays,
       processedBy: row.changedBy?.email?.split("@")[0] ?? "System",
       receiptNumber: receipt?.receiptNumber ?? null,
-      receiptUrl: receipt?.pdfUrl ?? null,
+      receiptUrl: receipt?.pdfUrl ? await presignStored(receipt.pdfUrl) : null,
     };
-  });
+  }));
 
   return {
     success: true,

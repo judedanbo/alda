@@ -1,6 +1,12 @@
 import type { H3Event } from "h3";
-import { Prisma } from "@prisma/client";
-import prisma from "./prisma";
+import { extractClientIp } from "./request-meta";
+import { scrubAuditValues } from "./pii";
+import {
+  enqueueAuditJob,
+  isAuditQueueEnabled,
+  processAuditJob,
+  type AuditJobData,
+} from "./audit-queue";
 
 export interface AuditLogData {
   userId?: string;
@@ -12,35 +18,66 @@ export interface AuditLogData {
 }
 
 /**
- * Create an audit log entry
+ * Capture an audit-log event.
+ *
+ * When the BullMQ audit queue is enabled (Redis configured), the call
+ * enqueues a job and returns in microseconds. The worker started by
+ * `server/plugins/audit-worker.ts` writes the AuditLog row with up to
+ * `maxAttempts` retries; persistent failures land in BullMQ's `failed`
+ * set for operator inspection (M-10).
+ *
+ * When the queue is disabled, or when the enqueue itself throws (Redis
+ * outage mid-request), this falls back to writing the row inline via
+ * `processAuditJob`. The inline write is best-effort — a failure is
+ * console.error-logged but doesn't fail the request, matching the
+ * original pre-M-10 behaviour. Production deploys are expected to keep
+ * the queue enabled so the durable path is the common case.
  */
 export async function createAuditLog(
   event: H3Event,
   data: AuditLogData
 ): Promise<void> {
-  const ipAddress = getHeader(event, "x-forwarded-for")?.split(",")[0]?.trim()
-    || getHeader(event, "x-real-ip")
-    || "unknown";
+  const ipAddress = extractClientIp(event);
   const userAgent = getHeader(event, "user-agent") || "unknown";
   const sessionId = getCookie(event, "session_id") || undefined;
 
+  // Mask known PII fields (Ghana Card numbers, full names, emails, phones,
+  // bucket keys) before persisting. Old rows written before C-5 still
+  // contain plaintext; new rows do not. See server/utils/pii.ts.
+  const scrubbedOld = scrubAuditValues(data.oldValues);
+  const scrubbedNew = scrubAuditValues(data.newValues);
+
+  const job: AuditJobData = {
+    userId: data.userId,
+    action: data.action,
+    entityType: data.entityType,
+    entityId: data.entityId,
+    oldValues: scrubbedOld,
+    newValues: scrubbedNew,
+    ipAddress,
+    userAgent,
+    sessionId,
+    // Captured here, not in the worker — guarantees AuditLog.createdAt
+    // reflects request time even if the worker drains the queue minutes
+    // later.
+    occurredAt: new Date().toISOString(),
+  };
+
+  if (isAuditQueueEnabled()) {
+    try {
+      await enqueueAuditJob(job);
+      return;
+    } catch (err) {
+      console.error("[audit] queue enqueue failed, falling back to inline write:", err);
+    }
+  }
+
+  // Inline / fallback path. Best-effort — production should run with the
+  // queue enabled so the durable path is the common case.
   try {
-    await prisma.auditLog.create({
-      data: {
-        userId: data.userId,
-        action: data.action,
-        entityType: data.entityType,
-        entityId: data.entityId,
-        oldValues: (data.oldValues ?? Prisma.JsonNull) as Prisma.InputJsonValue,
-        newValues: (data.newValues ?? Prisma.JsonNull) as Prisma.InputJsonValue,
-        ipAddress,
-        userAgent,
-        sessionId,
-      },
-    });
-  } catch (error) {
-    // Log error but don't fail the request
-    console.error("Failed to create audit log:", error);
+    await processAuditJob({ data: job });
+  } catch (err) {
+    console.error("[audit] inline write failed:", err);
   }
 }
 
@@ -53,6 +90,7 @@ export const AuditActions = {
   USER_LOGIN: "user_login",
   USER_LOGOUT: "user_logout",
   USER_LOGIN_FAILED: "user_login_failed",
+  REFRESH_TOKEN_REPLAY_DETECTED: "refresh_token_replay_detected",
   PASSWORD_RESET_REQUESTED: "password_reset_requested",
   PASSWORD_RESET_COMPLETED: "password_reset_completed",
   EMAIL_VERIFIED: "email_verified",

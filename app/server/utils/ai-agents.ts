@@ -20,6 +20,25 @@ import {
  * AI crawler / scraper detection: registry matching, visitor classification,
  * declared-identity verification (reverse DNS + published IP ranges) and
  * behavioural cloaked-scraper heuristics.
+ *
+ * L-8 — important note on what this enforces vs. what it doesn't:
+ *
+ * User-Agent matching against the `AI_AGENTS` / `SEARCH_ENGINES` registries
+ * is a *politeness signal*, not a security boundary. Any caller can claim
+ * any User-Agent string in a single HTTP header; well-behaved crawlers
+ * (Google, OpenAI, Anthropic, …) self-identify because their reputation
+ * depends on it, and we honour that by applying the configured per-category
+ * policy (allow / log / throttle / block).
+ *
+ * The actual defence against *undeclared* / cloaked scrapers lives in
+ * `app/server/plugins/traffic.ts:detectCloakedScraper`, which scores
+ * behavioural fingerprints (datacenter ASN ranges, missing browser
+ * headers, sessionless cookie usage, request cadence). That's what catches
+ * the headless-Chrome-pretending-to-be-Safari case.
+ *
+ * Don't add security-critical decisions that branch only on the UA-match
+ * result; gate them on `verifyAiIdentity()` (reverse DNS + IP-range) or
+ * on the cloaked-scraper score.
  */
 
 export type VisitorClassValue = "HUMAN" | "SEARCH_BOT" | "AI_AGENT" | "OTHER_BOT";

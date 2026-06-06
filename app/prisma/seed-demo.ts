@@ -1,8 +1,26 @@
 import { type Prisma, type DeclarationStatus, PrismaClient } from "@prisma/client";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
+import { encryptPii, hashPii, canonicalizeId } from "../server/utils/pii-encryption";
 
 const prisma = new PrismaClient();
+
+/**
+ * M-8: refuse to run in production. The demo seed creates 250 fictional
+ * applicants with a hardcoded password. Override only via explicit
+ * ALLOW_SEED_IN_PRODUCTION=true env var.
+ */
+function assertNotProduction(scriptName: string): void {
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_SEED_IN_PRODUCTION !== "true") {
+    console.error(
+      `Refusing to run ${scriptName} in production. This script creates ` +
+      "demo data with hardcoded credentials. Set ALLOW_SEED_IN_PRODUCTION=true " +
+      "if you genuinely need to run it against a production database (you " +
+      "almost certainly should not).",
+    );
+    process.exit(1);
+  }
+}
 
 // ═══ Name Pools ═══════════════════════════════════════════════
 
@@ -251,6 +269,7 @@ interface DeclPlan {
 // ═══ Main ═════════════════════════════════════════════════════
 
 async function main() {
+  assertNotProduction("prisma/seed-demo.ts");
   console.log("📊 Demo Seed: Starting...\n");
 
   // ── Check prerequisites ────────────────────────────────────
@@ -459,7 +478,8 @@ async function main() {
           id: a.profileId,
           userId: a.userId,
           fullName: a.fullName,
-          ghanaCardNumber: a.ghanaCardNumber,
+          ghanaCardNumberCipher: encryptPii(canonicalizeId(a.ghanaCardNumber)),
+          ghanaCardNumberHash: hashPii(a.ghanaCardNumber),
           ghanaCardFrontUrl: `https://placeholder.local/demo/ghana-card-${a.ghanaCardNumber}-front.jpg`,
           ghanaCardBackUrl:
             Math.random() < 0.7

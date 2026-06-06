@@ -46,6 +46,7 @@ model User {
   verificationReviews      ApplicantVerificationReview[] @relation("VerificationReviewedBy")
   formReissuesRequested    FormReissueRequest[]          @relation("ReissueRequestedBy")
   formReissuesReviewed     FormReissueRequest[]          @relation("ReissueReviewedBy")
+  assignedOffices          UserCollectionOffice[]
 
   @@map("users")
 }
@@ -73,16 +74,23 @@ model UserRole {
 }
 
 model RefreshToken {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  token     String   @unique @db.VarChar(500)
-  expiresAt DateTime @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  token       String    @unique @db.VarChar(500)
+  // Family identifier — every refresh in a session inherits the familyId
+  // of the consumed token; presenting a token whose row has `consumedAt`
+  // set is treated as a replay and tears down the family. Nullable to
+  // tolerate pre-migration rows that haven't rotated yet.
+  familyId    String?   @map("family_id") @db.Uuid
+  consumedAt  DateTime? @map("consumed_at")
+  expiresAt   DateTime  @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([token])
+  @@index([familyId])
   @@map("refresh_tokens")
 }
 
@@ -140,16 +148,24 @@ model ApplicantProfile {
   userId             String             @unique @map("user_id") @db.Uuid
   fullName           String             @map("full_name") @db.VarChar(255)
   idType             IdDocumentType     @default(GHANA_CARD) @map("id_type")
-  ghanaCardNumber    String?            @unique @map("ghana_card_number") @db.VarChar(20)
-  ghanaCardFrontUrl  String?            @map("ghana_card_front_url") @db.Text
-  ghanaCardBackUrl   String?            @map("ghana_card_back_url") @db.Text
-  alternateIdNumber  String?            @map("alternate_id_number") @db.VarChar(64)
-  alternateIdScanUrl String?            @map("alternate_id_scan_url") @db.Text
-  alternateIdReason  AlternateIdReason? @map("alternate_id_reason")
-  alternateIdDetails String?            @map("alternate_id_details") @db.Text
-  createdAt          DateTime           @default(now()) @map("created_at")
-  updatedAt          DateTime           @updatedAt @map("updated_at")
-  verificationStatus VerificationStatus @default(PENDING_VERIFICATION) @map("verification_status")
+  // National-ID columns are encrypted at rest. The `*Cipher` column holds
+  // an AES-256-GCM envelope (see server/utils/pii-encryption.ts) and the
+  // `*Hash` column holds a deterministic HMAC-SHA256 over the canonical
+  // plaintext, which is what equality / uniqueness queries match against.
+  // The legacy plaintext columns (`ghana_card_number`, `alternate_id_number`)
+  // were dropped in the 20260526010000_pii_encryption_drop_plaintext migration.
+  ghanaCardNumberCipher   String? @map("ghana_card_number_cipher") @db.Text
+  ghanaCardNumberHash     String? @unique @map("ghana_card_number_hash") @db.VarChar(64)
+  ghanaCardFrontUrl       String? @map("ghana_card_front_url") @db.Text
+  ghanaCardBackUrl        String? @map("ghana_card_back_url") @db.Text
+  alternateIdNumberCipher String? @map("alternate_id_number_cipher") @db.Text
+  alternateIdNumberHash   String? @map("alternate_id_number_hash") @db.VarChar(64)
+  alternateIdScanUrl      String?            @map("alternate_id_scan_url") @db.Text
+  alternateIdReason       AlternateIdReason? @map("alternate_id_reason")
+  alternateIdDetails      String?            @map("alternate_id_details") @db.Text
+  createdAt               DateTime           @default(now()) @map("created_at")
+  updatedAt               DateTime           @updatedAt @map("updated_at")
+  verificationStatus      VerificationStatus @default(PENDING_VERIFICATION) @map("verification_status")
 
   // Relations
   user                User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -157,7 +173,7 @@ model ApplicantProfile {
   declarations        Declaration[]
   verificationReviews ApplicantVerificationReview[]
 
-  @@unique([idType, alternateIdNumber], name: "applicant_profiles_alt_id_key")
+  @@unique([idType, alternateIdNumberHash], name: "applicant_profiles_alt_id_hash_key")
   @@index([verificationStatus])
   @@index([idType])
   @@map("applicant_profiles")
@@ -364,10 +380,28 @@ model CollectionOffice {
   createdAt DateTime             @default(now()) @map("created_at")
 
   // Relations
-  formCollections FormCollection[]
-  formReturns     Declaration[]    @relation("FormReturnedTo")
+  formCollections   FormCollection[]
+  formReturns       Declaration[]          @relation("FormReturnedTo")
+  assignedOfficers  UserCollectionOffice[]
 
   @@map("collection_offices")
+}
+
+/// Many-to-many: schedule officers (and admins, though admins bypass) are
+/// scoped to specific collection offices for write actions. See H-3 in
+/// docs/security-assessment.md and the `assertOfficerCanActOn*` helpers in
+/// server/utils/officer-scope.ts.
+model UserCollectionOffice {
+  userId             String   @map("user_id") @db.Uuid
+  collectionOfficeId String   @map("collection_office_id") @db.Uuid
+  assignedAt         DateTime @default(now()) @map("assigned_at")
+
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collectionOffice CollectionOffice @relation(fields: [collectionOfficeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, collectionOfficeId])
+  @@index([collectionOfficeId])
+  @@map("user_collection_offices")
 }
 
 model FormCollection {

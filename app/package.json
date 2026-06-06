@@ -14,6 +14,7 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:demo": "tsx prisma/seed-demo.ts",
+    "db:backfill:pii": "tsx prisma/backfill-pii-encryption.ts",
     "db:reset": "prisma migrate reset",
     "db:studio": "prisma studio",
     "test:unit": "vitest",

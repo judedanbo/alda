@@ -1,9 +1,32 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { encryptPii, hashPii, canonicalizeId } from "../server/utils/pii-encryption";
 
 const prisma = new PrismaClient();
 
+/**
+ * M-8: refuse to run in production. The seed creates demo accounts with
+ * a hardcoded password (`password123`) — running it against a prod DB
+ * would either drop those credentials onto the live system or wedge the
+ * idempotent `upsert`s into prod data. The escape hatch is for the rare
+ * case where an operator genuinely needs to seed a prod-but-empty DB
+ * (initial deploy); they set the env var explicitly to acknowledge the
+ * risk.
+ */
+function assertNotProduction(scriptName: string): void {
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_SEED_IN_PRODUCTION !== "true") {
+    console.error(
+      `Refusing to run ${scriptName} in production. This script creates ` +
+      "demo accounts with a hardcoded password. If you genuinely need to " +
+      "run it against a production database, set ALLOW_SEED_IN_PRODUCTION=true " +
+      "in the environment — but you almost certainly should not.",
+    );
+    process.exit(1);
+  }
+}
+
 async function main() {
+  assertNotProduction("prisma/seed.ts");
   console.log("🌱 Starting database seed...");
 
   // Seed Roles
@@ -306,6 +329,34 @@ async function main() {
       console.log(`✅ Created ${label} user: ${email} (password: password123)`);
     }
 
+    // H-3: scope dev officers to specific CollectionOffices so the
+    // assertOfficerCanActOn* helpers don't bounce every action in dev.
+    // officer@ → HQ (Accra); officer2@ → Kumasi Regional. Admins bypass
+    // scoping, so admin@ doesn't need an assignment.
+    const hqOffice = await prisma.collectionOffice.findFirst({
+      where: { name: "GAS Headquarters, Accra" },
+    });
+    const kumasiOffice = await prisma.collectionOffice.findFirst({
+      where: { name: "Kumasi Regional Office" },
+    });
+    const officer1 = await prisma.user.findUnique({ where: { email: "officer@adla.gov.gh" } });
+    const officer2 = await prisma.user.findUnique({ where: { email: "officer2@adla.gov.gh" } });
+    if (hqOffice && officer1) {
+      await prisma.userCollectionOffice.upsert({
+        where: { userId_collectionOfficeId: { userId: officer1.id, collectionOfficeId: hqOffice.id } },
+        update: {},
+        create: { userId: officer1.id, collectionOfficeId: hqOffice.id },
+      });
+    }
+    if (kumasiOffice && officer2) {
+      await prisma.userCollectionOffice.upsert({
+        where: { userId_collectionOfficeId: { userId: officer2.id, collectionOfficeId: kumasiOffice.id } },
+        update: {},
+        create: { userId: officer2.id, collectionOfficeId: kumasiOffice.id },
+      });
+    }
+    console.log("✅ Assigned seeded officers to collection offices (H-3 scoping)");
+
     const applicantUser = await prisma.user.findUnique({
       where: { email: "applicant@adla.gov.gh" },
     });
@@ -315,13 +366,15 @@ async function main() {
       const firstCategory = await prisma.publicOfficeCategory.findFirst();
 
       if (firstInstitution && firstCategory) {
+        const demoCardNumber = "GHA-000000001-0";
         const profile = await prisma.applicantProfile.upsert({
           where: { userId: applicantUser.id },
           update: {},
           create: {
             userId: applicantUser.id,
             fullName: "Kwame Asante",
-            ghanaCardNumber: "GHA-000000001-0",
+            ghanaCardNumberCipher: encryptPii(canonicalizeId(demoCardNumber)),
+            ghanaCardNumberHash: hashPii(demoCardNumber),
             ghanaCardFrontUrl: "https://placeholder.local/ghana-card-front.jpg",
             verificationStatus: "VERIFIED",
           },

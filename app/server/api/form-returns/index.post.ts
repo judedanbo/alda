@@ -2,6 +2,7 @@ import prisma from "~/server/utils/prisma";
 import { validateBody, formReturnRecordSchema } from "~/server/utils/validators";
 import { logAction, AuditActions } from "~/server/utils/audit";
 import { notifyDeclarationSubmitted } from "~/server/services/notification.service";
+import { assertOfficerCanActOnOffice } from "~/server/utils/officer-scope";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -70,6 +71,10 @@ export default defineEventHandler(async (event) => {
       statusMessage: "Selected return office not found.",
     });
   }
+
+  // H-3: schedule officers can only return forms to offices they're
+  // assigned to. Admins bypass.
+  await assertOfficerCanActOnOffice(event, data.returnOfficeId);
 
   await prisma.$transaction([
     prisma.declaration.update({

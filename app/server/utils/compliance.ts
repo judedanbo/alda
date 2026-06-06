@@ -1,5 +1,6 @@
 import prisma from "~/server/utils/prisma";
 import { getCached, buildCacheKey } from "~/server/utils/analytics-cache";
+import { decryptProfileIds } from "~/server/utils/pii-encryption";
 
 export type ObligationType = "assumption" | "periodic" | "departure";
 export type ComplianceStatus = "compliant" | "upcoming" | "due_now" | "overdue";
@@ -138,8 +139,8 @@ export async function computeComplianceObligations(
           id: true,
           fullName: true,
           idType: true,
-          ghanaCardNumber: true,
-          alternateIdNumber: true,
+          ghanaCardNumberCipher: true,
+          alternateIdNumberCipher: true,
           declarations: {
             select: {
               statusHistory: {
@@ -174,12 +175,13 @@ export async function computeComplianceObligations(
 
       const diffDays = Math.round((today.getTime() - due.date.getTime()) / 86400000);
 
+      const decryptedProfile = decryptProfileIds(office.profile);
       obligations.push({
         applicantId: office.profile.id,
         fullName: office.profile.fullName,
         idType: office.profile.idType,
-        ghanaCardNumber: office.profile.ghanaCardNumber,
-        alternateIdNumber: office.profile.alternateIdNumber,
+        ghanaCardNumber: decryptedProfile.ghanaCardNumber,
+        alternateIdNumber: decryptedProfile.alternateIdNumber,
         institution: office.institution?.name ?? null,
         institutionId: office.institution?.id ?? null,
         designation: office.designation,

@@ -88,9 +88,11 @@ services:
       sleep 5;
       mc alias set myminio http://minio:9000 minioadmin minioadmin;
       mc mb myminio/adla-uploads --ignore-existing;
-      mc anonymous set download myminio/adla-uploads;
       exit 0;
       "
+    # Note: the bucket is intentionally NOT anonymous-readable. The app's
+    # ensureBucket() asserts a deny-anonymous policy on every boot. Clients
+    # download files via short-lived presigned URLs minted by the server.
     networks:
       - adla-network
 

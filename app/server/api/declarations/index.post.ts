@@ -86,14 +86,30 @@ export default defineEventHandler(async (event) => {
     attempts++;
   }
 
-  // Create declaration
-  const declaration = await prisma.declaration.create({
-    data: {
-      applicantId: profile.id,
-      uniqueCode,
-      status: "CODE_GENERATED",
-    },
-  });
+  // Create declaration. M-1: a partial unique index on (applicant_id)
+  // WHERE status IN active-set guarantees no second active declaration
+  // can sneak through between the pre-check above and this insert. A
+  // P2002 here means a concurrent request beat us — return the same
+  // friendly 409.
+  let declaration;
+  try {
+    declaration = await prisma.declaration.create({
+      data: {
+        applicantId: profile.id,
+        uniqueCode,
+        status: "CODE_GENERATED",
+      },
+    });
+  } catch (err) {
+    if (err && typeof err === "object" && "code" in err && (err as { code: string }).code === "P2002") {
+      throw createError({
+        statusCode: 409,
+        statusMessage: "Conflict",
+        message: "You already have a pending declaration. Please wait for it to be processed.",
+      });
+    }
+    throw err;
+  }
 
   // Create audit log
   await createAuditLog(event, {

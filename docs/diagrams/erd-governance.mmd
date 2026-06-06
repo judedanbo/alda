@@ -1,0 +1,38 @@
+erDiagram
+  USER |o--o{ AUDIT_LOG : "actor (optional)"
+  USER |o--o{ ARCHIVED_RECORD : "archived by"
+
+  AUDIT_LOG {
+    uuid id PK
+    uuid userId FK "optional"
+    string action
+    string entityType
+    string entityId
+    json oldValues "no raw PII"
+    json newValues "no raw PII"
+    string ipAddress
+    string sessionId
+  }
+  DATA_RETENTION_POLICY {
+    int id PK
+    string entityType
+    int retentionPeriodDays
+    int archiveAfterDays
+    int deleteAfterDays
+  }
+  ARCHIVED_RECORD {
+    uuid id PK
+    string entityType
+    string entityId
+    json archivedData "snapshot"
+    datetime scheduledDeletionDate
+  }
+  CONTACT_SUBMISSION {
+    uuid id PK
+    string name "PII"
+    string email "PII"
+    string phone "PII, optional"
+    enum category
+    enum status
+    string ipAddress
+  }

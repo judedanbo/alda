@@ -1,0 +1,22 @@
+flowchart TB
+  A["Applicant submits<br/>Ghana Card image + national-ID number"]
+
+  A -->|"POST /api/upload/ghana-card<br/>(magic-byte validated)"| UP[storage.service]
+  UP -->|"randomized key,<br/>deny-anonymous bucket"| OS[("MinIO<br/>adla-uploads")]
+  OS -->|"presigned URL (15-min TTL)"| VIEW["Authorized officer view"]
+
+  A -->|"POST /api/profile (national-ID)"| ENC[pii-encryption.ts]
+  ENC -->|"AES-256-GCM cipher"| C1["ghanaCardNumberCipher"]
+  ENC -->|"HMAC-SHA256 hash"| C2["ghanaCardNumberHash (unique lookup)"]
+  C1 --> PG[("PostgreSQL")]
+  C2 --> PG
+
+  PG -->|"decrypt only for verified subject<br/>or authorized officer"| DEC["DSAR / officer access"]
+  PG -->|"receipt generation"| PDF[pdf.service]
+  PDF --> OS
+
+  PG -. "no raw PII in audit_logs" .-> AUD[("audit_logs")]
+  PG -. "no PII in message bodies" .-> NOTIF["Email / SMS notifications"]
+
+  classDef pii fill:#ffe0e0,stroke:#c00;
+  class C1,C2,OS pii;

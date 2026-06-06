@@ -1,4 +1,5 @@
 import prisma from "~/server/utils/prisma";
+import { decryptProfileIds } from "~/server/utils/pii-encryption";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -72,8 +73,8 @@ export default defineEventHandler(async (event) => {
           select: {
             fullName: true,
             idType: true,
-            ghanaCardNumber: true,
-            alternateIdNumber: true,
+            ghanaCardNumberCipher: true,
+            alternateIdNumberCipher: true,
             offices: {
               include: {
                 officeCategory: true,
@@ -104,13 +105,16 @@ export default defineEventHandler(async (event) => {
         createdAt: user.createdAt.toISOString(),
         roles: user.roles.map((r) => r.role.name),
         profile: user.applicantProfile
-          ? {
-              fullName: user.applicantProfile.fullName,
-              idType: user.applicantProfile.idType,
-              ghanaCardNumber: user.applicantProfile.ghanaCardNumber,
-              alternateIdNumber: user.applicantProfile.alternateIdNumber,
-              offices: user.applicantProfile.offices,
-            }
+          ? (() => {
+              const decrypted = decryptProfileIds(user.applicantProfile);
+              return {
+                fullName: user.applicantProfile.fullName,
+                idType: user.applicantProfile.idType,
+                ghanaCardNumber: decrypted.ghanaCardNumber,
+                alternateIdNumber: decrypted.alternateIdNumber,
+                offices: user.applicantProfile.offices,
+              };
+            })()
           : null,
       })),
       total,

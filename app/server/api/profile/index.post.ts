@@ -4,6 +4,8 @@ import prisma from "~/server/utils/prisma";
 import { validateBody, applicantProfileSchema } from "~/server/utils/validators";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
 import { notifyVerificationSubmitted } from "~/server/services/notification.service";
+import { presignStored } from "~/server/services/storage.service";
+import { encryptPii, hashPii, canonicalizeId, decryptProfileIds } from "~/server/utils/pii-encryption";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -31,9 +33,11 @@ export default defineEventHandler(async (event) => {
 
   // Per-path uniqueness check. DB constraints catch races, but a friendly
   // 409 with field-scoped error is far better than a raw constraint failure.
+  // National-ID columns are encrypted; equality lookups use the HMAC hash.
   if (data.idType === IdDocumentType.GHANA_CARD) {
+    const cardHash = hashPii(data.ghanaCardNumber);
     const existingCard = await prisma.applicantProfile.findUnique({
-      where: { ghanaCardNumber: data.ghanaCardNumber },
+      where: { ghanaCardNumberHash: cardHash },
     });
     if (existingCard) {
       throw createError({
@@ -46,10 +50,11 @@ export default defineEventHandler(async (event) => {
       });
     }
   } else {
+    const altHash = hashPii(data.alternateIdNumber);
     const existingAlt = await prisma.applicantProfile.findFirst({
       where: {
         idType: data.idType,
-        alternateIdNumber: data.alternateIdNumber,
+        alternateIdNumberHash: altHash,
       },
     });
     if (existingAlt) {
@@ -70,7 +75,8 @@ export default defineEventHandler(async (event) => {
         user: { connect: { id: auth.userId } },
         fullName: data.fullName,
         idType: data.idType,
-        ghanaCardNumber: data.ghanaCardNumber,
+        ghanaCardNumberCipher: encryptPii(canonicalizeId(data.ghanaCardNumber)),
+        ghanaCardNumberHash: hashPii(data.ghanaCardNumber),
         ghanaCardFrontUrl: data.ghanaCardFrontUrl,
         ghanaCardBackUrl: data.ghanaCardBackUrl,
       }
@@ -78,7 +84,8 @@ export default defineEventHandler(async (event) => {
         user: { connect: { id: auth.userId } },
         fullName: data.fullName,
         idType: data.idType,
-        alternateIdNumber: data.alternateIdNumber,
+        alternateIdNumberCipher: encryptPii(canonicalizeId(data.alternateIdNumber)),
+        alternateIdNumberHash: hashPii(data.alternateIdNumber),
         alternateIdScanUrl: data.alternateIdScanUrl,
         alternateIdReason: data.alternateIdReason,
         alternateIdDetails: data.alternateIdDetails,
@@ -101,11 +108,14 @@ export default defineEventHandler(async (event) => {
     action: AuditActions.PROFILE_CREATED,
     entityType: "applicant_profile",
     entityId: profile.id,
+    // Audit captures the plaintext we received (it's masked by
+    // scrubAuditValues before persistence); cipher columns aren't useful
+    // to a reviewer who can't decrypt them.
     newValues: {
       fullName: profile.fullName,
       idType: profile.idType,
-      ghanaCardNumber: profile.ghanaCardNumber,
-      alternateIdNumber: profile.alternateIdNumber,
+      ghanaCardNumber: data.idType === IdDocumentType.GHANA_CARD ? data.ghanaCardNumber : null,
+      alternateIdNumber: data.idType !== IdDocumentType.GHANA_CARD ? data.alternateIdNumber : null,
       alternateIdReason: profile.alternateIdReason,
     },
   });
@@ -125,9 +135,25 @@ export default defineEventHandler(async (event) => {
   // uses a different key (see resubmit endpoint).
   await notifyVerificationSubmitted(auth.userId, data.fullName, profile.id);
 
+  // Re-sign the stored keys for client preview.
+  const [ghanaCardFrontUrl, ghanaCardBackUrl, alternateIdScanUrl] = await Promise.all([
+    presignStored(profile.ghanaCardFrontUrl),
+    presignStored(profile.ghanaCardBackUrl),
+    presignStored(profile.alternateIdScanUrl),
+  ]);
+
+  // Rehydrate the legacy `*Number` fields from the encrypted columns for
+  // the response — clients still see the JSON shape they did before.
+  const decrypted = decryptProfileIds(profile);
+
   return {
     success: true,
     message: "Profile created successfully",
-    data: profile,
+    data: {
+      ...decrypted,
+      ghanaCardFrontUrl,
+      ghanaCardBackUrl,
+      alternateIdScanUrl,
+    },
   };
 });

@@ -2,6 +2,7 @@ import { IdDocumentType } from "@prisma/client";
 import { z } from "zod";
 import prisma from "~/server/utils/prisma";
 import { ID_NUMBER_PATTERNS } from "~/server/utils/validators";
+import { hashPii } from "~/server/utils/pii-encryption";
 
 const querySchema = z.object({
   idType: z.nativeEnum(IdDocumentType),
@@ -35,11 +36,14 @@ export default defineEventHandler(async (event) => {
     return { success: true, data: { available: false, invalid: true } };
   }
 
+  // National-ID columns are encrypted; equality lookups go via the HMAC
+  // hash column populated at write time.
+  const hash = hashPii(number);
   const existing = await prisma.applicantProfile.findFirst({
     where: {
       ...(idType === IdDocumentType.GHANA_CARD
-        ? { ghanaCardNumber: number }
-        : { idType, alternateIdNumber: number }),
+        ? { ghanaCardNumberHash: hash }
+        : { idType, alternateIdNumberHash: hash }),
       NOT: { userId: auth.userId },
     },
     select: { id: true },
