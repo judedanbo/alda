@@ -1,0 +1,115 @@
+services:
+  app:
+    build:
+      context: ./app
+      dockerfile: docker/Dockerfile.dev
+    container_name: adla-app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./app:/app
+      - /app/node_modules
+      - /app/.nuxt
+    environment:
+      - DATABASE_URL=postgresql://adla:adla@db:5432/adla?schema=public
+      - REDIS_URL=redis://redis:6379
+      - MINIO_ENDPOINT=minio
+      - MINIO_PORT=9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET=adla-uploads
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+      - JWT_SECRET=dev-jwt-secret-change-in-production
+      - JWT_REFRESH_SECRET=dev-refresh-secret-change-in-production
+      - NODE_ENV=development
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
+    networks:
+      - adla-network
+
+  db:
+    image: postgres:16-alpine
+    container_name: adla-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: adla
+      POSTGRES_PASSWORD: adla
+      POSTGRES_DB: adla
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U adla -d adla"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - adla-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: adla-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - adla-network
+
+  minio:
+    image: minio/minio
+    container_name: adla-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - adla-network
+
+  minio-init:
+    image: minio/mc
+    container_name: adla-minio-init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      mc mb myminio/adla-uploads --ignore-existing;
+      exit 0;
+      "
+    # Note: the bucket is intentionally NOT anonymous-readable. The app's
+    # ensureBucket() asserts a deny-anonymous policy on every boot. Clients
+    # download files via short-lived presigned URLs minted by the server.
+    networks:
+      - adla-network
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: adla-mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - adla-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+
+networks:
+  adla-network:
+    driver: bridge
