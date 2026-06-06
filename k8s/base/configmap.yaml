@@ -4,6 +4,7 @@ metadata:
   name: adla-config
   labels:
     app.kubernetes.io/part-of: adla
+    app.kubernetes.io/component: infra
 data:
   NODE_ENV: "production"
   APP_URL: ""
@@ -11,15 +12,15 @@ data:
   PORT: "3000"
 
   # SMTP (host/port/from are not secrets — user/pass are in adla-secrets)
-  SMTP_HOST: ""
+  SMTP_HOST: "smtp.office365.com"
   SMTP_PORT: "587"
-  SMTP_FROM: "noreply@alda.audit.gov.gh"
+  SMTP_FROM: "alda@audit.gov.gh"
 
-  # Storage (endpoint/bucket are not secrets)
-  MINIO_ENDPOINT: ""
-  MINIO_PORT: "443"
+  # Storage (endpoint/bucket are not secrets) — in-cluster MinIO over plaintext
+  MINIO_ENDPOINT: "adla-minio"
+  MINIO_PORT: "9000"
   MINIO_BUCKET: "adla-uploads"
-  MINIO_USE_SSL: "true"
+  MINIO_USE_SSL: "false"
 
   # Notification queue
   NOTIFICATIONS_QUEUE_ENABLED: "true"

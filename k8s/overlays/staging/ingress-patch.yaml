@@ -6,11 +6,13 @@ metadata:
     cert-manager.io/cluster-issuer: infosys-issuer
 spec:
   tls:
+    # TEMPORARY: DNS typo. Correct to staging-alda.audit.gov.gh once the DNS
+    # record is fixed (host and tls host must match for cert-manager).
     - hosts:
-        - staging-alda.audit.gov.gh
+        - ttaging-alda.audit.gov.gh
       secretName: adla-staging-tls
   rules:
-    - host: staging-alda.audit.gov.gh
+    - host: ttaging-alda.audit.gov.gh
       http:
         paths:
           - path: /

@@ -1,3 +1,7 @@
+# Reference manifest / manual fallback. The CI workflow runs migrations as a
+# uniquely-named per-run Job (deploy.yml), so this is NOT in the kustomization.
+# part-of: adla is baked in so the NetworkPolicy admits it to reach Postgres when
+# applied directly with `kubectl apply -f` (outside kustomize).
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -5,6 +9,7 @@ metadata:
   labels:
     app.kubernetes.io/name: adla-migrate
     app.kubernetes.io/component: migration
+    app.kubernetes.io/part-of: adla
 spec:
   backoffLimit: 3
   ttlSecondsAfterFinished: 300
@@ -13,12 +18,15 @@ spec:
       labels:
         app.kubernetes.io/name: adla-migrate
         app.kubernetes.io/component: migration
+        app.kubernetes.io/part-of: adla
     spec:
       restartPolicy: Never
       containers:
         - name: migrate
           image: regisry.azurecr.io/adla-migrate:latest
           envFrom:
+            - configMapRef:
+                name: adla-config
             - secretRef:
                 name: adla-secrets
           resources:

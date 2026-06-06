@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# DEPRECATED — the deployment now runs Postgres, Redis, and MinIO IN-CLUSTER as
+# StatefulSets (see k8s/base/statefulset-*.yaml). This script provisions Azure
+# managed PostgreSQL/Redis/Blob, which the current architecture does NOT use.
+# Kept for reference / optional fallback only. Do not run for the standard deploy.
+
 # Provisions ADLA managed services into an existing resource group.
 # Prerequisites: az CLI logged in, existing AKS cluster + ACR + VNet.
 

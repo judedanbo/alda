@@ -4,6 +4,7 @@ metadata:
   name: adla-netpol
   labels:
     app.kubernetes.io/part-of: adla
+    app.kubernetes.io/component: infra
 spec:
   podSelector:
     matchLabels:
@@ -22,6 +23,19 @@ spec:
               app.kubernetes.io/name: ingress-nginx
       ports:
         - port: 3000
+          protocol: TCP
+    # Allow east-west traffic between adla pods (app/worker/migrate → in-cluster
+    # Postgres/Redis/MinIO, and minio-init → MinIO) within the namespace
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: adla
+      ports:
+        - port: 5432
+          protocol: TCP
+        - port: 6379
+          protocol: TCP
+        - port: 9000
           protocol: TCP
   egress:
     # DNS
@@ -43,7 +57,12 @@ spec:
           protocol: TCP
         - port: 6380
           protocol: TCP
-    # Azure Blob Storage / HTTPS
+    # In-cluster MinIO (S3 API)
+    - to: []
+      ports:
+        - port: 9000
+          protocol: TCP
+    # HTTPS (SMS providers, cert-manager ACME, external APIs)
     - to: []
       ports:
         - port: 443

@@ -5,9 +5,9 @@ set -euo pipefail
 GITHUB_ORG="${GITHUB_ORG:-judedanbo}"
 GITHUB_REPO="${GITHUB_REPO:-alda}"
 APP_NAME="${APP_NAME:-adla-github-deploy}"
-RESOURCE_GROUP="${RESOURCE_GROUP:-adla-rg}"
-ACR_NAME="${ACR_NAME:-adlaacr}"
-AKS_CLUSTER="${AKS_CLUSTER:-adla-aks}"
+RESOURCE_GROUP="${RESOURCE_GROUP:-infosys}"
+ACR_NAME="${ACR_NAME:-regisry}"
+AKS_CLUSTER="${AKS_CLUSTER:-infosys}"
 
 echo "==> Creating Azure AD app registration: $APP_NAME"
 APP_ID=$(az ad app create --display-name "$APP_NAME" --query appId -o tsv)
@@ -18,23 +18,10 @@ az ad sp create --id "$APP_ID" --output none
 
 SP_OBJECT_ID=$(az ad sp show --id "$APP_ID" --query id -o tsv)
 
-echo "==> Adding federated credentials for GitHub branches"
-
-# Staging: develop branch
-az ad app federated-credential create --id "$APP_ID" --parameters "{
-  \"name\": \"github-develop\",
-  \"issuer\": \"https://token.actions.githubusercontent.com\",
-  \"subject\": \"repo:${GITHUB_ORG}/${GITHUB_REPO}:ref:refs/heads/develop\",
-  \"audiences\": [\"api://AzureADTokenExchange\"]
-}" --output none
-
-# Production: main branch
-az ad app federated-credential create --id "$APP_ID" --parameters "{
-  \"name\": \"github-main\",
-  \"issuer\": \"https://token.actions.githubusercontent.com\",
-  \"subject\": \"repo:${GITHUB_ORG}/${GITHUB_REPO}:ref:refs/heads/main\",
-  \"audiences\": [\"api://AzureADTokenExchange\"]
-}" --output none
+echo "==> Adding federated credentials for GitHub environments"
+# Deploy jobs declare `environment:`, so the OIDC subject is environment-scoped.
+# Staging deploys on push to main; production deploys on a published release —
+# both authenticate via these environment credentials (no ref-based creds needed).
 
 # Staging environment
 az ad app federated-credential create --id "$APP_ID" --parameters "{
@@ -70,15 +57,8 @@ az role assignment create \
   --scope "$AKS_ID" \
   --output none
 
-az keyvault set-policy --name adla-staging-kv \
-  --object-id "$SP_OBJECT_ID" \
-  --secret-permissions get list \
-  --output none
-
-az keyvault set-policy --name adla-production-kv \
-  --object-id "$SP_OBJECT_ID" \
-  --secret-permissions get list \
-  --output none
+# Note: secrets are delivered as plain kubectl Secrets (infra/create-secrets.sh),
+# so no Azure Key Vault access is required.
 
 TENANT_ID=$(az account show --query tenantId -o tsv)
 
@@ -95,3 +75,5 @@ echo ""
 echo "For 'production', enable:"
 echo "  - Required reviewers (1)"
 echo "  - Wait timer: 5 minutes"
+echo ""
+echo "Deploy model: merge to main → staging; publish a GitHub Release → production."

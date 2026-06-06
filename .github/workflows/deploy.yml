@@ -1,8 +1,12 @@
 name: Deploy
 
 on:
+  # Merge to main → deploy staging
   push:
-    branches: [main, develop]
+    branches: [main]
+  # Publish a GitHub Release → deploy production
+  release:
+    types: [published]
 
 permissions:
   id-token: write
@@ -14,10 +18,14 @@ env:
   RESOURCE_GROUP: infosys
 
 jobs:
+  # Gate: lint, typecheck, unit tests, and build must all pass before anything
+  # is built, pushed, or deployed. build-and-push `needs: [ci]`, and every
+  # deploy job chains from build-and-push, so a CI failure blocks the deploy.
   ci:
     uses: ./.github/workflows/ci.yml
 
   set-env:
+    needs: [ci]
     runs-on: ubuntu-latest
     outputs:
       environment: ${{ steps.env.outputs.environment }}
@@ -27,7 +35,8 @@ jobs:
     steps:
       - id: env
         run: |
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          # release event → production; push to main → staging
+          if [ "${{ github.event_name }}" = "release" ]; then
             echo "environment=production" >> "$GITHUB_OUTPUT"
             echo "overlay=production" >> "$GITHUB_OUTPUT"
             echo "namespace=adla-production" >> "$GITHUB_OUTPUT"
@@ -36,7 +45,8 @@ jobs:
             echo "environment=staging" >> "$GITHUB_OUTPUT"
             echo "overlay=staging" >> "$GITHUB_OUTPUT"
             echo "namespace=adla-staging" >> "$GITHUB_OUTPUT"
-            echo "domain=staging-alda.audit.gov.gh" >> "$GITHUB_OUTPUT"
+            # TEMPORARY: typo'd staging host until DNS is corrected to staging-alda.*
+            echo "domain=ttaging-alda.audit.gov.gh" >> "$GITHUB_OUTPUT"
           fi
 
   build-and-push:
@@ -76,8 +86,49 @@ jobs:
             app/
           docker push ${{ env.ACR_NAME }}.azurecr.io/adla-migrate --all-tags
 
-  migrate:
+  deploy-data-tier:
     needs: [build-and-push, set-env]
+    runs-on: ubuntu-latest
+    environment: ${{ needs.set-env.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get AKS credentials
+        run: |
+          az aks get-credentials \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name ${{ env.AKS_CLUSTER }} \
+            --overwrite-existing
+
+      - name: Apply data tier + shared config, wait for readiness
+        run: |
+          NAMESPACE="${{ needs.set-env.outputs.namespace }}"
+          OVERLAY="${{ needs.set-env.outputs.overlay }}"
+
+          # Render once; apply only the data tier (database/cache/storage) and
+          # shared infra (configmap/netpol/quota/limitrange/namespace) so the
+          # app/worker are NOT rolled to the new image until AFTER migrations.
+          kustomize build "k8s/overlays/$OVERLAY" > /tmp/manifests.yaml
+          kubectl apply -f /tmp/manifests.yaml \
+            -l 'app.kubernetes.io/component in (database,cache,storage,infra)'
+
+          # Gate: Postgres must be Ready before the migration job runs.
+          kubectl rollout status statefulset/adla-postgres -n "$NAMESPACE" --timeout=300s
+          kubectl rollout status statefulset/adla-redis -n "$NAMESPACE" --timeout=300s
+          kubectl rollout status statefulset/adla-minio -n "$NAMESPACE" --timeout=300s
+          kubectl wait --for=condition=ready pod \
+            -l app.kubernetes.io/name=adla-postgres \
+            -n "$NAMESPACE" --timeout=300s
+
+  migrate:
+    needs: [deploy-data-tier, set-env]
     runs-on: ubuntu-latest
     environment: ${{ needs.set-env.outputs.environment }}
     steps:
@@ -113,10 +164,17 @@ jobs:
           metadata:
             name: $JOB_NAME
             namespace: $NAMESPACE
+            labels:
+              app.kubernetes.io/part-of: adla
+              app.kubernetes.io/component: migration
           spec:
             backoffLimit: 3
             ttlSecondsAfterFinished: 300
             template:
+              metadata:
+                labels:
+                  app.kubernetes.io/part-of: adla
+                  app.kubernetes.io/component: migration
               spec:
                 restartPolicy: Never
                 containers:
@@ -143,7 +201,7 @@ jobs:
             "job/$JOB_NAME" \
             -n "$NAMESPACE"
 
-  deploy:
+  deploy-app:
     needs: [migrate, set-env]
     runs-on: ubuntu-latest
     environment: ${{ needs.set-env.outputs.environment }}
@@ -175,7 +233,8 @@ jobs:
             regisry.azurecr.io/adla-migrate=regisry.azurecr.io/adla-migrate:${{ github.sha }}
           cd -
 
-          # Apply manifests
+          # Apply the full overlay (app/worker/hpa/ingress + idempotent data tier).
+          # Runs AFTER migrations so the app rolls onto a migrated database.
           kustomize build k8s/overlays/$OVERLAY | kubectl apply -f -
 
           # Discard the image tag mutation so the checkout stays clean
@@ -188,7 +247,7 @@ jobs:
           kubectl rollout status deployment/adla-worker -n "$NAMESPACE" --timeout=300s
 
   smoke-test:
-    needs: [deploy, set-env]
+    needs: [deploy-app, set-env]
     runs-on: ubuntu-latest
     steps:
       - name: Health check

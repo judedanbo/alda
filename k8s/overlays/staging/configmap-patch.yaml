@@ -3,5 +3,5 @@ kind: ConfigMap
 metadata:
   name: adla-config
 data:
-  APP_URL: "https://staging-alda.audit.gov.gh"
-  MINIO_ENDPOINT: ""
+  # TEMPORARY: matches the typo'd staging host until DNS is corrected
+  APP_URL: "https://ttaging-alda.audit.gov.gh"
