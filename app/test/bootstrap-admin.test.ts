@@ -72,7 +72,7 @@ describe("bootstrapAdmin", () => {
   it("stores a bcrypt hash, never the plaintext password", async () => {
     await bootstrapAdmin(mockPrisma, { email: "a@b.gov.gh", password: "secret-pw" });
 
-    const arg = userUpsert.mock.calls[0][0];
+    const arg = userUpsert.mock.calls[0]![0];
     const hash = arg.create.passwordHash;
     expect(hash).not.toBe("secret-pw");
     expect(bcrypt.compareSync("secret-pw", hash)).toBe(true);
@@ -81,7 +81,7 @@ describe("bootstrapAdmin", () => {
   it("rotates the password on re-run (update also sets the hash)", async () => {
     await bootstrapAdmin(mockPrisma, { email: "a@b.gov.gh", password: "new-pw" });
 
-    const arg = userUpsert.mock.calls[0][0];
+    const arg = userUpsert.mock.calls[0]![0];
     expect(bcrypt.compareSync("new-pw", arg.update.passwordHash)).toBe(true);
   });
 
