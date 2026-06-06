@@ -26,7 +26,9 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
 
-      - run: npm install
+      # npm ci (not install): fails the build on a lockfile out of sync with
+      # package.json, so a desync is caught here instead of leaking to Deploy.
+      - run: npm ci
 
       - run: npx nuxi prepare
 
