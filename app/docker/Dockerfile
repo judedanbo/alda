@@ -1,5 +1,5 @@
 # Build stage
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -25,7 +25,7 @@ COPY . .
 RUN npm run build
 
 # Migration stage — used by the K8s migration Job
-FROM node:22-alpine AS migration
+FROM node:24-alpine AS migration
 
 WORKDIR /app
 
@@ -38,7 +38,7 @@ COPY --from=builder /app/package.json ./package.json
 CMD ["npx", "prisma", "migrate", "deploy"]
 
 # Production stage
-FROM node:22-alpine AS production
+FROM node:24-alpine AS production
 
 WORKDIR /app
 
