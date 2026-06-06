@@ -1,0 +1,50 @@
+erDiagram
+  ABUSE_EVENT |o--o{ ENFORCEMENT_ACTION : "may trigger"
+
+  TRAFFIC_EVENT {
+    uuid id PK
+    datetime occurredAt
+    string routePattern
+    int statusCode
+    string ipHash "pseudonymized (salted)"
+    string ipTruncated
+    enum visitorClass "HUMAN|SEARCH_BOT|AI_AGENT|OTHER_BOT"
+    string sessionId
+    string visitorId
+  }
+  TRAFFIC_ROLLUP_HOURLY {
+    uuid id PK
+    datetime bucket
+    int requests
+    int uniqueVisitors
+    int p95DurationMs
+  }
+  TRAFFIC_ROLLUP_DAILY {
+    uuid id PK
+    date bucket
+    int requests
+    int uniqueVisitors
+  }
+  ABUSE_EVENT {
+    uuid id PK
+    datetime detectedAt
+    enum actorType "IP|SESSION|USER"
+    string actorKey
+    enum severity "LOW|MEDIUM|HIGH|CRITICAL"
+    int score
+    json signals
+  }
+  ENFORCEMENT_ACTION {
+    uuid id PK
+    uuid abuseEventId FK "optional"
+    enum type "LOG_ONLY|THROTTLE|BLOCK"
+    string reason
+    datetime expiresAt
+    bool active
+  }
+  ACTOR_ACCESS_RULE {
+    uuid id PK
+    enum actorType "IP|SESSION|USER"
+    string actorValue "IP/CIDR/session/user"
+    enum ruleType "ALLOW|BLOCK"
+  }
