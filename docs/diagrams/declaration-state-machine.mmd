@@ -1,0 +1,17 @@
+stateDiagram-v2
+  [*] --> CODE_GENERATED: applicant initiates declaration
+
+  CODE_GENERATED --> FORM_COLLECTED: officer records FormCollection
+  FORM_COLLECTED --> SUBMITTED: officer records physical submission
+  SUBMITTED --> UNDER_REVIEW: officer/legal begins review
+  UNDER_REVIEW --> APPROVED: review approved
+  UNDER_REVIEW --> REJECTED: review rejected
+
+  REJECTED --> CODE_GENERATED: new unique code issued (fresh declaration)
+  APPROVED --> SEALED: receipt generated / sealed
+  SEALED --> [*]
+
+  note right of FORM_COLLECTED
+    Lost-form reissue (FormReissueRequest)
+    happens here without a status change
+  end note

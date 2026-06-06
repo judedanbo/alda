@@ -1,0 +1,39 @@
+graph TB
+  USER([Browser / client])
+
+  subgraph internet["Internet-facing (untrusted)"]
+    USER
+  end
+
+  subgraph edge["Edge (TLS termination)"]
+    PROXY["Reverse proxy / ingress / CDN<br/>sets X-Forwarded-For<br/>(CIDRs in ANALYTICS_TRUSTED_PROXIES)"]
+  end
+  USER -->|HTTPS| PROXY
+
+  subgraph trusted["Private network (trusted)"]
+    subgraph web["Web pods (N replicas)"]
+      WEB["Nuxt/Nitro<br/>QUEUE_ENABLED=true<br/>WORKER_ENABLED=false"]
+    end
+    subgraph worker["Worker pods"]
+      WRK["Nitro workers<br/>AUDIT_WORKER_ENABLED=true<br/>NOTIFICATIONS_WORKER_ENABLED=true"]
+    end
+    PG[("PostgreSQL")]
+    RD[("Redis / BullMQ")]
+    OS[("MinIO / object storage<br/>TLS if MINIO_USE_SSL")]
+  end
+
+  PROXY -->|HTTP internal| WEB
+  WEB --> PG
+  WEB --> RD
+  WEB --> OS
+  WEB -->|enqueue jobs| RD
+  WRK -->|drain queues| RD
+  WRK --> PG
+
+  subgraph external["External processors"]
+    SMTP[/"SMTP / email"/]
+    SMS[/"SMS gateways<br/>Hubtel / Arkesel / Twilio"/]
+  end
+  WRK --> SMTP
+  WRK --> SMS
+  SMS -. "delivery webhook (shared secret)" .-> PROXY

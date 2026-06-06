@@ -1,0 +1,68 @@
+erDiagram
+  APPLICANT_PROFILE ||--o{ DECLARATION : files
+  DECLARATION ||--o{ DECLARATION_STATUS_HISTORY : tracks
+  DECLARATION ||--o{ FORM_COLLECTION : "form collected"
+  DECLARATION ||--o{ FORM_REISSUE_REQUEST : "reissue requests"
+  DECLARATION ||--o{ REVIEW : reviewed
+  DECLARATION ||--o{ DECLARATION_SECTION_REVIEW : "section reviews"
+  DECLARATION ||--o{ RECEIPT : issues
+  DECLARATION |o--o| DECLARATION : "previous (chain)"
+  COLLECTION_OFFICE ||--o{ FORM_COLLECTION : "collected at"
+  COLLECTION_OFFICE ||--o{ DECLARATION : "return office"
+  COLLECTION_OFFICE ||--o{ USER_COLLECTION_OFFICE : scopes
+  USER ||--o{ USER_COLLECTION_OFFICE : "assigned (officer)"
+
+  DECLARATION {
+    uuid id PK
+    uuid applicantId FK
+    string uniqueCode "unique"
+    enum status "CODE_GENERATED..SEALED"
+    uuid returnOfficeId FK
+    uuid previousDeclarationId FK "unique"
+  }
+  DECLARATION_STATUS_HISTORY {
+    uuid id PK
+    uuid declarationId FK
+    enum status
+    uuid changedById FK
+  }
+  COLLECTION_OFFICE {
+    uuid id PK
+    string name
+    enum type "HEADQUARTERS|REGIONAL"
+    string region
+  }
+  USER_COLLECTION_OFFICE {
+    uuid userId FK
+    uuid collectionOfficeId FK
+  }
+  FORM_COLLECTION {
+    uuid id PK
+    uuid declarationId FK
+    uuid recordedBy FK
+    uuid collectionOfficeId FK
+  }
+  FORM_REISSUE_REQUEST {
+    uuid id PK
+    uuid declarationId FK
+    enum status "PENDING|APPROVED|DECLINED"
+    enum approverType
+    string letterScanUrl "scanned letter"
+  }
+  REVIEW {
+    uuid id PK
+    uuid declarationId FK
+    enum status "APPROVED|REJECTED"
+  }
+  DECLARATION_SECTION_REVIEW {
+    uuid id PK
+    uuid declarationId FK
+    enum section
+    bool isAcceptable
+  }
+  RECEIPT {
+    uuid id PK
+    uuid declarationId FK
+    string receiptNumber "unique"
+    string pdfUrl
+  }

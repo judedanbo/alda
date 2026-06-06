@@ -1,0 +1,33 @@
+flowchart LR
+  subgraph z1["Trust zone: Internet (untrusted)"]
+    APP[/"Applicant<br/>(external entity)"/]
+    STAFF[/"Officer / Legal / Admin<br/>(external entity)"/]
+    SMSP[/"SMS provider<br/>(external entity)"/]
+  end
+
+  subgraph z2["Trust zone: Edge"]
+    PROXY(["Reverse proxy / TLS"])
+  end
+
+  subgraph z3["Trust zone: Private network (trusted)"]
+    WEB(("Nitro web app<br/>process"))
+    WRK(("Worker process"))
+    PG[("PostgreSQL<br/>data store")]
+    RD[("Redis / queues<br/>data store")]
+    OS[("MinIO<br/>data store")]
+  end
+
+  subgraph z4["Trust zone: External processors"]
+    SMTP[/"SMTP / SMS<br/>(external entity)"/]
+  end
+
+  APP -->|"1 HTTPS + JWT"| PROXY
+  STAFF -->|"2 HTTPS + JWT"| PROXY
+  PROXY -->|"3 HTTP internal"| WEB
+  WEB -->|"4 SQL (PII encrypted)"| PG
+  WEB -->|"5 enqueue / counters"| RD
+  WEB -->|"6 put/get (presigned)"| OS
+  WRK -->|"7 drain queues"| RD
+  WRK -->|"8 SQL"| PG
+  WRK -->|"9 send"| SMTP
+  SMSP -->|"10 delivery webhook (HMAC secret)"| PROXY

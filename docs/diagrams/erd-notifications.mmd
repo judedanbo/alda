@@ -1,0 +1,43 @@
+erDiagram
+  USER ||--o{ NOTIFICATION : receives
+  NOTIFICATION ||--o{ NOTIFICATION_DELIVERY_LOG : "delivery attempts"
+  USER ||--o| NOTIFICATION_PREFERENCE : "channels (1:1)"
+  USER ||--o{ NOTIFICATION_TYPE_PREFERENCE : "per-type opt-in"
+  USER ||--o| ACCESSIBILITY_PREFERENCE : "a11y (1:1)"
+
+  NOTIFICATION {
+    uuid id PK
+    uuid userId FK
+    enum type
+    enum channel "EMAIL|SMS|IN_APP"
+    string title
+    string message "no Restricted-PII"
+    string dedupeKey
+    datetime readAt
+  }
+  NOTIFICATION_DELIVERY_LOG {
+    uuid id PK
+    uuid notificationId FK
+    enum channel
+    enum status "PENDING|SENT|DELIVERED|FAILED"
+    json providerResponse
+    int retryCount
+  }
+  NOTIFICATION_PREFERENCE {
+    uuid id PK
+    uuid userId FK "unique"
+    bool emailEnabled
+    bool smsEnabled
+    bool inAppEnabled
+  }
+  NOTIFICATION_TYPE_PREFERENCE {
+    uuid id PK
+    uuid userId FK
+    enum type
+  }
+  ACCESSIBILITY_PREFERENCE {
+    uuid id PK
+    uuid userId FK "unique"
+    string textSize
+    bool reduceMotion
+  }

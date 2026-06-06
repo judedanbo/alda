@@ -1,0 +1,32 @@
+graph TB
+  APP[Applicant]
+  SO[Schedule Officer]
+  LU[Legal Unit]
+  AD[Admin]
+  PUB[Public / Code Verifier]
+
+  ADLA["ADLA Portal<br/>Nuxt 4 + Nitro server"]
+
+  APP --> ADLA
+  SO --> ADLA
+  LU --> ADLA
+  AD --> ADLA
+  PUB --> ADLA
+
+  subgraph stores["Data stores (internal)"]
+    PG[("PostgreSQL")]
+    RD[("Redis")]
+    OS[("MinIO / object storage")]
+  end
+
+  subgraph ext["External services"]
+    SMTP[/"SMTP / email"/]
+    SMS[/"SMS gateways<br/>Hubtel / Arkesel / Twilio"/]
+  end
+
+  ADLA --> PG
+  ADLA --> RD
+  ADLA --> OS
+  ADLA --> SMTP
+  ADLA --> SMS
+  SMS -. "delivery webhook" .-> ADLA
