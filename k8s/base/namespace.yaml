@@ -1,3 +1,6 @@
+# Bootstrap-managed (NOT in kustomization). Created once per environment by a
+# cluster admin: `kubectl create namespace adla-staging` / `adla-production`.
+# The deploy pipeline is namespace-scoped and cannot create namespaces.
 apiVersion: v1
 kind: Namespace
 metadata:

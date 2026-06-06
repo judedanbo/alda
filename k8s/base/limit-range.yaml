@@ -1,3 +1,7 @@
+# Bootstrap-managed (NOT in kustomization). Applied once per namespace by a
+# cluster admin: `kubectl apply -n <ns> -f k8s/base/limit-range.yaml`.
+# Like ResourceQuota, LimitRange is a platform guardrail the namespace-scoped
+# deploy identity cannot write by design.
 apiVersion: v1
 kind: LimitRange
 metadata:
