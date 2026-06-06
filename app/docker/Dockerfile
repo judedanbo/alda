@@ -24,6 +24,19 @@ COPY . .
 # Build the application
 RUN npm run build
 
+# Migration stage — used by the K8s migration Job
+FROM node:22-alpine AS migration
+
+WORKDIR /app
+
+RUN apk add --no-cache libc6-compat
+
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/package.json ./package.json
+
+CMD ["npx", "prisma", "migrate", "deploy"]
+
 # Production stage
 FROM node:22-alpine AS production
 

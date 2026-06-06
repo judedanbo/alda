@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: adla-limits
+  labels:
+    app.kubernetes.io/part-of: adla
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: 500m
+        memory: 1Gi
+      defaultRequest:
+        cpu: 128m
+        memory: 256Mi
+      max:
+        cpu: "2"
+        memory: 2Gi

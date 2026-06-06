@@ -1,0 +1,57 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: adla-netpol
+  labels:
+    app.kubernetes.io/part-of: adla
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: adla
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic from NGINX Ingress Controller to app pods only
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+      ports:
+        - port: 3000
+          protocol: TCP
+  egress:
+    # DNS
+    - to: []
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # PostgreSQL
+    - to: []
+      ports:
+        - port: 5432
+          protocol: TCP
+    # Redis
+    - to: []
+      ports:
+        - port: 6379
+          protocol: TCP
+        - port: 6380
+          protocol: TCP
+    # Azure Blob Storage / HTTPS
+    - to: []
+      ports:
+        - port: 443
+          protocol: TCP
+    # SMTP
+    - to: []
+      ports:
+        - port: 587
+          protocol: TCP
+        - port: 465
+          protocol: TCP

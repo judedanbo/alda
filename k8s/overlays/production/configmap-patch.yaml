@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: adla-config
+data:
+  APP_URL: "https://alda.audit.gov.gh"
+  MINIO_ENDPOINT: ""

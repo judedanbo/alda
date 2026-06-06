@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: adla
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: true
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - limit-range.yaml
+  - resource-quota.yaml
+  - deployment-app.yaml
+  - deployment-worker.yaml
+  - service-app.yaml
+  - hpa-app.yaml
+  - ingress.yaml
+  - network-policy.yaml
+  - migration-job.yaml

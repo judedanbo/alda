@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: adla-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: infosys-issuer
+spec:
+  tls:
+    - hosts:
+        - alda.audit.gov.gh
+      secretName: adla-production-tls
+  rules:
+    - host: alda.audit.gov.gh
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: adla-app
+                port:
+                  number: 3000
