@@ -18,10 +18,14 @@ env:
   RESOURCE_GROUP: infosys
 
 jobs:
+  # Gate: lint, typecheck, unit tests, and build must all pass before anything
+  # is built, pushed, or deployed. build-and-push `needs: [ci]`, and every
+  # deploy job chains from build-and-push, so a CI failure blocks the deploy.
   ci:
     uses: ./.github/workflows/ci.yml
 
   set-env:
+    needs: [ci]
     runs-on: ubuntu-latest
     outputs:
       environment: ${{ steps.env.outputs.environment }}

@@ -1,8 +1,9 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
+  # Runs on PRs (gates merge) and via workflow_call from the Deploy workflow
+  # (gates the deploy). No push trigger — pushing to main runs Deploy, which
+  # invokes this workflow as its first job, so CI runs exactly once per merge.
   pull_request:
     branches: [main]
   workflow_call:
