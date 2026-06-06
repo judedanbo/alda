@@ -1,8 +1,12 @@
 name: Deploy
 
 on:
+  # Merge to main → deploy staging
   push:
-    branches: [main, develop]
+    branches: [main]
+  # Publish a GitHub Release → deploy production
+  release:
+    types: [published]
 
 permissions:
   id-token: write
@@ -27,7 +31,8 @@ jobs:
     steps:
       - id: env
         run: |
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          # release event → production; push to main → staging
+          if [ "${{ github.event_name }}" = "release" ]; then
             echo "environment=production" >> "$GITHUB_OUTPUT"
             echo "overlay=production" >> "$GITHUB_OUTPUT"
             echo "namespace=adla-production" >> "$GITHUB_OUTPUT"

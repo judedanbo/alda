@@ -42,7 +42,7 @@ Secrets; TLS is issued by cert-manager; ingress is served by ingress-nginx.
 | cert-manager ClusterIssuer | `infosys-issuer` |
 | Ingress controller | ingress-nginx (`ingressClassName: nginx`) |
 | Namespaces | `adla-staging`, `adla-production` |
-| Branch → environment | `develop` → staging, `main` → production |
+| Trigger → environment | merge to `main` → staging; publish a GitHub Release → production |
 | Production host | `alda.audit.gov.gh` |
 | Staging host | `ttaging-alda.audit.gov.gh` *(temporary — DNS typo, to be corrected to `staging-alda.audit.gov.gh`)* |
 | StorageClass | `managed-csi` (Azure Disk) |
@@ -155,13 +155,8 @@ Add the printed values as **repository secrets**
 Create the GitHub **Environments** (`Settings → Environments`):
 
 - `staging`
-- `production` — recommended: 1 required reviewer + a short wait timer
-
-Create the `develop` branch (staging deploys trigger from it):
-
-```bash
-git branch develop main && git push -u origin develop
-```
+- `production` — recommended: 1 required reviewer + a short wait timer (the
+  release-triggered production deploy then waits for approval)
 
 ## Step 5 — Create the application secrets (per namespace)
 
@@ -192,16 +187,22 @@ This writes Secret `adla-secrets` containing: `JWT_SECRET`, `JWT_REFRESH_SECRET`
 
 ### Option A — GitHub Actions (recommended)
 
-Push to the matching branch; the `Deploy` workflow runs
-`ci → build-and-push → deploy-data-tier → migrate → deploy-app → smoke-test`:
+The `Deploy` workflow runs `ci → build-and-push → deploy-data-tier → migrate →
+deploy-app → smoke-test` and targets an environment based on the trigger:
 
 ```bash
-# staging
-git push origin develop
-
-# production (after staging is verified)
-git push origin main
+# staging — merge a PR (or push) to main
+git push origin main          # or merge the PR in the GitHub UI
 ```
+
+```bash
+# production — publish a GitHub Release once staging is verified
+gh release create v1.0.0 --target main --title "v1.0.0" --notes "..."
+# (or create the release from the GitHub UI → Releases → Draft a new release)
+```
+
+The release tag is the production deploy marker; images are built from the
+release's target commit and tagged with its SHA.
 
 The workflow:
 1. builds & pushes `adla-app` and `adla-migrate` images (tagged with the commit SHA),

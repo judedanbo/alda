@@ -18,23 +18,10 @@ az ad sp create --id "$APP_ID" --output none
 
 SP_OBJECT_ID=$(az ad sp show --id "$APP_ID" --query id -o tsv)
 
-echo "==> Adding federated credentials for GitHub branches"
-
-# Staging: develop branch
-az ad app federated-credential create --id "$APP_ID" --parameters "{
-  \"name\": \"github-develop\",
-  \"issuer\": \"https://token.actions.githubusercontent.com\",
-  \"subject\": \"repo:${GITHUB_ORG}/${GITHUB_REPO}:ref:refs/heads/develop\",
-  \"audiences\": [\"api://AzureADTokenExchange\"]
-}" --output none
-
-# Production: main branch
-az ad app federated-credential create --id "$APP_ID" --parameters "{
-  \"name\": \"github-main\",
-  \"issuer\": \"https://token.actions.githubusercontent.com\",
-  \"subject\": \"repo:${GITHUB_ORG}/${GITHUB_REPO}:ref:refs/heads/main\",
-  \"audiences\": [\"api://AzureADTokenExchange\"]
-}" --output none
+echo "==> Adding federated credentials for GitHub environments"
+# Deploy jobs declare `environment:`, so the OIDC subject is environment-scoped.
+# Staging deploys on push to main; production deploys on a published release —
+# both authenticate via these environment credentials (no ref-based creds needed).
 
 # Staging environment
 az ad app federated-credential create --id "$APP_ID" --parameters "{
@@ -88,3 +75,5 @@ echo ""
 echo "For 'production', enable:"
 echo "  - Required reviewers (1)"
 echo "  - Wait timer: 5 minutes"
+echo ""
+echo "Deploy model: merge to main → staging; publish a GitHub Release → production."
