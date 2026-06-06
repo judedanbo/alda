@@ -49,9 +49,11 @@ export async function bootstrapAdmin(
 
   const passwordHash = await bcrypt.hash(opts.password, BCRYPT_COST);
 
+  // Update path rotates the password and re-asserts emailVerified.
+  // It does NOT re-assign the admin role — operators who strip the role must re-create the user.
   const user = await prisma.user.upsert({
     where: { email: opts.email },
-    update: { passwordHash },
+    update: { passwordHash, emailVerified: true },
     create: {
       email: opts.email,
       passwordHash,

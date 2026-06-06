@@ -43,6 +43,18 @@ describe("readBootstrapEnv", () => {
       phone: "+233200000000",
     });
   });
+
+  it("throws when the email is whitespace-only", () => {
+    expect(() =>
+      readBootstrapEnv({ BOOTSTRAP_ADMIN_EMAIL: "   ", BOOTSTRAP_ADMIN_PASSWORD: "pw" }),
+    ).toThrow(/BOOTSTRAP_ADMIN_EMAIL/);
+  });
+
+  it("omits the phone key entirely when BOOTSTRAP_ADMIN_PHONE is absent", () => {
+    expect(
+      readBootstrapEnv({ BOOTSTRAP_ADMIN_EMAIL: "a@b.gov.gh", BOOTSTRAP_ADMIN_PASSWORD: "pw" }),
+    ).toEqual({ email: "a@b.gov.gh", password: "pw" });
+  });
 });
 
 describe("bootstrapAdmin", () => {
