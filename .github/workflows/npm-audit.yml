@@ -1,0 +1,48 @@
+name: npm audit
+
+on:
+  # Weekly so newly-disclosed CVEs in existing dependencies surface even when
+  # nobody touches package.json. Manual dispatch for on-demand / testing runs.
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      # Actions pinned to full commit SHAs (matches ci.yml). The trailing
+      # comment records the human-readable version; bump the SHA when upgrading.
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      # npm audit reads package-lock.json and queries the registry directly, so
+      # no `npm install` is required. Production deps only; the job fails (red X)
+      # on high/critical advisories and passes on low/moderate.
+      - name: Audit production dependencies (fail on high+)
+        run: npm audit --omit=dev --audit-level=high
+
+      # Always render a human-readable summary so results are visible on the
+      # run page without opening the step logs, even when the gate above fails.
+      - name: Write run summary
+        if: always()
+        run: |
+          {
+            echo "### npm audit (production deps)"
+            echo ""
+            echo '```'
+            npm audit --omit=dev || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
