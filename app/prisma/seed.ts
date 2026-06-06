@@ -176,12 +176,17 @@ async function main() {
     { name: "Electricity Company of Ghana", type: "State Enterprise" },
   ];
 
+  let institutionsCreated = 0;
   for (const institution of institutions) {
-    await prisma.institution.create({
-      data: institution,
+    const existing = await prisma.institution.findFirst({
+      where: { name: institution.name },
     });
+    if (!existing) {
+      await prisma.institution.create({ data: institution });
+      institutionsCreated++;
+    }
   }
-  console.log(`✅ Created ${institutions.length} institutions`);
+  console.log(`✅ Created ${institutionsCreated} institutions`);
 
   // Seed Collection Offices (GAS offices where physical declaration forms are
   // collected and returned). Idempotent so re-running the seed is safe.
@@ -235,12 +240,17 @@ async function main() {
     },
   ];
 
+  let retentionPoliciesCreated = 0;
   for (const policy of retentionPolicies) {
-    await prisma.dataRetentionPolicy.create({
-      data: policy,
+    const existing = await prisma.dataRetentionPolicy.findFirst({
+      where: { entityType: policy.entityType },
     });
+    if (!existing) {
+      await prisma.dataRetentionPolicy.create({ data: policy });
+      retentionPoliciesCreated++;
+    }
   }
-  console.log(`✅ Created ${retentionPolicies.length} data retention policies`);
+  console.log(`✅ Created ${retentionPoliciesCreated} data retention policies`);
 
   // Create default users for testing (non-production only)
   if (process.env.NODE_ENV === "production") {

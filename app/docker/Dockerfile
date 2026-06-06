@@ -24,7 +24,9 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Migration stage — used by the K8s migration Job
+# Migration + seed stage — used by the K8s migration Job (default CMD) and by the
+# seed Jobs (which override the command to run tsx prisma/<seed>.ts). server/ is
+# required because the seed scripts import ../server/utils/pii-encryption.
 FROM node:24-alpine AS migration
 
 WORKDIR /app
@@ -33,6 +35,7 @@ RUN apk add --no-cache libc6-compat
 
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/server ./server
 COPY --from=builder /app/package.json ./package.json
 
 CMD ["npx", "prisma", "migrate", "deploy"]

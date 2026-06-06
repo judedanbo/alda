@@ -1,0 +1,66 @@
+name: K8s Lint
+
+on:
+  # Path-filtered: only runs when the manifests or the linter config itself
+  # change, so app-only PRs don't pay for it. Separate from ci.yml (which is
+  # app-scoped) — this validates the k8s/ tree, not the Nuxt app.
+  pull_request:
+    branches: [main]
+    paths:
+      - "k8s/**"
+      - ".yamllint.yml"
+      - ".github/workflows/k8s-lint.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  k8s-lint:
+    runs-on: ubuntu-latest
+    env:
+      # Pinned tool versions for deterministic linting. Bump deliberately.
+      YAMLLINT_VERSION: "1.38.0"
+      KUSTOMIZE_VERSION: "5.4.3"
+      KUBECONFORM_VERSION: "0.6.7"
+      # Schema version kubeconform validates against.
+      KUBERNETES_VERSION: "1.30.0"
+    steps:
+      # L-6: actions pinned to full commit SHAs (matches ci.yml).
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+
+      - name: Install yamllint
+        run: pip install "yamllint==${YAMLLINT_VERSION}"
+
+      - name: Install kustomize and kubeconform
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          curl -sSfL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" \
+            | tar -xz -C "$HOME/.local/bin" kustomize
+          curl -sSfL "https://github.com/yannh/kubeconform/releases/download/v${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+            | tar -xz -C "$HOME/.local/bin" kubeconform
+          "$HOME/.local/bin/kustomize" version
+          "$HOME/.local/bin/kubeconform" -v
+
+      - name: yamllint
+        run: yamllint -c .yamllint.yml k8s/
+
+      # The standalone *-job.yaml manifests (migration, minio-init, seed-reference,
+      # seed-test-data, bootstrap-admin) are intentionally excluded from
+      # kustomization.yaml, so the overlay render never sees them — validate them
+      # directly as whole objects.
+      - name: Validate standalone Job manifests
+        run: kubeconform -strict -summary -kubernetes-version "${KUBERNETES_VERSION}" k8s/base/*-job.yaml
+
+      # Validate the real merged objects each environment ships (catches both
+      # kustomize build errors and schema violations). Patch files are partial
+      # objects, so they are validated here via the render — never standalone.
+      - name: Validate rendered overlays
+        run: |
+          set -euo pipefail
+          for overlay in staging production; do
+            echo "== overlay: ${overlay} =="
+            kustomize build "k8s/overlays/${overlay}" \
+              | kubeconform -strict -summary -kubernetes-version "${KUBERNETES_VERSION}" -
+          done

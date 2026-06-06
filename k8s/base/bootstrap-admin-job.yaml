@@ -1,0 +1,41 @@
+# Manual utility — provisions one real admin user (prisma/bootstrap-admin.ts) from
+# BOOTSTRAP_ADMIN_EMAIL / BOOTSTRAP_ADMIN_PASSWORD in adla-secrets. Idempotent:
+# re-running rotates the admin password. Run via:
+#   infra/seed.sh production bootstrap-admin
+# (set BOOTSTRAP_ADMIN_* in adla-secrets first — see infra/create-secrets.sh).
+# Intentionally NOT in kustomization.yaml. part-of: adla baked in for NetworkPolicy.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: adla-bootstrap-admin
+  labels:
+    app.kubernetes.io/name: adla-bootstrap-admin
+    app.kubernetes.io/component: bootstrap
+    app.kubernetes.io/part-of: adla
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: adla-bootstrap-admin
+        app.kubernetes.io/component: bootstrap
+        app.kubernetes.io/part-of: adla
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: bootstrap-admin
+          image: regisry.azurecr.io/adla-migrate:latest
+          command: ["npx", "tsx", "prisma/bootstrap-admin.ts"]
+          envFrom:
+            - configMapRef:
+                name: adla-config
+            - secretRef:
+                name: adla-secrets
+          resources:
+            requests:
+              cpu: 128m
+              memory: 256Mi
+            limits:
+              cpu: 256m
+              memory: 512Mi
