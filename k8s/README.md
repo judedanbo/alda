@@ -363,3 +363,28 @@ kubectl edit pvc data-adla-postgres-0 -n <ns>   # raise spec.resources.requests.
 - **`infra/provision.sh` / `teardown.sh` are deprecated** — they provision Azure
   *managed* Postgres/Redis/Blob, which this in-cluster architecture does not use.
 ```
+
+## Seeding & bootstrapping
+
+Migrations run automatically in the deploy pipeline. Seeding and admin
+bootstrap are deliberate, operator-driven one-shots run with `infra/seed.sh`
+(after `az aks get-credentials ...`):
+
+```bash
+# Reference data (roles, categories, institutions, offices, retention policies).
+# Staging also gets the demo login accounts (password123); production does not.
+infra/seed.sh staging reference
+infra/seed.sh production reference
+
+# Staging-only: load the 250-applicant demo dataset.
+infra/seed.sh staging test-data        # production test-data is refused
+
+# Production: provision the first admin. Set the creds in the Secret first:
+kubectl patch secret adla-secrets -n adla-production --type merge \
+  -p '{"stringData":{"BOOTSTRAP_ADMIN_EMAIL":"admin@audit.gov.gh","BOOTSTRAP_ADMIN_PASSWORD":"<strong-pw>"}}'
+infra/seed.sh production bootstrap-admin   # re-running rotates the password
+```
+
+All seed/bootstrap Jobs reuse the `adla-migrate` image (it carries `tsx`,
+`prisma/`, and `server/`). The reference manifests in `k8s/base/*-job.yaml` are
+manual utilities, intentionally excluded from kustomize.

@@ -66,6 +66,12 @@ REDIS_URL="${REDIS_URL:-redis://adla-redis:6379}"
 SMTP_USER="${SMTP_USER:-}"
 SMTP_PASS="${SMTP_PASS:-}"
 
+# Optional bootstrap admin (consumed by prisma/bootstrap-admin.ts via the
+# bootstrap-admin Job). Leave blank here and patch them in just before running
+# `infra/seed.sh production bootstrap-admin`, or export them before this script.
+BOOTSTRAP_ADMIN_EMAIL="${BOOTSTRAP_ADMIN_EMAIL:-}"
+BOOTSTRAP_ADMIN_PASSWORD="${BOOTSTRAP_ADMIN_PASSWORD:-}"
+
 kubectl create secret generic adla-secrets \
   --namespace "$NAMESPACE" \
   --from-literal="DATABASE_URL=${DATABASE_URL}" \
@@ -83,6 +89,8 @@ kubectl create secret generic adla-secrets \
   --from-literal="PII_HMAC_KEY=${PII_HMAC_KEY}" \
   --from-literal="SMTP_USER=${SMTP_USER}" \
   --from-literal="SMTP_PASS=${SMTP_PASS}" \
+  --from-literal="BOOTSTRAP_ADMIN_EMAIL=${BOOTSTRAP_ADMIN_EMAIL}" \
+  --from-literal="BOOTSTRAP_ADMIN_PASSWORD=${BOOTSTRAP_ADMIN_PASSWORD}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 echo ""
@@ -92,3 +100,8 @@ echo ""
 echo "SMTP_USER/SMTP_PASS are blank — add them later WITHOUT rotating other keys:"
 echo "  kubectl patch secret adla-secrets -n $NAMESPACE --type merge \\"
 echo "    -p '{\"stringData\":{\"SMTP_USER\":\"...\",\"SMTP_PASS\":\"...\"}}'"
+echo ""
+echo "BOOTSTRAP_ADMIN_EMAIL/PASSWORD are blank — set them before bootstrapping the"
+echo "first admin (infra/seed.sh production bootstrap-admin):"
+echo "  kubectl patch secret adla-secrets -n $NAMESPACE --type merge \\"
+echo "    -p '{\"stringData\":{\"BOOTSTRAP_ADMIN_EMAIL\":\"...\",\"BOOTSTRAP_ADMIN_PASSWORD\":\"...\"}}'"
