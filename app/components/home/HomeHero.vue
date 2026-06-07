@@ -121,14 +121,6 @@ onUnmounted(() => {
                 : undefined,
           }"
         >
-          <!-- Soft radial glow behind the seal -->
-          <!-- <div
-            class="absolute w-80 h-80 lg:w-[28rem] lg:h-[28rem] rounded-full bg-secondary/10 blur-2xl"
-            aria-hidden="true"
-          /> -->
-          <!-- <div
-            class="relative rounded-full border-[3px] border-secondary/20 p-6 lg:p-8 bg-white/5 backdrop-blur-[1px]"
-          > -->
           <img
             src="/gas-logo.png"
             alt="Ghana Audit Service official seal"
@@ -137,7 +129,6 @@ onUnmounted(() => {
             class="w-60 h-60 lg:w-80 lg:h-80 object-contain drop-shadow-xl"
             decoding="async"
           >
-          <!-- </div> -->
           <!-- Floating dots -->
           <div
             class="absolute top-8 right-8 w-2 h-2 rounded-full bg-secondary/30"
