@@ -194,3 +194,33 @@ describe("PUT /api/admin/users/[id]/offices", () => {
     expect(after.assignedOffices).toHaveLength(0);
   });
 });
+
+const updateRoles = (await import("~/server/api/admin/users/[id]/roles.put")).default;
+
+describe("PUT /api/admin/users/[id]/roles (self-lockout guard)", () => {
+  it("blocks an admin from removing their own admin role", async () => {
+    const legalRole = await prisma.role.findUniqueOrThrow({ where: { name: "legal_unit" } });
+    currentRouteId = adminId;
+    currentBody = { roleIds: [legalRole.id] };
+    await expect(updateRoles(adminEvent())).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it("allows granting applicant to an existing user", async () => {
+    const applicantRole = await prisma.role.findUniqueOrThrow({ where: { name: "applicant" } });
+    const legalRole = await prisma.role.findUniqueOrThrow({ where: { name: "legal_unit" } });
+    currentBody = { email: "dual@adla.test", roleNames: ["legal_unit"] };
+    await createUser(adminEvent());
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: "dual@adla.test" } });
+
+    currentRouteId = user.id;
+    currentBody = { roleIds: [legalRole.id, applicantRole.id] };
+    const res = await updateRoles(adminEvent());
+    expect(res.success).toBe(true);
+
+    const after = await prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
+      include: { roles: { include: { role: true } } },
+    });
+    expect(after.roles.map((r) => r.role.name).sort()).toEqual(["applicant", "legal_unit"]);
+  });
+});

@@ -52,6 +52,19 @@ export default defineEventHandler(async (event) => {
 
   const oldRoles = targetUser.roles.map((r) => r.role.name);
 
+  // Resolve the requested role records up front — used for the guard and audit.
+  const newRoleRecords = await prisma.role.findMany({ where: { id: { in: roleIds } } });
+  const newRoleNames = newRoleRecords.map((r) => r.name);
+
+  // Self-lockout guard: an admin cannot strip their own admin role.
+  if (userId === auth.userId && !newRoleNames.includes("admin")) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Bad Request",
+      message: "You cannot remove your own admin role",
+    });
+  }
+
   // Delete existing roles and create new ones
   await prisma.$transaction([
     prisma.userRole.deleteMany({
@@ -65,17 +78,13 @@ export default defineEventHandler(async (event) => {
     }),
   ]);
 
-  const newRoles = await prisma.role.findMany({
-    where: { id: { in: roleIds } },
-  });
-
   await logAction({
     userId: auth.userId,
     action: "ROLE_ASSIGN",
     entityType: "User",
     entityId: userId,
     oldValues: { roles: oldRoles },
-    newValues: { roles: newRoles.map((r) => r.name) },
+    newValues: { roles: newRoleNames },
     event,
   });
 
