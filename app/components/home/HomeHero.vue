@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import { usePreferredReducedMotion } from '@vueuse/core'
-import { Mouse } from 'lucide-vue-next'
-import { useAuthStore } from '~/stores/auth'
+import { ref, onMounted, onUnmounted } from "vue";
+import { usePreferredReducedMotion } from "@vueuse/core";
+import { Mouse, ShieldCheck } from "lucide-vue-next";
+import { useAuthStore } from "~/stores/auth";
 
-const authStore = useAuthStore()
-const prefersReducedMotion = usePreferredReducedMotion()
-const scrollY = ref(0)
+const authStore = useAuthStore();
+const prefersReducedMotion = usePreferredReducedMotion();
+const scrollY = ref(0);
 
 function onScroll() {
-  scrollY.value = window.scrollY
+  scrollY.value = window.scrollY;
 }
 
 onMounted(() => {
-  if (prefersReducedMotion.value !== 'reduce') {
-    window.addEventListener('scroll', onScroll, { passive: true })
+  if (prefersReducedMotion.value !== "reduce") {
+    window.addEventListener("scroll", onScroll, { passive: true });
   }
-})
+});
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', onScroll)
-})
+  window.removeEventListener("scroll", onScroll);
+});
 </script>
 
 <template>
@@ -42,19 +42,14 @@ onUnmounted(() => {
     <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Nav -->
       <nav class="flex items-center justify-between py-6">
-        <div class="flex items-center gap-3">
-          <div
-            class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center"
-          >
-            <NuxtLink to="/" class="font-bold text-xl">GH</NuxtLink>
-          </div>
-          <div>
-            <h1 class="text-lg font-semibold">Asset Declaration Portal</h1>
-            <p class="text-white/80 text-sm">
-              Audit Service — Republic of Ghana
-            </p>
-          </div>
-        </div>
+        <AppBrandLogo
+          to="/"
+          size="sm"
+          show-wordmark
+          chip
+          wordmark-class="hidden sm:block text-white"
+          subtitle-class="hidden sm:block text-white/80"
+        />
         <div class="flex items-center gap-2">
           <AppThemeSwitcherButton />
           <!--
@@ -100,27 +95,36 @@ onUnmounted(() => {
         <!-- Left: text content -->
         <div class="flex-1 text-center md:text-left">
           <span
-            class="inline-block rounded-full border border-[#FCD116]/30 bg-[#FCD116]/15 px-4 py-1 text-xs font-medium tracking-wide text-[#FCD116] mb-6"
+            class="inline-block rounded-full border border-secondary/30 bg-secondary/15 px-4 py-1 text-xs font-medium tracking-wide text-secondary mb-6"
           >
             REPUBLIC OF GHANA
           </span>
-          <h2 class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-            Asset Declaration<br>System
+          <h2
+            class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 leading-tight"
+          >
+            Asset Declaration<br >System
           </h2>
+          <p
+            class="flex items-center justify-center md:justify-start gap-2 text-secondary font-medium mb-6"
+          >
+            <ShieldCheck class="size-5 shrink-0" aria-hidden="true" />
+            An official portal of the Ghana Audit Service
+          </p>
           <p
             class="text-lg text-white/75 max-w-lg mb-8 leading-relaxed mx-auto md:mx-0"
           >
             Online portal for public office holders to submit their asset
-            declarations as required by Article 286(5) of the 1992
-            Constitution and the Public Office Holders (Declaration of Assets
-            and Disqualification) Act, 1998 (Act 550).
+            declarations as required by Article 286(5) of the 1992 Constitution
+            and the Public Office Holders (Declaration of Assets and
+            Disqualification) Act, 1998 (Act 550).
           </p>
           <div class="flex items-center gap-4 justify-center md:justify-start">
             <ClientOnly>
               <Button
                 size="lg"
+                variant="secondary"
                 as-child
-                class="bg-[#FCD116] text-gray-900 hover:bg-[#FCD116]/90 font-semibold"
+                class="font-semibold"
               >
                 <NuxtLink
                   v-if="authStore.isAuthenticated"
@@ -131,8 +135,9 @@ onUnmounted(() => {
               <template #fallback>
                 <Button
                   size="lg"
+                  variant="secondary"
                   as-child
-                  class="bg-[#FCD116] text-gray-900 hover:bg-[#FCD116]/90 font-semibold"
+                  class="font-semibold"
                 >
                   <NuxtLink to="/auth/register">Start Declaration</NuxtLink>
                 </Button>
@@ -149,9 +154,9 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- Right: decorative emblem (hidden on mobile) -->
+        <!-- Right: official seal (hidden on mobile) -->
         <div
-          class="hidden md:flex flex-[0.6] items-center justify-center relative"
+          class="hidden md:flex flex-[0.8] items-center justify-center relative"
           :style="{
             transform:
               prefersReducedMotion !== 'reduce'
@@ -159,24 +164,23 @@ onUnmounted(() => {
                 : undefined,
           }"
         >
-          <div
-            class="w-52 h-52 lg:w-64 lg:h-64 rounded-full border-[3px] border-[#FCD116]/20 flex items-center justify-center"
+          <img
+            src="/gas-logo.png"
+            alt="Ghana Audit Service official seal"
+            width="360"
+            height="360"
+            class="w-60 h-60 lg:w-80 lg:h-80 object-contain drop-shadow-xl"
+            decoding="async"
           >
-            <div
-              class="w-40 h-40 lg:w-48 lg:h-48 rounded-full border-2 border-[#FCD116]/12 flex items-center justify-center"
-            >
-              <span class="text-6xl lg:text-7xl text-[#FCD116]/25">★</span>
-            </div>
-          </div>
           <!-- Floating dots -->
           <div
-            class="absolute top-8 right-8 w-2 h-2 rounded-full bg-[#FCD116]/20"
+            class="absolute top-8 right-8 w-2 h-2 rounded-full bg-secondary/30"
           />
           <div
-            class="absolute bottom-16 right-12 w-1.5 h-1.5 rounded-full bg-[#CE1126]/20"
+            class="absolute bottom-16 right-12 w-1.5 h-1.5 rounded-full bg-accent/30"
           />
           <div
-            class="absolute top-20 left-4 w-1.5 h-1.5 rounded-full bg-white/15"
+            class="absolute top-20 left-4 w-1.5 h-1.5 rounded-full bg-white/20"
           />
         </div>
       </div>

@@ -42,7 +42,7 @@ const pillars = [
 </script>
 
 <template>
-  <section id="about-act-550" ref="sectionRef" class="py-20">
+  <section id="about-act-550" ref="sectionRef" class="py-16 sm:py-20">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-start">
         <!-- Left: framing -->
