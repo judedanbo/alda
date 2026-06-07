@@ -6,33 +6,59 @@ metadata:
     app.kubernetes.io/part-of: adla
     app.kubernetes.io/component: infra
 data:
+  # ── NAMING CONTRACT ───────────────────────────────────────────────────────
+  # A PRODUCTION Nuxt build evaluates `nuxt.config.ts` at BUILD time and bakes
+  # the committed defaults into `.output`. At RUNTIME, only `NUXT_`-prefixed env
+  # vars override `runtimeConfig`; plain names are IGNORED by `useRuntimeConfig()`.
+  # So every value consumed via `useRuntimeConfig()` MUST be delivered under its
+  # `NUXT_`-prefixed name (c12 snake_case mapping: `minioEndpoint` ←
+  # `NUXT_MINIO_ENDPOINT`, `public.appUrl` ← `NUXT_PUBLIC_APP_URL`).
+  #
+  # Plain names below are read ONLY by code that touches `process.env` directly
+  # (HOST/PORT/NODE_ENV, the SMS providers, the notification prune/rate-limit
+  # helpers) or by non-Nuxt tools (Prisma's DATABASE_URL lives in the Secret).
+  # ──────────────────────────────────────────────────────────────────────────
   NODE_ENV: "production"
-  APP_URL: ""
   HOST: "0.0.0.0"
   PORT: "3000"
 
-  # SMTP (host/port/from are not secrets — user/pass are in adla-secrets)
-  SMTP_HOST: "smtp.office365.com"
-  SMTP_PORT: "587"
-  SMTP_FROM: "alda@audit.gov.gh"
+  # App base URL → runtimeConfig.public.appUrl (overridden per-env in overlays).
+  NUXT_PUBLIC_APP_URL: ""
 
-  # Storage (endpoint/bucket are not secrets) — in-cluster MinIO over plaintext
-  MINIO_ENDPOINT: "adla-minio"
-  MINIO_PORT: "9000"
-  MINIO_BUCKET: "adla-uploads"
-  MINIO_USE_SSL: "false"
+  # SMTP → runtimeConfig.smtp* (host/port/from are not secrets; user/pass in adla-secrets)
+  NUXT_SMTP_HOST: "smtp.office365.com"
+  NUXT_SMTP_PORT: "587"
+  NUXT_SMTP_FROM: "alda@audit.gov.gh"
 
-  # Notification queue
-  NOTIFICATIONS_QUEUE_ENABLED: "true"
-  NOTIFICATIONS_WORKER_ENABLED: "false"
-  NOTIFICATIONS_EMAIL_CONCURRENCY: "5"
-  NOTIFICATIONS_SMS_CONCURRENCY: "5"
-  NOTIFICATIONS_MAX_ATTEMPTS: "3"
+  # Storage → runtimeConfig.minio* — in-cluster MinIO over plaintext
+  NUXT_MINIO_ENDPOINT: "adla-minio"
+  NUXT_MINIO_PORT: "9000"
+  NUXT_MINIO_BUCKET: "adla-uploads"
+  NUXT_MINIO_USE_SSL: "false"
+
+  # Notification queue → runtimeConfig.notifications.*
+  NUXT_NOTIFICATIONS_QUEUE_ENABLED: "true"
+  NUXT_NOTIFICATIONS_WORKER_ENABLED: "false"
+  NUXT_NOTIFICATIONS_EMAIL_CONCURRENCY: "5"
+  NUXT_NOTIFICATIONS_SMS_CONCURRENCY: "5"
+  NUXT_NOTIFICATIONS_MAX_ATTEMPTS: "3"
+  # Read via process.env directly (notification.service.ts / prune task) — keep plain.
   NOTIFICATIONS_READ_RETENTION_DAYS: "90"
   NOTIFICATIONS_UNREAD_RETENTION_DAYS: "180"
   NOTIFICATIONS_RATE_LIMIT_PER_HOUR: "10"
 
-  # Analytics
+  # Analytics → runtimeConfig.analytics.*
+  #
+  # Only values that DIFFER from the app's built-in defaults need a NUXT_ name to
+  # take effect at runtime. `storageDriver` is the one that differs (the baked
+  # default computes to "memory" because REDIS_URL is absent at build time), so
+  # it is delivered NUXT_-prefixed. The remaining ANALYTICS_* keys below match
+  # nuxt.config.ts defaults exactly and are retained for visibility/documentation;
+  # they are NOT consumed at runtime under these plain names. To actually override
+  # one, add it under its NUXT_ name, minding c12 snake_case for digit keys
+  # (e.g. uploadPer5Min → NUXT_ANALYTICS_RL_UPLOAD_PER5_MIN).
+  NUXT_ANALYTICS_STORAGE_DRIVER: "redis"
+
   ANALYTICS_ENABLED: "true"
   ANALYTICS_CAPTURE_ENABLED: "true"
   ANALYTICS_ABUSE_ENABLED: "true"
@@ -42,10 +68,9 @@ data:
   ANALYTICS_RETENTION_DAYS: "30"
   ANALYTICS_ROLLUP_RETENTION_DAYS: "365"
   ANALYTICS_EXCLUDE_PATHS: "/_nuxt,/__nuxt,/_ipx,/favicon.ico,/api/health,/api/admin/analytics"
-  ANALYTICS_STORAGE_DRIVER: "redis"
   ANALYTICS_SESSION_WINDOW_MINUTES: "30"
 
-  # Rate limits
+  # Rate limits (match app defaults)
   ANALYTICS_RL_IP_PER_MIN: "300"
   ANALYTICS_RL_AUTH_PER_MIN: "15"
   ANALYTICS_RL_WRITE_PER_MIN: "90"
@@ -54,7 +79,7 @@ data:
   ANALYTICS_RL_ABUSIVE_MULTIPLIER: "0.2"
   ANALYTICS_RL_AI_THROTTLE_MULTIPLIER: "0.25"
 
-  # Abuse detection
+  # Abuse detection (match app defaults)
   ANALYTICS_ABUSE_FLOOD_PER_MIN: "600"
   ANALYTICS_ABUSE_ERROR_RATE: "0.6"
   ANALYTICS_ABUSE_DISTINCT_404: "12"
@@ -63,7 +88,7 @@ data:
   ANALYTICS_ABUSE_ABUSIVE_SCORE: "75"
   ANALYTICS_ABUSE_BLOCK_MINUTES: "30"
 
-  # AI crawler policy
+  # AI crawler policy (match app defaults)
   ANALYTICS_AI_TRAINING_POLICY: "block"
   ANALYTICS_AI_SEARCH_POLICY: "allow"
   ANALYTICS_AI_LIVE_RETRIEVAL_POLICY: "log"
@@ -71,7 +96,7 @@ data:
   ANALYTICS_AI_ROBOTS_ENFORCEMENT: "true"
   ANALYTICS_AI_IP_RANGE_REFRESH_HOURS: "24"
 
-  # SMS provider
+  # SMS provider — read via process.env directly (sms.service.ts) — keep plain.
   SMS_PROVIDER: "hubtel"
   HUBTEL_SENDER_ID: "ADLA"
   ARKESEL_SENDER_ID: "ADLA"

@@ -1,5 +1,7 @@
 import { Client } from "minio";
 import { randomUUID } from "crypto";
+import type { Readable } from "node:stream";
+import { signFileUrl, DEFAULT_FILE_URL_TTL_SECONDS } from "~/server/utils/file-url";
 
 let minioClient: Client | null = null;
 
@@ -22,8 +24,6 @@ function denyAnonymousPolicy(): string {
   });
 }
 
-const DEFAULT_PRESIGN_TTL_SECONDS = 900;
-
 /** Get or create MinIO client. */
 function getMinioClient(): Client {
   if (!minioClient) {
@@ -42,6 +42,41 @@ function getMinioClient(): Client {
 }
 
 /**
+ * Run a MinIO operation, turning any low-level failure (connection refused,
+ * TLS handshake, AccessDenied, NoSuchBucket, …) into a logged, attributable
+ * 502 instead of an opaque unhandled 500. The log line names the operation +
+ * bucket/key so the cause is diagnosable in a single `kubectl logs` read; the
+ * client gets a usable message (rendered by the upload UI) rather than a bare
+ * stack. An error that already carries `statusCode` (e.g. our own validation
+ * 400s) is re-thrown unchanged.
+ */
+const NOT_FOUND_CODES = new Set(["NoSuchKey", "NotFound", "NoSuchObject"]);
+
+async function storageOp<T>(
+  operation: string,
+  ctx: Record<string, unknown>,
+  fn: () => Promise<T>,
+  opts: { notFoundIs404?: boolean } = {},
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (err && typeof err === "object" && "statusCode" in err) throw err;
+    const code = (err as { code?: string })?.code;
+    if (opts.notFoundIs404 && code && NOT_FOUND_CODES.has(code)) {
+      throw createError({ statusCode: 404, statusMessage: "Not Found", message: "File not found." });
+    }
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error(`[storage] ${operation} failed`, { ...ctx, error: detail });
+    throw createError({
+      statusCode: 502,
+      statusMessage: "Bad Gateway",
+      message: "Storage backend is unavailable. Please try again shortly.",
+    });
+  }
+}
+
+/**
  * Ensure the bucket exists AND assert a deny-anonymous policy on every boot.
  * Idempotent: setBucketPolicy overwrites, so this is the durable source of
  * truth for the bucket being private even if a dev compose script or a hand-
@@ -49,9 +84,11 @@ function getMinioClient(): Client {
  */
 async function ensureBucket(bucketName: string): Promise<void> {
   const client = getMinioClient();
-  const exists = await client.bucketExists(bucketName);
+  const exists = await storageOp("bucketExists", { bucket: bucketName }, () =>
+    client.bucketExists(bucketName),
+  );
   if (!exists) {
-    await client.makeBucket(bucketName);
+    await storageOp("makeBucket", { bucket: bucketName }, () => client.makeBucket(bucketName));
   }
   try {
     await client.setBucketPolicy(bucketName, denyAnonymousPolicy());
@@ -64,7 +101,7 @@ async function ensureBucket(bucketName: string): Promise<void> {
   }
 }
 
-/** Upload result. `url` is a short-lived presigned URL for immediate preview; `key` is the canonical persistable identifier. */
+/** Upload result. `url` is a short-lived app-signed /api/files URL for immediate preview; `key` is the canonical persistable identifier. */
 export interface UploadResult {
   url: string;
   key: string;
@@ -73,13 +110,14 @@ export interface UploadResult {
   contentType: string;
 }
 
-async function presignFresh(key: string, ttlSeconds = DEFAULT_PRESIGN_TTL_SECONDS): Promise<string> {
-  const config = useRuntimeConfig();
-  const client = getMinioClient();
-  return client.presignedGetObject(config.minioBucket, key, ttlSeconds);
+async function presignFresh(key: string, ttlSeconds = DEFAULT_FILE_URL_TTL_SECONDS): Promise<string> {
+  // Same-origin app-signed URL (served by /api/files) — never a MinIO presigned
+  // URL, which would point at the internal endpoint and be unreachable + mixed
+  // content in the browser.
+  return signFileUrl(key, ttlSeconds);
 }
 
-/** Upload a file to MinIO. The bucket is private; the returned `url` is a presigned URL valid for ~15 minutes. Persist `key`, not `url`. */
+/** Upload a file to MinIO. The bucket is private; the returned `url` is an app-signed /api/files URL valid for ~15 minutes. Persist `key`, not `url`. */
 export async function uploadFile(
   file: Buffer,
   originalName: string,
@@ -95,9 +133,9 @@ export async function uploadFile(
   const ext = originalName.split(".").pop() || "";
   const key = `${folder}/${randomUUID()}.${ext}`;
 
-  await client.putObject(bucket, key, file, file.length, {
-    "Content-Type": contentType,
-  });
+  await storageOp("putObject", { bucket, key }, () =>
+    client.putObject(bucket, key, file, file.length, { "Content-Type": contentType }),
+  );
 
   const url = await presignFresh(key);
   return { url, key, bucket, size: file.length, contentType };
@@ -120,9 +158,9 @@ export async function uploadGhanaCard(
   const ext = originalName.split(".").pop() || "jpg";
   const key = `ghana-cards/${userId}/${side}.${ext}`;
 
-  await client.putObject(bucket, key, file, file.length, {
-    "Content-Type": contentType,
-  });
+  await storageOp("putObject", { bucket, key }, () =>
+    client.putObject(bucket, key, file, file.length, { "Content-Type": contentType }),
+  );
 
   const url = await presignFresh(key);
   return { url, key, bucket, size: file.length, contentType };
@@ -151,9 +189,9 @@ export async function uploadAlternateIdScan(
   const safeType = idType.toLowerCase().replace(/[^a-z0-9_-]/g, "");
   const key = `alternate-ids/${userId}/${safeType}.${ext}`;
 
-  await client.putObject(bucket, key, file, file.length, {
-    "Content-Type": contentType,
-  });
+  await storageOp("putObject", { bucket, key }, () =>
+    client.putObject(bucket, key, file, file.length, { "Content-Type": contentType }),
+  );
 
   const url = await presignFresh(key);
   return { url, key, bucket, size: file.length, contentType };
@@ -171,21 +209,21 @@ export async function uploadBuffer(
 
   await ensureBucket(bucket);
 
-  await client.putObject(bucket, key, buffer, buffer.length, {
-    "Content-Type": contentType,
-  });
+  await storageOp("putObject", { bucket, key }, () =>
+    client.putObject(bucket, key, buffer, buffer.length, { "Content-Type": contentType }),
+  );
 
   return key;
 }
 
 /**
- * Turn a stored MinIO reference into a fresh short-lived presigned URL.
+ * Turn a stored MinIO reference into a fresh short-lived app-signed /api/files URL.
  *
- * Accepts three shapes:
- * - a bare bucket-relative key (the new persistable form);
+ * Accepts three legacy input shapes stored in older DB rows:
+ * - a bare bucket-relative key (the canonical persistable form);
  * - a legacy absolute URL `http://host:port/bucket/path` (what older rows
  *   captured before the bucket went private);
- * - an expired presigned URL (same shape plus a query string).
+ * - a legacy presigned URL (same absolute URL shape plus a query string).
  *
  * For the URL forms it parses the key by stripping origin, the leading
  * bucket prefix, and any query string. Inputs that don't match either
@@ -194,7 +232,7 @@ export async function uploadBuffer(
  */
 export async function presignStored(
   stored: string | null | undefined,
-  ttlSeconds = DEFAULT_PRESIGN_TTL_SECONDS,
+  ttlSeconds = DEFAULT_FILE_URL_TTL_SECONDS,
 ): Promise<string | null> {
   if (!stored) return null;
   const key = parseStoredKey(stored);
@@ -236,20 +274,51 @@ export async function deleteFile(key: string): Promise<void> {
 }
 
 /**
- * Get a presigned URL for downloading
+ * Get an app-signed /api/files URL for downloading.
  */
 export async function getPresignedUrl(
   key: string,
   expirySeconds: number = 3600
 ): Promise<string> {
+  return signFileUrl(key, expirySeconds);
+}
+
+/** Read a stored object's bytes as a stream (internal MinIO). For /api/files. */
+export async function getObjectStream(key: string): Promise<Readable> {
   const config = useRuntimeConfig();
   const client = getMinioClient();
-  return client.presignedGetObject(config.minioBucket, key, expirySeconds);
+  return storageOp(
+    "getObject",
+    { bucket: config.minioBucket, key },
+    () => client.getObject(config.minioBucket, key),
+    { notFoundIs404: true },
+  );
+}
+
+/** Stat a stored object: byte length + trusted content-type. For /api/files. */
+export async function statObjectMeta(key: string): Promise<{ size: number; contentType: string }> {
+  const config = useRuntimeConfig();
+  const client = getMinioClient();
+  const stat = await storageOp(
+    "statObject",
+    { bucket: config.minioBucket, key },
+    () => client.statObject(config.minioBucket, key),
+    { notFoundIs404: true },
+  );
+  return {
+    size: stat.size,
+    contentType: (stat.metaData?.["content-type"] as string) || "application/octet-stream",
+  };
 }
 
 /**
  * Trusted content type for an upload — one we can serve safely with the
  * matching response header.
+ *
+ * Source of truth for the safe-to-serve set. The serving boundary keeps a
+ * parallel inline allow-list (`INLINE_SAFE_TYPES` in
+ * `server/api/files/[...key].get.ts`) — adding a format here means updating
+ * that set too, or the new type will be force-downloaded instead of rendered.
  */
 export type SupportedUploadType = "image/jpeg" | "image/png" | "image/webp" | "application/pdf";
 
