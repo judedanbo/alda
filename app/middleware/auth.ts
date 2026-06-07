@@ -44,4 +44,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (path.startsWith("/legal") && !authStore.isLegalUnit && !authStore.isAdmin) {
     return navigateTo(authStore.dashboardPath);
   }
+
+  if (path.startsWith("/applicant") && !authStore.isApplicant && !authStore.isAdmin) {
+    return navigateTo(authStore.dashboardPath);
+  }
 });
