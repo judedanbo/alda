@@ -114,14 +114,14 @@ const handleLogout = async () => {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
           <!-- Logo -->
-          <div class="flex items-center gap-3">
+          <NuxtLink :to="authStore.dashboardPath" class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
               <span class="text-primary-foreground font-bold">GH</span>
             </div>
             <span class="font-semibold text-foreground hidden sm:block">
               Asset Declaration Portal
             </span>
-          </div>
+          </NuxtLink>
 
           <!-- Navigation Links -->
           <nav class="hidden md:flex items-center gap-1" aria-label="Primary">

@@ -10,18 +10,20 @@ const helpStore = useHelpStore();
     <!-- Header with Ghana coat of arms / logo -->
     <header class="py-6 px-4">
       <div class="max-w-md mx-auto flex items-center justify-center gap-3">
-        <div
-          class="w-12 h-12 rounded-full bg-primary flex items-center justify-center"
-        >
-          <span class="text-primary-foreground font-bold text-xl">GH</span>
-        </div>
-        <div>
-          <h1 class="text-lg font-semibold text-foreground">
-            Asset Declaration Portal
-          </h1>
-          <p class="text-muted-foreground">Audit Service</p>
-          <p class="text-sm text-muted-foreground">Republic of Ghana</p>
-        </div>
+        <NuxtLink to="/" class="flex items-center gap-3">
+          <div
+            class="w-12 h-12 rounded-full bg-primary flex items-center justify-center"
+          >
+            <span class="text-primary-foreground font-bold text-xl">GH</span>
+          </div>
+          <div>
+            <h1 class="text-lg font-semibold text-foreground">
+              Asset Declaration Portal
+            </h1>
+            <p class="text-muted-foreground">Audit Service</p>
+            <p class="text-sm text-muted-foreground">Republic of Ghana</p>
+          </div>
+        </NuxtLink>
         <div class="ml-auto flex items-center gap-2">
           <button
             type="button"

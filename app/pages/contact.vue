@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useAuthStore } from "~/stores/auth";
+
 definePageMeta({
   layout: "auth",
 });
@@ -7,6 +9,8 @@ useSeoMeta({
   title: "Contact Us - Asset Declaration Portal",
   description: "Contact the Ghana Audit Service for support with the Asset Declaration Portal",
 });
+
+const authStore = useAuthStore();
 
 const categories = [
   { value: "GENERAL_INQUIRY", label: "General Inquiry" },
@@ -272,12 +276,30 @@ const handleSubmit = async () => {
       </CardContent>
 
       <CardFooter class="flex items-center justify-center gap-4 text-sm">
-        <NuxtLink
-          to="/auth/login"
-          class="text-primary hover:underline"
-        >
-          Back to Login
-        </NuxtLink>
+        <ClientOnly>
+          <NuxtLink
+            v-if="authStore.isAuthenticated"
+            :to="authStore.dashboardPath"
+            class="text-primary hover:underline"
+          >
+            Back to Dashboard
+          </NuxtLink>
+          <NuxtLink
+            v-else
+            to="/auth/login"
+            class="text-primary hover:underline"
+          >
+            Back to Login
+          </NuxtLink>
+          <template #fallback>
+            <NuxtLink
+              to="/auth/login"
+              class="text-primary hover:underline"
+            >
+              Back to Login
+            </NuxtLink>
+          </template>
+        </ClientOnly>
         <span class="text-muted-foreground">|</span>
         <NuxtLink
           to="/"

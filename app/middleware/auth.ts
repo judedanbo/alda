@@ -18,15 +18,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (isPublicRoute) {
     // If user is already authenticated and trying to access auth pages, redirect to dashboard
     if (authStore.isAuthenticated && to.path.startsWith("/auth/")) {
-      if (authStore.isAdmin) {
-        return navigateTo("/admin/dashboard");
-      } else if (authStore.isOfficer) {
-        return navigateTo("/officer/dashboard");
-      } else if (authStore.isLegalUnit) {
-        return navigateTo("/legal/dashboard");
-      } else {
-        return navigateTo("/applicant/dashboard");
-      }
+      return navigateTo(authStore.dashboardPath);
     }
     return;
   }
@@ -39,15 +31,17 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // Role-based access control
   const path = to.path;
 
+  // On a role violation, send the user to THEIR own dashboard rather than
+  // always the applicant one.
   if (path.startsWith("/admin") && !authStore.isAdmin) {
-    return navigateTo("/applicant/dashboard");
+    return navigateTo(authStore.dashboardPath);
   }
 
   if (path.startsWith("/officer") && !authStore.isOfficer && !authStore.isAdmin) {
-    return navigateTo("/applicant/dashboard");
+    return navigateTo(authStore.dashboardPath);
   }
 
   if (path.startsWith("/legal") && !authStore.isLegalUnit && !authStore.isAdmin) {
-    return navigateTo("/applicant/dashboard");
+    return navigateTo(authStore.dashboardPath);
   }
 });

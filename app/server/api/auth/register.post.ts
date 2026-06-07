@@ -2,13 +2,24 @@ import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import prisma from "~/server/utils/prisma";
 import { validateBody, registerSchema } from "~/server/utils/validators";
-import { generateTokenPair, getTokenExpiry } from "~/server/utils/jwt";
+import { generateTokenPair, getTokenExpiry, getAuthUser } from "~/server/utils/jwt";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
 import { sendWelcomeEmail, sendVerificationEmail } from "~/server/services/email.service";
 import { generateVerificationToken } from "~/server/utils/code-generator";
 import { ghanaPhoneAlternates, isGhanaPhone, normalizePhoneE164 } from "~/server/utils/phone";
 
 export default defineEventHandler(async (event) => {
+  // Already-authenticated sessions cannot register a new account. getAuthUser
+  // soft-reads the Bearer token (returns null when absent/invalid), so this is
+  // safe on this public route.
+  if (getAuthUser(event)) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: "Forbidden",
+      message: "You are already signed in. Log out before continuing.",
+    });
+  }
+
   // Validate request body
   const { email, password, phone } = await validateBody(event, registerSchema);
 

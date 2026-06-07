@@ -30,16 +30,12 @@ const handleSubmit = async () => {
   const result = await authStore.login(form.email, form.password);
 
   if (result.success) {
-    if (authStore.isAdmin) {
-      router.push("/admin/dashboard");
-    } else if (authStore.isOfficer) {
-      router.push("/officer/dashboard");
-    } else if (authStore.isLegalUnit) {
-      router.push("/legal/dashboard");
-    } else if (result.hasProfile) {
-      router.push("/applicant/dashboard");
-    } else {
+    // New applicants without a profile go to setup first; everyone else
+    // (and applicants who already have a profile) goes to their dashboard.
+    if (authStore.dashboardPath === "/applicant/dashboard" && !result.hasProfile) {
       router.push("/applicant/profile/setup");
+    } else {
+      router.push(authStore.dashboardPath);
     }
   } else {
     if (result.fieldErrors) {

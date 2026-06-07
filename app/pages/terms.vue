@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useAuthStore } from "~/stores/auth";
+
 definePageMeta({
   layout: "auth",
 });
@@ -7,6 +9,8 @@ useSeoMeta({
   title: "Terms of Service - Asset Declaration Portal",
   description: "Terms of Service for the Ghana Audit Service Asset Declaration Portal",
 });
+
+const authStore = useAuthStore();
 </script>
 
 <template>
@@ -197,12 +201,30 @@ useSeoMeta({
       </CardContent>
 
       <CardFooter class="flex items-center justify-between">
-        <NuxtLink
-          to="/auth/login"
-          class="text-primary hover:underline text-sm"
-        >
-          Back to Login
-        </NuxtLink>
+        <ClientOnly>
+          <NuxtLink
+            v-if="authStore.isAuthenticated"
+            :to="authStore.dashboardPath"
+            class="text-primary hover:underline text-sm"
+          >
+            Back to Dashboard
+          </NuxtLink>
+          <NuxtLink
+            v-else
+            to="/auth/login"
+            class="text-primary hover:underline text-sm"
+          >
+            Back to Login
+          </NuxtLink>
+          <template #fallback>
+            <NuxtLink
+              to="/auth/login"
+              class="text-primary hover:underline text-sm"
+            >
+              Back to Login
+            </NuxtLink>
+          </template>
+        </ClientOnly>
         <NuxtLink
           to="/privacy"
           class="text-primary hover:underline text-sm"
