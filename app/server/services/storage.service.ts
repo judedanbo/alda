@@ -101,7 +101,7 @@ async function ensureBucket(bucketName: string): Promise<void> {
   }
 }
 
-/** Upload result. `url` is a short-lived presigned URL for immediate preview; `key` is the canonical persistable identifier. */
+/** Upload result. `url` is a short-lived app-signed /api/files URL for immediate preview; `key` is the canonical persistable identifier. */
 export interface UploadResult {
   url: string;
   key: string;
@@ -117,7 +117,7 @@ async function presignFresh(key: string, ttlSeconds = DEFAULT_FILE_URL_TTL_SECON
   return signFileUrl(key, ttlSeconds);
 }
 
-/** Upload a file to MinIO. The bucket is private; the returned `url` is a presigned URL valid for ~15 minutes. Persist `key`, not `url`. */
+/** Upload a file to MinIO. The bucket is private; the returned `url` is an app-signed /api/files URL valid for ~15 minutes. Persist `key`, not `url`. */
 export async function uploadFile(
   file: Buffer,
   originalName: string,
@@ -217,13 +217,13 @@ export async function uploadBuffer(
 }
 
 /**
- * Turn a stored MinIO reference into a fresh short-lived presigned URL.
+ * Turn a stored MinIO reference into a fresh short-lived app-signed /api/files URL.
  *
- * Accepts three shapes:
- * - a bare bucket-relative key (the new persistable form);
+ * Accepts three legacy input shapes stored in older DB rows:
+ * - a bare bucket-relative key (the canonical persistable form);
  * - a legacy absolute URL `http://host:port/bucket/path` (what older rows
  *   captured before the bucket went private);
- * - an expired presigned URL (same shape plus a query string).
+ * - a legacy presigned URL (same absolute URL shape plus a query string).
  *
  * For the URL forms it parses the key by stripping origin, the leading
  * bucket prefix, and any query string. Inputs that don't match either
@@ -274,7 +274,7 @@ export async function deleteFile(key: string): Promise<void> {
 }
 
 /**
- * Get a presigned URL for downloading
+ * Get an app-signed /api/files URL for downloading.
  */
 export async function getPresignedUrl(
   key: string,
