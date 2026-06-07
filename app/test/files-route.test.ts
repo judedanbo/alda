@@ -63,4 +63,42 @@ describe("GET /api/files/[...key]", () => {
     await expect(handler(eventFor(signFileUrl("ghana-cards/abc/front.jpg", 900))))
       .rejects.toMatchObject({ statusCode: 404 });
   });
+
+  // Helper: collect the header name→value pairs the handler set.
+  function headersSet(): Record<string, unknown> {
+    return Object.fromEntries(
+      setResponseHeaderMock.mock.calls.map(([, name, value]) => [name, value]),
+    );
+  }
+
+  it("always sends nosniff + a locked-down CSP (defense in depth)", async () => {
+    await handler(eventFor(signFileUrl("ghana-cards/abc/front.jpg", 900)));
+    const h = headersSet();
+    expect(h["X-Content-Type-Options"]).toBe("nosniff");
+    expect(h["Content-Security-Policy"]).toBe("default-src 'none'; sandbox");
+  });
+
+  it("serves an allow-listed image type inline", async () => {
+    storageMock.statObjectMeta.mockResolvedValue({ size: 10, contentType: "image/png" });
+    await handler(eventFor(signFileUrl("ghana-cards/abc/front.jpg", 900)));
+    const h = headersSet();
+    expect(h["Content-Type"]).toBe("image/png");
+    expect(h["Content-Disposition"]).toBeUndefined();
+  });
+
+  it("neutralizes a dangerous stored content-type (text/html) to a forced download", async () => {
+    storageMock.statObjectMeta.mockResolvedValue({ size: 10, contentType: "text/html" });
+    await handler(eventFor(signFileUrl("ghana-cards/abc/front.jpg", 900)));
+    const h = headersSet();
+    expect(h["Content-Type"]).toBe("application/octet-stream");
+    expect(String(h["Content-Disposition"])).toMatch(/^attachment;/);
+  });
+
+  it("neutralizes image/svg+xml (script-capable) to a forced download", async () => {
+    storageMock.statObjectMeta.mockResolvedValue({ size: 10, contentType: "image/svg+xml" });
+    await handler(eventFor(signFileUrl("ghana-cards/abc/front.jpg", 900)));
+    const h = headersSet();
+    expect(h["Content-Type"]).toBe("application/octet-stream");
+    expect(String(h["Content-Disposition"])).toMatch(/^attachment;/);
+  });
 });
