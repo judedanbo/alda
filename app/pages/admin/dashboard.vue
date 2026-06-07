@@ -175,11 +175,14 @@ const codeTable = useDataTable<RecentCode>("/api/admin/declarations", {
   itemsKey: "declarations",
 });
 
+// Non-default tabs are loaded lazily on first activation (see `activeTab`
+// watcher) so the initial dashboard render fires one table fetch, not four.
 const userTable = useDataTable<RecentUser>("/api/admin/users", {
   perPage: 5,
   defaultSort: "createdAt",
   defaultDirection: "desc",
   itemsKey: "users",
+  immediate: false,
 });
 
 const declarationTable = useDataTable<RecentDeclaration>("/api/admin/declarations", {
@@ -187,6 +190,7 @@ const declarationTable = useDataTable<RecentDeclaration>("/api/admin/declaration
   defaultSort: "createdAt",
   defaultDirection: "desc",
   itemsKey: "declarations",
+  immediate: false,
 });
 
 const auditTable = useDataTable<AuditLogEntry>("/api/admin/audit-logs", {
@@ -194,6 +198,22 @@ const auditTable = useDataTable<AuditLogEntry>("/api/admin/audit-logs", {
   defaultSort: "createdAt",
   defaultDirection: "desc",
   itemsKey: "logs",
+  immediate: false,
+});
+
+// Lazy tab loading: fetch a tab's table the first time it becomes active.
+const activeTab = ref("codes");
+const loadedTabs = new Set<string>(["codes"]);
+const lazyTables: Record<string, { refresh: () => void }> = {
+  users: userTable,
+  declarations: declarationTable,
+  audit: auditTable,
+};
+
+watch(activeTab, (tab) => {
+  if (loadedTabs.has(tab)) return;
+  loadedTabs.add(tab);
+  lazyTables[tab]?.refresh();
 });
 
 // --- Column definitions ---
@@ -380,7 +400,7 @@ function getActionColor(action: string): string {
 
     <!-- Tabbed Recent Activity -->
     <Card>
-      <Tabs default-value="codes" class="flex-col">
+      <Tabs v-model="activeTab" default-value="codes" class="flex-col">
         <CardHeader class="relative z-10 pb-0">
           <TabsList>
             <TabsTrigger value="codes">Recent Codes</TabsTrigger>
