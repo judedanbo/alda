@@ -26,6 +26,9 @@ const publicRoutes = [
   // SSE stream — authenticated via `?token=` query in the handler
   // because EventSource can't set custom headers.
   "/api/notifications/stream",
+  // Capability-authed by the URL signature (an <img> request can't carry a
+  // Bearer token); the handler verifies the HMAC + expiry itself.
+  "/api/files/",
   ...(process.env.NODE_ENV !== "production" ? ["/api/dev"] : []),
 ];
 
