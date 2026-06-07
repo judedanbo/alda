@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { verifyFileSig } from "~/server/utils/file-url";
 
 /**
  * `parseStoredKey` is the pure half of `presignStored`. It takes whatever the
@@ -17,6 +18,7 @@ beforeEach(() => {
     minioPort: 9000,
     minioAccessKey: "test",
     minioSecretKey: "test",
+    jwtSecret: "unit-test-secret",
     analytics: { ipSalt: "test-salt" },
   }));
 });
@@ -64,5 +66,35 @@ describe("parseStoredKey", () => {
     expect(
       parseStoredKey("https://minio.example.com/adla-uploads/alternate-ids/u/passport.jpg"),
     ).toBe("alternate-ids/u/passport.jpg");
+  });
+});
+
+const { presignStored } = await import("~/server/services/storage.service");
+
+describe("presignStored → app-signed URL", () => {
+  function parse(url: string) {
+    const [path, qs] = url.split("?");
+    const q = new URLSearchParams(qs);
+    return { path, exp: Number(q.get("exp")), sig: q.get("sig") || "" };
+  }
+
+  it("signs a bare key into a verifiable /api/files URL", async () => {
+    const url = await presignStored("ghana-cards/abc/front.jpg");
+    const { path, exp, sig } = parse(url!);
+    expect(path).toBe("/api/files/ghana-cards/abc/front.jpg");
+    expect(verifyFileSig("ghana-cards/abc/front.jpg", exp, sig)).toBe(true);
+  });
+
+  it("normalizes a legacy absolute URL then signs the key", async () => {
+    const url = await presignStored(
+      "http://localhost:9000/adla-uploads/receipts/RCP-1.pdf",
+    );
+    const { path, exp, sig } = parse(url!);
+    expect(path).toBe("/api/files/receipts/RCP-1.pdf");
+    expect(verifyFileSig("receipts/RCP-1.pdf", exp, sig)).toBe(true);
+  });
+
+  it("returns null for empty input", async () => {
+    expect(await presignStored("")).toBeNull();
   });
 });

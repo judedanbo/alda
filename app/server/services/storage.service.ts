@@ -1,5 +1,7 @@
 import { Client } from "minio";
 import { randomUUID } from "crypto";
+import type { Readable } from "node:stream";
+import { signFileUrl, DEFAULT_FILE_URL_TTL_SECONDS } from "~/server/utils/file-url";
 
 let minioClient: Client | null = null;
 
@@ -21,8 +23,6 @@ function denyAnonymousPolicy(): string {
     Statement: [],
   });
 }
-
-const DEFAULT_PRESIGN_TTL_SECONDS = 900;
 
 /** Get or create MinIO client. */
 function getMinioClient(): Client {
@@ -50,15 +50,22 @@ function getMinioClient(): Client {
  * stack. An error that already carries `statusCode` (e.g. our own validation
  * 400s) is re-thrown unchanged.
  */
+const NOT_FOUND_CODES = new Set(["NoSuchKey", "NotFound", "NoSuchObject"]);
+
 async function storageOp<T>(
   operation: string,
   ctx: Record<string, unknown>,
   fn: () => Promise<T>,
+  opts: { notFoundIs404?: boolean } = {},
 ): Promise<T> {
   try {
     return await fn();
   } catch (err) {
     if (err && typeof err === "object" && "statusCode" in err) throw err;
+    const code = (err as { code?: string })?.code;
+    if (opts.notFoundIs404 && code && NOT_FOUND_CODES.has(code)) {
+      throw createError({ statusCode: 404, statusMessage: "Not Found", message: "File not found." });
+    }
     const detail = err instanceof Error ? err.message : String(err);
     console.error(`[storage] ${operation} failed`, { ...ctx, error: detail });
     throw createError({
@@ -103,12 +110,11 @@ export interface UploadResult {
   contentType: string;
 }
 
-async function presignFresh(key: string, ttlSeconds = DEFAULT_PRESIGN_TTL_SECONDS): Promise<string> {
-  const config = useRuntimeConfig();
-  const client = getMinioClient();
-  return storageOp("presignedGetObject", { bucket: config.minioBucket, key }, () =>
-    client.presignedGetObject(config.minioBucket, key, ttlSeconds),
-  );
+async function presignFresh(key: string, ttlSeconds = DEFAULT_FILE_URL_TTL_SECONDS): Promise<string> {
+  // Same-origin app-signed URL (served by /api/files) — never a MinIO presigned
+  // URL, which would point at the internal endpoint and be unreachable + mixed
+  // content in the browser.
+  return signFileUrl(key, ttlSeconds);
 }
 
 /** Upload a file to MinIO. The bucket is private; the returned `url` is a presigned URL valid for ~15 minutes. Persist `key`, not `url`. */
@@ -226,7 +232,7 @@ export async function uploadBuffer(
  */
 export async function presignStored(
   stored: string | null | undefined,
-  ttlSeconds = DEFAULT_PRESIGN_TTL_SECONDS,
+  ttlSeconds = DEFAULT_FILE_URL_TTL_SECONDS,
 ): Promise<string | null> {
   if (!stored) return null;
   const key = parseStoredKey(stored);
@@ -274,9 +280,35 @@ export async function getPresignedUrl(
   key: string,
   expirySeconds: number = 3600
 ): Promise<string> {
+  return signFileUrl(key, expirySeconds);
+}
+
+/** Read a stored object's bytes as a stream (internal MinIO). For /api/files. */
+export async function getObjectStream(key: string): Promise<Readable> {
   const config = useRuntimeConfig();
   const client = getMinioClient();
-  return client.presignedGetObject(config.minioBucket, key, expirySeconds);
+  return storageOp(
+    "getObject",
+    { bucket: config.minioBucket, key },
+    () => client.getObject(config.minioBucket, key),
+    { notFoundIs404: true },
+  );
+}
+
+/** Stat a stored object: byte length + trusted content-type. For /api/files. */
+export async function statObjectMeta(key: string): Promise<{ size: number; contentType: string }> {
+  const config = useRuntimeConfig();
+  const client = getMinioClient();
+  const stat = await storageOp(
+    "statObject",
+    { bucket: config.minioBucket, key },
+    () => client.statObject(config.minioBucket, key),
+    { notFoundIs404: true },
+  );
+  return {
+    size: stat.size,
+    contentType: (stat.metaData?.["content-type"] as string) || "application/octet-stream",
+  };
 }
 
 /**
