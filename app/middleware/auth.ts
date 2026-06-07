@@ -18,15 +18,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (isPublicRoute) {
     // If user is already authenticated and trying to access auth pages, redirect to dashboard
     if (authStore.isAuthenticated && to.path.startsWith("/auth/")) {
-      if (authStore.isAdmin) {
-        return navigateTo("/admin/dashboard");
-      } else if (authStore.isOfficer) {
-        return navigateTo("/officer/dashboard");
-      } else if (authStore.isLegalUnit) {
-        return navigateTo("/legal/dashboard");
-      } else {
-        return navigateTo("/applicant/dashboard");
-      }
+      return navigateTo(authStore.dashboardPath);
     }
     return;
   }

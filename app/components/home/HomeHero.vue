@@ -2,7 +2,9 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { usePreferredReducedMotion } from '@vueuse/core'
 import { Mouse } from 'lucide-vue-next'
+import { useAuthStore } from '~/stores/auth'
 
+const authStore = useAuthStore()
 const prefersReducedMotion = usePreferredReducedMotion()
 const scrollY = ref(0)
 
@@ -55,16 +57,41 @@ onUnmounted(() => {
         </div>
         <div class="flex items-center gap-2">
           <AppThemeSwitcherButton />
-          <Button
-            variant="link"
-            as-child
-            class="text-white hover:text-white/80"
-          >
-            <NuxtLink to="/auth/login">Sign in</NuxtLink>
-          </Button>
-          <Button variant="secondary" as-child>
-            <NuxtLink to="/auth/register">Create account</NuxtLink>
-          </Button>
+          <!--
+            Auth state derives from localStorage, so it is empty during SSR and
+            on the first client render. Render the signed-out buttons as the
+            fallback so hydration matches, then swap to "Dashboard" once the
+            auth store hydrates.
+          -->
+          <ClientOnly>
+            <Button v-if="authStore.isAuthenticated" variant="secondary" as-child>
+              <NuxtLink :to="authStore.dashboardPath">Dashboard</NuxtLink>
+            </Button>
+            <template v-else>
+              <Button
+                variant="link"
+                as-child
+                class="text-white hover:text-white/80"
+              >
+                <NuxtLink to="/auth/login">Sign in</NuxtLink>
+              </Button>
+              <Button variant="secondary" as-child>
+                <NuxtLink to="/auth/register">Create account</NuxtLink>
+              </Button>
+            </template>
+            <template #fallback>
+              <Button
+                variant="link"
+                as-child
+                class="text-white hover:text-white/80"
+              >
+                <NuxtLink to="/auth/login">Sign in</NuxtLink>
+              </Button>
+              <Button variant="secondary" as-child>
+                <NuxtLink to="/auth/register">Create account</NuxtLink>
+              </Button>
+            </template>
+          </ClientOnly>
         </div>
       </nav>
 
@@ -89,13 +116,28 @@ onUnmounted(() => {
             and Disqualification) Act, 1998 (Act 550).
           </p>
           <div class="flex items-center gap-4 justify-center md:justify-start">
-            <Button
-              size="lg"
-              as-child
-              class="bg-[#FCD116] text-gray-900 hover:bg-[#FCD116]/90 font-semibold"
-            >
-              <NuxtLink to="/auth/register">Start Declaration</NuxtLink>
-            </Button>
+            <ClientOnly>
+              <Button
+                size="lg"
+                as-child
+                class="bg-[#FCD116] text-gray-900 hover:bg-[#FCD116]/90 font-semibold"
+              >
+                <NuxtLink
+                  v-if="authStore.isAuthenticated"
+                  :to="authStore.dashboardPath"
+                >Dashboard</NuxtLink>
+                <NuxtLink v-else to="/auth/register">Start Declaration</NuxtLink>
+              </Button>
+              <template #fallback>
+                <Button
+                  size="lg"
+                  as-child
+                  class="bg-[#FCD116] text-gray-900 hover:bg-[#FCD116]/90 font-semibold"
+                >
+                  <NuxtLink to="/auth/register">Start Declaration</NuxtLink>
+                </Button>
+              </template>
+            </ClientOnly>
             <Button
               size="lg"
               variant="outline"

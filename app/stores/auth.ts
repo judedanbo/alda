@@ -36,6 +36,15 @@ export const useAuthStore = defineStore("auth", () => {
   const isPhoneVerified = computed(() => user.value?.phoneVerified ?? false);
   const isVerified = computed(() => user.value?.verificationStatus === "VERIFIED");
 
+  // Single source of truth for "where does this user's dashboard live?".
+  // Precedence matches the role-based redirects in middleware/auth.ts.
+  const dashboardPath = computed(() => {
+    if (isAdmin.value) return "/admin/dashboard";
+    if (isOfficer.value) return "/officer/dashboard";
+    if (isLegalUnit.value) return "/legal/dashboard";
+    return "/applicant/dashboard";
+  });
+
   // Actions
   function setTokens(newTokens: Tokens) {
     tokens.value = newTokens;
@@ -285,6 +294,7 @@ export const useAuthStore = defineStore("auth", () => {
     isEmailVerified,
     isPhoneVerified,
     isVerified,
+    dashboardPath,
     // Actions
     setTokens,
     clearTokens,

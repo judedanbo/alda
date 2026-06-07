@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import prisma from "~/server/utils/prisma";
 import { validateBody, loginSchema } from "~/server/utils/validators";
-import { generateTokenPair, getTokenExpiry } from "~/server/utils/jwt";
+import { generateTokenPair, getTokenExpiry, getAuthUser } from "~/server/utils/jwt";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
 import {
   isAccountLocked,
@@ -18,6 +18,17 @@ import {
 const DUMMY_PASSWORD_HASH = bcrypt.hashSync("invalid-timing-equalizer", 13);
 
 export default defineEventHandler(async (event) => {
+  // Already-authenticated sessions cannot log in again. getAuthUser soft-reads
+  // the Bearer token (returns null when absent/invalid), so this is safe on
+  // this public route.
+  if (getAuthUser(event)) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: "Forbidden",
+      message: "You are already signed in. Log out before continuing.",
+    });
+  }
+
   // Validate request body
   const { email, password } = await validateBody(event, loginSchema);
 
