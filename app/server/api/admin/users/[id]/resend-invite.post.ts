@@ -39,6 +39,14 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: "User not found" });
   }
 
+  if (user.emailVerified) {
+    throw createError({
+      statusCode: 409,
+      statusMessage: "Conflict",
+      message: "This account is already activated",
+    });
+  }
+
   // Fresh 72h token; drop any prior tokens for this user.
   const token = generateResetToken();
   const expiresAt = new Date();

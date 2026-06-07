@@ -243,4 +243,14 @@ describe("POST /api/admin/users/[id]/resend-invite", () => {
     const hoursOut = (tokens[0]!.expiresAt.getTime() - Date.now()) / 3_600_000;
     expect(hoursOut).toBeGreaterThan(71);
   });
+
+  it("refuses to resend for an already-activated user", async () => {
+    currentBody = { email: "activated@adla.test", roleNames: ["legal_unit"] };
+    await createUser(adminEvent());
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: "activated@adla.test" } });
+    await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } });
+
+    currentRouteId = user.id;
+    await expect(resendInvite(adminEvent())).rejects.toMatchObject({ statusCode: 409 });
+  });
 });
