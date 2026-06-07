@@ -196,6 +196,7 @@ describe("PUT /api/admin/users/[id]/offices", () => {
 });
 
 const updateRoles = (await import("~/server/api/admin/users/[id]/roles.put")).default;
+const resendInvite = (await import("~/server/api/admin/users/[id]/resend-invite.post")).default;
 
 describe("PUT /api/admin/users/[id]/roles (self-lockout guard)", () => {
   it("blocks an admin from removing their own admin role", async () => {
@@ -222,5 +223,24 @@ describe("PUT /api/admin/users/[id]/roles (self-lockout guard)", () => {
       include: { roles: { include: { role: true } } },
     });
     expect(after.roles.map((r) => r.role.name).sort()).toEqual(["applicant", "legal_unit"]);
+  });
+});
+
+describe("POST /api/admin/users/[id]/resend-invite", () => {
+  it("replaces the existing invite token with a fresh 72h token", async () => {
+    currentBody = { email: "resend@adla.test", roleNames: ["legal_unit"] };
+    await createUser(adminEvent());
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: "resend@adla.test" } });
+    const first = await prisma.passwordResetToken.findFirstOrThrow({ where: { userId: user.id } });
+
+    currentRouteId = user.id;
+    const res = await resendInvite(adminEvent());
+    expect(res.success).toBe(true);
+
+    const tokens = await prisma.passwordResetToken.findMany({ where: { userId: user.id } });
+    expect(tokens).toHaveLength(1);
+    expect(tokens[0]!.token).not.toBe(first.token);
+    const hoursOut = (tokens[0]!.expiresAt.getTime() - Date.now()) / 3_600_000;
+    expect(hoursOut).toBeGreaterThan(71);
   });
 });
