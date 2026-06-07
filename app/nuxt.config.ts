@@ -196,6 +196,18 @@ export default defineNuxtConfig({
     },
   },
 
+  // Auth is client-only (tokens live in localStorage, never cookies — see
+  // plugins/auth.ts), so the server can never render these trees in their
+  // authenticated state. SSR-ing them only paints the wrong (logged-out) shell
+  // and forces a hydration mismatch on every reload. Render them client-side
+  // only; public pages keep SSR.
+  routeRules: {
+    "/admin/**": { ssr: false },
+    "/officer/**": { ssr: false },
+    "/legal/**": { ssr: false },
+    "/applicant/**": { ssr: false },
+  },
+
   typescript: {
     strict: true,
   },

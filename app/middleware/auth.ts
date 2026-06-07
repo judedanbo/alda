@@ -11,6 +11,18 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // Initialize auth state
   await authStore.initialize();
 
+  // On a hard reload the auth plugin rehydrates the tokens from localStorage
+  // synchronously, but the user (and therefore the role flags) is only loaded
+  // later in onNuxtReady — after this middleware has already run. Without the
+  // roles, every `isAdmin`/`isOfficer`/… check below is false and the role
+  // guards redirect to `dashboardPath`, which falls back to /applicant/dashboard
+  // and then fails its own applicant check, producing an infinite redirect.
+  // Load the user here so role decisions see real roles. (fetchUser clears the
+  // tokens if the session is invalid, so isAuthenticated stays correct.)
+  if (authStore.isAuthenticated && !authStore.user) {
+    await authStore.fetchUser();
+  }
+
   // Public routes that don't require authentication
   const publicRoutes = ["/", "/auth/login", "/auth/register", "/auth/forgot-password", "/auth/reset-password", "/auth/verify-email"];
   const isPublicRoute = publicRoutes.some((route) => to.path === route || to.path.startsWith(route + "/"));
