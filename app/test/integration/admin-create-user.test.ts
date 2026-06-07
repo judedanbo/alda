@@ -10,6 +10,7 @@ vi.mock("~/server/services/email.service", () => ({
 }));
 
 const createUser = (await import("~/server/api/admin/users/index.post")).default;
+const acceptInvite = (await import("~/server/api/auth/accept-invite.post")).default;
 
 const TABLES = [
   "password_reset_tokens",
@@ -97,5 +98,57 @@ describe("POST /api/admin/users", () => {
   it("rejects a duplicate email with 409", async () => {
     currentBody = { email: "newlegal@adla.test", roleNames: ["legal_unit"] };
     await expect(createUser(adminEvent())).rejects.toMatchObject({ statusCode: 409 });
+  });
+});
+
+describe("POST /api/auth/accept-invite", () => {
+  async function createInvitee(email: string) {
+    currentBody = { email, roleNames: ["legal_unit"] };
+    await createUser(adminEvent());
+    const user = await prisma.user.findUniqueOrThrow({ where: { email } });
+    const token = await prisma.passwordResetToken.findFirstOrThrow({ where: { userId: user.id } });
+    return { user, token };
+  }
+
+  const publicEvent = () => ({ context: {} }) as never;
+
+  it("marks the email verified and leaves the token unconsumed", async () => {
+    const { user, token } = await createInvitee("invitee1@adla.test");
+    currentBody = { token: token.token };
+    const res = await acceptInvite(publicEvent());
+    expect(res.success).toBe(true);
+    expect(res.email).toBe("invitee1@adla.test");
+
+    const after = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+    expect(after.emailVerified).toBe(true);
+    const tokenAfter = await prisma.passwordResetToken.findUniqueOrThrow({
+      where: { id: token.id },
+    });
+    expect(tokenAfter.usedAt).toBeNull();
+  });
+
+  it("rejects an unknown token", async () => {
+    currentBody = { token: "does-not-exist" };
+    await expect(acceptInvite(publicEvent())).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it("rejects an expired token", async () => {
+    const { token } = await createInvitee("invitee2@adla.test");
+    await prisma.passwordResetToken.update({
+      where: { id: token.id },
+      data: { expiresAt: new Date(Date.now() - 1000) },
+    });
+    currentBody = { token: token.token };
+    await expect(acceptInvite(publicEvent())).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it("rejects an already-used token", async () => {
+    const { token } = await createInvitee("invitee3@adla.test");
+    await prisma.passwordResetToken.update({
+      where: { id: token.id },
+      data: { usedAt: new Date() },
+    });
+    currentBody = { token: token.token };
+    await expect(acceptInvite(publicEvent())).rejects.toMatchObject({ statusCode: 400 });
   });
 });
