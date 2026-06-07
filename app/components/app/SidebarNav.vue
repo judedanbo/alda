@@ -31,6 +31,22 @@ watch(() => route.path, () => closeMobile());
     class="hidden md:flex flex-col sticky top-16 h-[calc(100vh-4rem)] shrink-0 border-r bg-background transition-[width] duration-200"
     :class="collapsed ? 'w-16' : 'w-60'"
   >
+    <div
+      class="border-b p-2 flex"
+      :class="collapsed ? 'justify-center' : 'justify-end'"
+    >
+      <button
+        type="button"
+        :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+        :aria-expanded="!collapsed"
+        class="flex items-center justify-center w-9 h-9 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        @click="toggleCollapsed"
+      >
+        <ChevronRightIcon v-if="collapsed" class="w-5 h-5 shrink-0" aria-hidden="true" />
+        <ChevronLeftIcon v-else class="w-5 h-5 shrink-0" aria-hidden="true" />
+      </button>
+    </div>
+
     <nav
       class="flex-1 overflow-y-auto px-2 py-4 flex flex-col gap-1"
       aria-label="Primary"
@@ -47,21 +63,6 @@ watch(() => route.path, () => closeMobile());
         </template>
       </TooltipProvider>
     </nav>
-
-    <div class="border-t p-2">
-      <button
-        type="button"
-        :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
-        :aria-expanded="!collapsed"
-        class="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-        :class="collapsed ? 'justify-center' : ''"
-        @click="toggleCollapsed"
-      >
-        <ChevronRightIcon v-if="collapsed" class="w-5 h-5 shrink-0" aria-hidden="true" />
-        <ChevronLeftIcon v-else class="w-5 h-5 shrink-0" aria-hidden="true" />
-        <span v-if="!collapsed">Collapse</span>
-      </button>
-    </div>
   </aside>
 
   <!-- Mobile drawer -->
