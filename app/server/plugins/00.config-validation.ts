@@ -9,10 +9,23 @@
  * Validation logic lives in `server/utils/config-validation.ts` so it can be
  * unit-tested without booting Nitro.
  */
-import { validateRequiredSecrets } from "~/server/utils/config-validation";
+import {
+  validateRequiredSecrets,
+  validateResolvedRuntimeConfig,
+} from "~/server/utils/config-validation";
 
 export default defineNitroPlugin(() => {
-  const errors = validateRequiredSecrets(process.env, process.env.NODE_ENV);
+  // Two complementary checks: raw process.env (the secrets are delivered) AND
+  // the resolved runtimeConfig (those secrets actually reached useRuntimeConfig
+  // via their NUXT_-prefixed twins, rather than silently falling back to a dev
+  // default). The latter catches the missing-NUXT_-twin class of misconfig.
+  const errors = [
+    ...validateRequiredSecrets(process.env, process.env.NODE_ENV),
+    ...validateResolvedRuntimeConfig(
+      useRuntimeConfig() as unknown as Record<string, unknown>,
+      process.env.NODE_ENV,
+    ),
+  ];
   if (errors.length > 0) {
     const message
       = "[config-validation] Refusing to start in production with insecure secrets:\n  - "
