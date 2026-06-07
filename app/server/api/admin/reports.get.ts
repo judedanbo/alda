@@ -1,4 +1,6 @@
+import { Prisma } from "@prisma/client";
 import prisma from "~/server/utils/prisma";
+import { getCached } from "~/server/utils/analytics-cache";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -28,140 +30,139 @@ export default defineEventHandler(async (event) => {
   const dateFrom = query.dateFrom as string | undefined;
   const dateTo = query.dateTo as string | undefined;
 
-  const dateFilter: Record<string, unknown> = {};
-  if (dateFrom || dateTo) {
-    dateFilter.createdAt = {};
-    if (dateFrom) {
-      (dateFilter.createdAt as Record<string, unknown>).gte = new Date(dateFrom);
-    }
-    if (dateTo) {
-      const toDate = new Date(dateTo);
-      toDate.setHours(23, 59, 59, 999);
-      (dateFilter.createdAt as Record<string, unknown>).lte = toDate;
-    }
+  const fromDate = dateFrom ? new Date(dateFrom) : undefined;
+  let toDate: Date | undefined;
+  if (dateTo) {
+    toDate = new Date(dateTo);
+    toDate.setHours(23, 59, 59, 999);
   }
 
-  // Declarations by status
-  const declarationsByStatus = await prisma.declaration.groupBy({
-    by: ["status"],
-    _count: { status: true },
-    where: dateFilter,
-  });
+  // Prisma `where` (createdAt range) for the groupBy queries.
+  const dateFilter: Record<string, unknown> = {};
+  if (fromDate || toDate) {
+    dateFilter.createdAt = {
+      ...(fromDate ? { gte: fromDate } : {}),
+      ...(toDate ? { lte: toDate } : {}),
+    };
+  }
 
-  // Users by role
-  const usersByRole = await prisma.userRole.groupBy({
-    by: ["roleId"],
-    _count: { roleId: true },
-  });
-
-  const roles = await prisma.role.findMany();
-  const roleMap = new Map(roles.map((r) => [r.id, r.name]));
-
-  // Declarations by month (last 12 months)
-  const twelveMonthsAgo = new Date();
-  twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
-
-  const declarations = await prisma.declaration.findMany({
-    where: {
-      createdAt: { gte: twelveMonthsAgo },
-      ...dateFilter,
-    },
-    select: { createdAt: true },
-  });
-
-  const monthlyData: Record<string, number> = {};
-  declarations.forEach((d) => {
-    const monthKey = d.createdAt.toISOString().substring(0, 7);
-    monthlyData[monthKey] = (monthlyData[monthKey] || 0) + 1;
-  });
-
-  const declarationsByMonth = Object.entries(monthlyData)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([month, count]) => ({ month, count }));
-
-  // Top institutions
-  const topInstitutions = await prisma.applicantOffice.groupBy({
-    by: ["institutionId"],
-    _count: { institutionId: true },
-    where: {
-      institutionId: { not: null },
-    },
-    orderBy: { _count: { institutionId: "desc" } },
-    take: 10,
-  });
-
-  const institutionIds = topInstitutions
-    .map((i) => i.institutionId)
-    .filter((id): id is string => id !== null);
-
-  const institutions = await prisma.institution.findMany({
-    where: { id: { in: institutionIds } },
-  });
-
-  const institutionMap = new Map(institutions.map((i) => [i.id, i.name]));
-
-  // Processing times (average hours from submission to review, review to receipt)
-  const declarationsWithTimeline = await prisma.declaration.findMany({
-    where: {
-      submittedAt: { not: null },
-      ...dateFilter,
-    },
-    include: {
-      reviews: { orderBy: { createdAt: "asc" }, take: 1 },
-      receipts: { orderBy: { createdAt: "asc" }, take: 1 },
-    },
-  });
-
-  let totalSubmissionToReview = 0;
-  let countSubmissionToReview = 0;
-  let totalReviewToReceipt = 0;
-  let countReviewToReceipt = 0;
-
-  declarationsWithTimeline.forEach((decl) => {
-    const review = decl.reviews[0];
-    const receipt = decl.receipts[0];
-
-    if (review && decl.submittedAt) {
-      const hours =
-        (review.createdAt.getTime() - decl.submittedAt.getTime()) / (1000 * 60 * 60);
-      totalSubmissionToReview += hours;
-      countSubmissionToReview++;
-
-      if (receipt) {
-        const hours2 =
-          (receipt.createdAt.getTime() - review.createdAt.getTime()) / (1000 * 60 * 60);
-        totalReviewToReceipt += hours2;
-        countReviewToReceipt++;
-      }
-    }
-  });
-
-  return {
-    success: true,
-    data: {
-      declarationsByStatus: declarationsByStatus.map((d) => ({
-        status: d.status,
-        count: d._count.status,
-      })),
-      declarationsByMonth,
-      usersByRole: usersByRole.map((u) => ({
-        role: roleMap.get(u.roleId) || "Unknown",
-        count: u._count.roleId,
-      })),
-      topInstitutions: topInstitutions.map((i) => ({
-        name: institutionMap.get(i.institutionId!) || "Unknown",
-        count: i._count.institutionId,
-      })),
-      processingTimes: {
-        avgSubmissionToReview:
-          countSubmissionToReview > 0
-            ? Math.round(totalSubmissionToReview / countSubmissionToReview)
-            : 0,
-        avgReviewToReceipt:
-          countReviewToReceipt > 0
-            ? Math.round(totalReviewToReceipt / countReviewToReceipt)
-            : 0,
-      },
-    },
+  // Reusable SQL date predicate (parameterized via Prisma.sql) for the raw
+  // aggregate queries. `col` lets the same filter target d.created_at in joins.
+  const dateConds = (col: Prisma.Sql) => {
+    const conds: Prisma.Sql[] = [];
+    if (fromDate) conds.push(Prisma.sql`${col} >= ${fromDate}`);
+    if (toDate) conds.push(Prisma.sql`${col} <= ${toDate}`);
+    return conds;
   };
+
+  const data = await getCached(
+    `admin:reports:${dateFrom ?? ""}:${dateTo ?? ""}`,
+    300,
+    async () => {
+      const twelveMonthsAgo = new Date();
+      twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+
+      // Monthly grouping pushed into SQL (date_trunc) — returns ~12 rows
+      // instead of every declaration for the JS to bucket. Uses the new
+      // declarations_created_at_idx.
+      const monthWhere = Prisma.join(
+        [Prisma.sql`created_at >= ${twelveMonthsAgo}`, ...dateConds(Prisma.sql`created_at`)],
+        " AND ",
+      );
+
+      // Processing-time averages pushed into SQL. INNER lateral join on the
+      // earliest review (metric requires a review); LEFT lateral join on the
+      // earliest receipt (AVG ignores NULLs → only declarations with a receipt
+      // count toward avg_review_to_receipt). Mirrors the old JS semantics.
+      const procWhere = Prisma.join(
+        [Prisma.sql`d.submitted_at IS NOT NULL`, ...dateConds(Prisma.sql`d.created_at`)],
+        " AND ",
+      );
+
+      const [
+        declarationsByStatus,
+        usersByRole,
+        roles,
+        monthlyRows,
+        topInstitutions,
+        institutions,
+        processingRows,
+      ] = await Promise.all([
+        prisma.declaration.groupBy({
+          by: ["status"],
+          _count: { status: true },
+          where: dateFilter,
+        }),
+        prisma.userRole.groupBy({
+          by: ["roleId"],
+          _count: { roleId: true },
+        }),
+        prisma.role.findMany(),
+        prisma.$queryRaw<{ month: string; count: number }[]>`
+          SELECT to_char(date_trunc('month', created_at), 'YYYY-MM') AS month,
+                 COUNT(*)::int AS count
+          FROM declarations
+          WHERE ${monthWhere}
+          GROUP BY 1
+          ORDER BY 1 ASC
+        `,
+        prisma.applicantOffice.groupBy({
+          by: ["institutionId"],
+          _count: { institutionId: true },
+          where: { institutionId: { not: null } },
+          orderBy: { _count: { institutionId: "desc" } },
+          take: 10,
+        }),
+        prisma.institution.findMany({ select: { id: true, name: true } }),
+        prisma.$queryRaw<
+          { avg_submission_to_review: number | null; avg_review_to_receipt: number | null }[]
+        >`
+          SELECT
+            AVG(EXTRACT(EPOCH FROM (r.created_at - d.submitted_at)) / 3600.0)::float8
+              AS avg_submission_to_review,
+            AVG(EXTRACT(EPOCH FROM (rc.created_at - r.created_at)) / 3600.0)::float8
+              AS avg_review_to_receipt
+          FROM declarations d
+          JOIN LATERAL (
+            SELECT created_at FROM reviews
+            WHERE declaration_id = d.id ORDER BY created_at ASC LIMIT 1
+          ) r ON true
+          LEFT JOIN LATERAL (
+            SELECT created_at FROM receipts
+            WHERE declaration_id = d.id ORDER BY created_at ASC LIMIT 1
+          ) rc ON true
+          WHERE ${procWhere}
+        `,
+      ]);
+
+      const roleMap = new Map(roles.map((r) => [r.id, r.name]));
+      const institutionMap = new Map(institutions.map((i) => [i.id, i.name]));
+      const proc = processingRows[0];
+
+      return {
+        declarationsByStatus: declarationsByStatus.map((d) => ({
+          status: d.status,
+          count: d._count.status,
+        })),
+        declarationsByMonth: monthlyRows.map((m) => ({
+          month: m.month,
+          count: m.count,
+        })),
+        usersByRole: usersByRole.map((u) => ({
+          role: roleMap.get(u.roleId) || "Unknown",
+          count: u._count.roleId,
+        })),
+        topInstitutions: topInstitutions.map((i) => ({
+          name: institutionMap.get(i.institutionId!) || "Unknown",
+          count: i._count.institutionId,
+        })),
+        processingTimes: {
+          avgSubmissionToReview: Math.round(proc?.avg_submission_to_review ?? 0),
+          avgReviewToReceipt: Math.round(proc?.avg_review_to_receipt ?? 0),
+        },
+      };
+    },
+  );
+
+  return { success: true, data };
 });
