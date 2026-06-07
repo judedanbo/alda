@@ -320,6 +320,49 @@ export const adminUserStatusSchema = z.object({
   isActive: z.boolean(),
 });
 
+/**
+ * Roles an admin may assign when CREATING a user. `applicant` is deliberately
+ * excluded — applicants self-register; admins can only add the applicant role
+ * to an EXISTING user via the roles endpoint.
+ */
+export const STAFF_ASSIGNABLE_ROLES = ["admin", "legal_unit", "schedule_officer"] as const;
+
+export const adminCreateUserSchema = z
+  .object({
+    email: z.string().email("Invalid email address"),
+    phone: z
+      .string()
+      .regex(e164PhoneRegex, "Invalid phone number — include country code, e.g. +14155551234")
+      .optional(),
+    roleNames: z.array(z.enum(STAFF_ASSIGNABLE_ROLES)).min(1, "Select at least one role"),
+    collectionOfficeIds: z.array(z.string().uuid()).default([]),
+  })
+  .superRefine((val, ctx) => {
+    const isOfficer = val.roleNames.includes("schedule_officer");
+    if (isOfficer && val.collectionOfficeIds.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["collectionOfficeIds"],
+        message: "Assign at least one collection office for a schedule officer",
+      });
+    }
+    if (!isOfficer && val.collectionOfficeIds.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["collectionOfficeIds"],
+        message: "Only schedule officers can be assigned collection offices",
+      });
+    }
+  });
+
+export const adminUserOfficesSchema = z.object({
+  collectionOfficeIds: z.array(z.string().uuid()),
+});
+
+export const acceptInviteSchema = z.object({
+  token: z.string().min(1, "Token is required"),
+});
+
 export const adminInstitutionCreateSchema = z.object({
   name: z.string().trim().min(2).max(255),
   type: z.string().trim().min(1).max(100).nullable().optional(),

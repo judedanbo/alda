@@ -33,10 +33,10 @@ const { isVisible } = useScrollAnimation(sectionRef, { threshold: 0.15 })
 </script>
 
 <template>
-  <section id="how-it-works" ref="sectionRef" class="py-20 bg-muted/30">
+  <section id="how-it-works" ref="sectionRef" class="py-16 sm:py-20 bg-muted/30">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-16">
-        <h2 class="text-3xl font-bold text-foreground mb-4">How It Works</h2>
+      <div class="text-center mb-12">
+        <h2 class="text-3xl sm:text-4xl font-bold text-foreground mb-4">How It Works</h2>
         <p class="text-muted-foreground max-w-2xl mx-auto">
           Complete your asset declaration in four simple steps
         </p>

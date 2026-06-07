@@ -17,17 +17,7 @@ const authStore = useAuthStore()
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
         <!-- Organization -->
         <div class="lg:col-span-1">
-          <NuxtLink to="/" class="flex items-center gap-3 mb-4">
-            <div
-              class="w-9 h-9 rounded-full bg-primary flex items-center justify-center"
-            >
-              <span class="text-primary-foreground font-bold text-sm">GH</span>
-            </div>
-            <div>
-              <div class="font-semibold text-sm">Asset Declaration Portal</div>
-              <div class="text-xs opacity-60">Ghana Audit Service</div>
-            </div>
-          </NuxtLink>
+          <AppBrandLogo size="sm" show-wordmark wordmark-class="text-foreground" subtitle-class="text-muted-foreground" class="mb-4" />
           <p class="text-sm opacity-60 leading-relaxed">
             Ensuring transparency and accountability in public service through
             constitutional compliance.
@@ -51,21 +41,21 @@ const authStore = useAuthStore()
                 <NuxtLink
                   v-if="authStore.isAuthenticated"
                   :to="authStore.dashboardPath"
-                  class="opacity-70 hover:opacity-100 transition-opacity"
+                  class="opacity-70 hover:opacity-100 hover:underline underline-offset-4 transition rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:opacity-100"
                 >
                   Dashboard
                 </NuxtLink>
                 <NuxtLink
                   v-else
                   to="/auth/register"
-                  class="opacity-70 hover:opacity-100 transition-opacity"
+                  class="opacity-70 hover:opacity-100 hover:underline underline-offset-4 transition rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:opacity-100"
                 >
                   Start Declaration
                 </NuxtLink>
                 <template #fallback>
                   <NuxtLink
                     to="/auth/register"
-                    class="opacity-70 hover:opacity-100 transition-opacity"
+                    class="opacity-70 hover:opacity-100 hover:underline underline-offset-4 transition rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:opacity-100"
                   >
                     Start Declaration
                   </NuxtLink>
@@ -75,7 +65,7 @@ const authStore = useAuthStore()
             <li>
               <a
                 href="#about-act-550"
-                class="opacity-70 hover:opacity-100 transition-opacity"
+                class="opacity-70 hover:opacity-100 hover:underline underline-offset-4 transition rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:opacity-100"
               >
                 About Act 550
               </a>
@@ -83,7 +73,7 @@ const authStore = useAuthStore()
             <li>
               <a
                 href="#how-it-works"
-                class="opacity-70 hover:opacity-100 transition-opacity"
+                class="opacity-70 hover:opacity-100 hover:underline underline-offset-4 transition rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:opacity-100"
               >
                 How It Works
               </a>
@@ -91,7 +81,7 @@ const authStore = useAuthStore()
             <li>
               <a
                 href="#who-must-declare"
-                class="opacity-70 hover:opacity-100 transition-opacity"
+                class="opacity-70 hover:opacity-100 hover:underline underline-offset-4 transition rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:opacity-100"
               >
                 Who Must Declare
               </a>
@@ -99,7 +89,7 @@ const authStore = useAuthStore()
             <li>
               <a
                 href="#faq"
-                class="opacity-70 hover:opacity-100 transition-opacity"
+                class="opacity-70 hover:opacity-100 hover:underline underline-offset-4 transition rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:opacity-100"
               >
                 FAQ
               </a>
@@ -118,7 +108,7 @@ const authStore = useAuthStore()
             <li>
               <NuxtLink
                 to="/privacy"
-                class="opacity-70 hover:opacity-100 transition-opacity"
+                class="opacity-70 hover:opacity-100 hover:underline underline-offset-4 transition rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:opacity-100"
               >
                 Privacy Policy
               </NuxtLink>
@@ -126,7 +116,7 @@ const authStore = useAuthStore()
             <li>
               <NuxtLink
                 to="/terms"
-                class="opacity-70 hover:opacity-100 transition-opacity"
+                class="opacity-70 hover:opacity-100 hover:underline underline-offset-4 transition rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:opacity-100"
               >
                 Terms of Service
               </NuxtLink>
@@ -134,7 +124,7 @@ const authStore = useAuthStore()
             <li>
               <NuxtLink
                 to="/contact"
-                class="opacity-70 hover:opacity-100 transition-opacity"
+                class="opacity-70 hover:opacity-100 hover:underline underline-offset-4 transition rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:opacity-100"
               >
                 Contact Us
               </NuxtLink>
@@ -142,7 +132,7 @@ const authStore = useAuthStore()
             <li>
               <NuxtLink
                 to="/accessibility"
-                class="opacity-70 hover:opacity-100 transition-opacity"
+                class="opacity-70 hover:opacity-100 hover:underline underline-offset-4 transition rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:opacity-100"
               >
                 Accessibility
               </NuxtLink>
@@ -173,7 +163,7 @@ const authStore = useAuthStore()
             <li>
               <NuxtLink
                 to="/contact"
-                class="opacity-70 hover:opacity-100 transition-opacity"
+                class="opacity-70 hover:opacity-100 hover:underline underline-offset-4 transition rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:opacity-100"
               >
                 Contact Form →
               </NuxtLink>

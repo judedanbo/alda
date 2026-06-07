@@ -147,6 +147,28 @@ export async function sendVerificationEmail(
 }
 
 /**
+ * Send a staff-account invitation. The link points at /auth/accept-invite,
+ * which verifies the email then hands off to the set-password form.
+ */
+export async function sendStaffInviteEmail(
+  to: string,
+  roleLabels: string,
+  token: string
+): Promise<boolean> {
+  const config = useRuntimeConfig();
+  return sendEmail({
+    to,
+    subject: "Activate your ADLA staff account",
+    template: "staff-invite",
+    data: {
+      name: to,
+      roleLabels,
+      inviteUrl: `${config.public.appUrl}/auth/accept-invite?token=${token}`,
+    },
+  });
+}
+
+/**
  * Send contact acknowledgment email
  */
 export async function sendContactAcknowledgment(

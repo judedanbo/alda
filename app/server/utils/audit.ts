@@ -38,8 +38,17 @@ export async function createAuditLog(
   data: AuditLogData
 ): Promise<void> {
   const ipAddress = extractClientIp(event);
-  const userAgent = getHeader(event, "user-agent") || "unknown";
-  const sessionId = getCookie(event, "session_id") || undefined;
+  // Request metadata is best-effort: synthetic/internal events (and tests)
+  // may lack node.req, and audit logging must never break the operation it
+  // records. extractClientIp already tolerates a missing socket.
+  let userAgent = "unknown";
+  let sessionId: string | undefined;
+  try {
+    userAgent = getHeader(event, "user-agent") || "unknown";
+    sessionId = getCookie(event, "session_id") || undefined;
+  } catch {
+    // leave defaults
+  }
 
   // Mask known PII fields (Ghana Card numbers, full names, emails, phones,
   // bucket keys) before persisting. Old rows written before C-5 still
@@ -106,6 +115,11 @@ export const AuditActions = {
   OFFICE_ADDED: "office_added",
   OFFICE_UPDATED: "office_updated",
   OFFICE_REMOVED: "office_removed",
+  OFFICE_ASSIGN: "office_assign",
+
+  // User Management
+  USER_CREATED: "user_created",
+  USER_INVITED: "user_invited",
 
   // Declarations
   DECLARATION_CREATED: "declaration_created",

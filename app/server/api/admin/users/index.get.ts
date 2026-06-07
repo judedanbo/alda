@@ -69,6 +69,11 @@ export default defineEventHandler(async (event) => {
         roles: {
           include: { role: true },
         },
+        assignedOffices: {
+          select: {
+            collectionOffice: { select: { id: true, name: true, type: true, region: true } },
+          },
+        },
         applicantProfile: {
           select: {
             fullName: true,
@@ -104,6 +109,10 @@ export default defineEventHandler(async (event) => {
         lastLoginAt: user.lastLoginAt?.toISOString() || null,
         createdAt: user.createdAt.toISOString(),
         roles: user.roles.map((r) => r.role.name),
+        collectionOffices: user.assignedOffices.map((a) => a.collectionOffice),
+        // "Invitation pending" = staff account created but email not yet verified
+        // via the invite link. (Applicants are never created here.)
+        activated: user.emailVerified,
         profile: user.applicantProfile
           ? (() => {
               const decrypted = decryptProfileIds(user.applicantProfile);
