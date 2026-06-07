@@ -16,9 +16,7 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      // Tall viewport so the Create-User dialog's footer button stays in view
-      // when the (un-scrolled) collection-office list expands.
-      use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 1400 } },
+      use: { ...devices["Desktop Chrome"] },
     },
   ],
   webServer: {

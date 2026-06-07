@@ -508,7 +508,7 @@ const resendInvite = async (user: User) => {
 
     <!-- Create User Modal -->
     <Dialog :open="showCreateModal" @update:open="(v: boolean) => { if (!v) closeCreateModal() }">
-      <DialogContent class="max-w-md">
+      <DialogContent class="max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create User</DialogTitle>
           <DialogDescription>
