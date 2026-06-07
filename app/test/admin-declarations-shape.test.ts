@@ -88,7 +88,7 @@ describe("GET /api/admin/declarations", () => {
   it("decrypts the projected *Cipher columns back to plaintext national IDs", async () => {
     const res = await handler(adminEvent());
 
-    const applicant = res.data.declarations[0].applicant;
+    const applicant = res.data.declarations[0]!.applicant;
     expect(applicant.ghanaCardNumber).toBe(KNOWN_GHANA_CARD);
     expect(applicant.alternateIdNumber).toBeNull();
     // The projected fields the UI reads are all present.
@@ -105,7 +105,7 @@ describe("GET /api/admin/declarations", () => {
   it("maps the nested relations and counts", async () => {
     const res = await handler(adminEvent());
 
-    const d = res.data.declarations[0];
+    const d = res.data.declarations[0]!;
     expect(d).toMatchObject({
       id: "decl-1",
       uniqueCode: "ADLA-0001",

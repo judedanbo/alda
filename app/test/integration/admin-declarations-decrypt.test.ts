@@ -28,10 +28,10 @@ describe("GET /api/admin/declarations (projection + decryption)", () => {
     const res = await handler(adminEvent());
 
     expect(res.data.declarations.length).toBe(fx.expectedDeclarationCount);
-    const applicant = res.data.declarations[0].applicant;
+    const applicant = res.data.declarations[0]!.applicant;
     expect(applicant.ghanaCardNumber).toBe(KNOWN_GHANA_CARD);
     expect(applicant.alternateIdNumber).toBeNull();
     expect(applicant.fullName).toBe("Ama Mensah");
-    expect(applicant.offices[0].institution?.name).toBe(fx.institutionName);
+    expect(applicant.offices[0]!.institution?.name).toBe(fx.institutionName);
   });
 });
