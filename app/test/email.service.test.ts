@@ -23,6 +23,7 @@ const allTemplates = [
   "verification-rejected",
   "verification-on-hold",
   "verification-more-info",
+  "staff-invite",
 ] as const;
 
 describe("generateEmailHtml", () => {
@@ -37,6 +38,8 @@ describe("generateEmailHtml", () => {
       receiptNumber: "R-2026-001",
       reason: "missing supporting document",
       messageToApplicant: "please re-upload your Ghana Card",
+      inviteUrl: "https://example.com/auth/accept-invite?token=abc",
+      roleLabels: "Legal Unit",
     });
     expect(typeof html).toBe("string");
     expect(html.length).toBeGreaterThan(100);
@@ -58,6 +61,16 @@ describe("generateEmailHtml", () => {
       receiptNumber: "R-2026-001",
     });
     expect(html).toContain("R-2026-001");
+  });
+
+  it("interpolates the accept-invite URL into the staff-invite email", () => {
+    const html = generateEmailHtml("staff-invite", {
+      name: "Jane",
+      roleLabels: "Legal Unit",
+      inviteUrl: "https://example.com/auth/accept-invite?token=abc",
+    });
+    expect(html).toContain("https://example.com/auth/accept-invite?token=abc");
+    expect(html).toContain("Legal Unit");
   });
 
   it("interpolates the rejection reason into the rejected email", () => {
