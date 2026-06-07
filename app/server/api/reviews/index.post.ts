@@ -2,6 +2,7 @@ import prisma from "~/server/utils/prisma";
 import { validateBody, sectionReviewSchema } from "~/server/utils/validators";
 import { logAction, AuditActions } from "~/server/utils/audit";
 import { sendNotification } from "~/server/services/notification.service";
+import { runAfterResponse } from "~/server/utils/after-response";
 import { payloads } from "~/server/notifications/payloads";
 import { assertOfficerCanActOnDeclaration } from "~/server/utils/officer-scope";
 
@@ -118,7 +119,7 @@ export default defineEventHandler(async (event) => {
     });
 
     if (declaration.applicant.user) {
-      await sendNotification({
+      runAfterResponse(sendNotification({
         userId: declaration.applicant.user.id,
         type: "REVIEW_APPROVED",
         ...payloads.declarationApproved({
@@ -127,7 +128,7 @@ export default defineEventHandler(async (event) => {
           declarationId: declaration.id,
         }),
         dedupeKey: declaration.uniqueCode,
-      });
+      }), "notify:REVIEW_APPROVED");
     }
 
     return {
@@ -186,7 +187,7 @@ export default defineEventHandler(async (event) => {
 
   if (declaration.applicant.user) {
     const issueCount = data.sections.filter((s) => !s.isAcceptable).length;
-    await sendNotification({
+    runAfterResponse(sendNotification({
       userId: declaration.applicant.user.id,
       type: "SECTION_REVIEW_COMMENTS",
       ...payloads.sectionReviewComments({
@@ -195,7 +196,7 @@ export default defineEventHandler(async (event) => {
         issueCount,
       }),
       dedupeKey: `${declaration.uniqueCode}:sections`,
-    });
+    }), "notify:SECTION_REVIEW_COMMENTS");
   }
 
   return {

@@ -89,7 +89,6 @@ model RefreshToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([token])
   @@index([familyId])
   @@map("refresh_tokens")
 }
@@ -104,7 +103,6 @@ model PasswordResetToken {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([token])
   @@map("password_reset_tokens")
 }
 
@@ -118,7 +116,6 @@ model EmailVerificationToken {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([token])
   @@index([userId])
   @@map("email_verification_tokens")
 }
@@ -174,7 +171,7 @@ model ApplicantProfile {
   verificationReviews ApplicantVerificationReview[]
 
   @@unique([idType, alternateIdNumberHash], name: "applicant_profiles_alt_id_hash_key")
-  @@index([verificationStatus])
+  @@index([verificationStatus, createdAt])
   @@index([idType])
   @@map("applicant_profiles")
 }
@@ -212,6 +209,9 @@ model ApplicantOffice {
   officeCategory PublicOfficeCategory @relation(fields: [officeCategoryId], references: [id])
   institution    Institution?         @relation(fields: [institutionId], references: [id])
 
+  @@index([profileId])
+  @@index([institutionId])
+  @@index([officeCategoryId])
   @@map("applicant_offices")
 }
 
@@ -348,8 +348,9 @@ model Declaration {
   previousDeclaration Declaration?               @relation("DeclarationChain", fields: [previousDeclarationId], references: [id])
   nextDeclaration     Declaration?               @relation("DeclarationChain")
 
-  @@index([uniqueCode])
-  @@index([status])
+  @@index([applicantId, createdAt])
+  @@index([status, createdAt])
+  @@index([createdAt])
   @@map("declarations")
 }
 
@@ -467,6 +468,8 @@ model Review {
   declaration Declaration @relation(fields: [declarationId], references: [id])
   reviewer    User        @relation("ReviewedBy", fields: [reviewedBy], references: [id])
 
+  @@index([declarationId])
+  @@index([reviewedBy])
   @@map("reviews")
 }
 
@@ -482,6 +485,7 @@ model Receipt {
   declaration Declaration @relation(fields: [declarationId], references: [id])
   generator   User        @relation("GeneratedBy", fields: [generatedBy], references: [id])
 
+  @@index([declarationId])
   @@map("receipts")
 }
 

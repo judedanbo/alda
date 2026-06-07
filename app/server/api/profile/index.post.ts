@@ -4,6 +4,7 @@ import prisma from "~/server/utils/prisma";
 import { validateBody, applicantProfileSchema } from "~/server/utils/validators";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
 import { notifyVerificationSubmitted } from "~/server/services/notification.service";
+import { runAfterResponse } from "~/server/utils/after-response";
 import { presignStored } from "~/server/services/storage.service";
 import { encryptPii, hashPii, canonicalizeId, decryptProfileIds } from "~/server/utils/pii-encryption";
 
@@ -133,7 +134,10 @@ export default defineEventHandler(async (event) => {
   // Notify applicant that verification is in progress. profile.id is
   // a natural per-profile key — re-clicks dedupe; a future resubmit
   // uses a different key (see resubmit endpoint).
-  await notifyVerificationSubmitted(auth.userId, data.fullName, profile.id);
+  runAfterResponse(
+    notifyVerificationSubmitted(auth.userId, data.fullName, profile.id),
+    "notify:VERIFICATION_SUBMITTED",
+  );
 
   // Re-sign the stored keys for client preview.
   const [ghanaCardFrontUrl, ghanaCardBackUrl, alternateIdScanUrl] = await Promise.all([

@@ -2,6 +2,7 @@ import prisma from "~/server/utils/prisma";
 import { logAction } from "~/server/utils/audit";
 import { generateReceiptPDF, generateReceiptNumber } from "~/server/services/pdf.service";
 import { sendNotification } from "~/server/services/notification.service";
+import { runAfterResponse } from "~/server/utils/after-response";
 import { payloads } from "~/server/notifications/payloads";
 import { presignStored } from "~/server/services/storage.service";
 import { assertOfficerCanActOnDeclaration } from "~/server/utils/officer-scope";
@@ -177,7 +178,7 @@ export default defineEventHandler(async (event) => {
   if (declaration.applicant.user) {
     const user = declaration.applicant.user;
 
-    await sendNotification({
+    runAfterResponse(sendNotification({
       userId: user.id,
       type: "RECEIPT_READY",
       ...payloads.receiptReady({
@@ -188,7 +189,7 @@ export default defineEventHandler(async (event) => {
         pdfUrl: pdfKey,
       }),
       dedupeKey: receiptNumber,
-    });
+    }), "notify:RECEIPT_READY");
   }
 
   const previewUrl = await presignStored(pdfKey);

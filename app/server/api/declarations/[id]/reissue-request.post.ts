@@ -2,6 +2,7 @@ import prisma from "~/server/utils/prisma";
 import { validateBody, reissueRequestSchema } from "~/server/utils/validators";
 import { logAction, AuditActions } from "~/server/utils/audit";
 import { notifyFormReissueRequested } from "~/server/services/notification.service";
+import { runAfterResponse } from "~/server/utils/after-response";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -117,11 +118,14 @@ export default defineEventHandler(async (event) => {
   });
 
   if (declaration.applicant.user) {
-    await notifyFormReissueRequested(
-      declaration.applicant.user.id,
-      declaration.uniqueCode,
-      declaration.applicant.fullName,
-      reissueRequest.id,
+    runAfterResponse(
+      notifyFormReissueRequested(
+        declaration.applicant.user.id,
+        declaration.uniqueCode,
+        declaration.applicant.fullName,
+        reissueRequest.id,
+      ),
+      "notify:FORM_REISSUE_REQUESTED",
     );
   }
 

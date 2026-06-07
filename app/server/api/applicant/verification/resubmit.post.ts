@@ -1,6 +1,7 @@
 import prisma from "~/server/utils/prisma";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
 import { notifyVerificationSubmitted } from "~/server/services/notification.service";
+import { runAfterResponse } from "~/server/utils/after-response";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -55,10 +56,13 @@ export default defineEventHandler(async (event) => {
   // Dedupe key includes the post-update timestamp so each legitimate
   // resubmit fires a fresh notification while still absorbing
   // double-clicks within the dedupe window.
-  await notifyVerificationSubmitted(
-    auth.userId,
-    profile.fullName,
-    `${profile.id}:${updatedProfile.updatedAt.getTime()}`,
+  runAfterResponse(
+    notifyVerificationSubmitted(
+      auth.userId,
+      profile.fullName,
+      `${profile.id}:${updatedProfile.updatedAt.getTime()}`,
+    ),
+    "notify:VERIFICATION_SUBMITTED",
   );
 
   return {

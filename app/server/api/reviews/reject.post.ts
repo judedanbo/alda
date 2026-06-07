@@ -2,6 +2,7 @@ import prisma from "~/server/utils/prisma";
 import { validateBody, rejectReviewSchema } from "~/server/utils/validators";
 import { logAction, AuditActions } from "~/server/utils/audit";
 import { sendNotification } from "~/server/services/notification.service";
+import { runAfterResponse } from "~/server/utils/after-response";
 import { payloads } from "~/server/notifications/payloads";
 import { generateUniqueCode } from "~/server/utils/code-generator";
 
@@ -170,12 +171,12 @@ export default defineEventHandler(async (event) => {
       copy.message += " Your replacement form is ready to be collected.";
     }
 
-    await sendNotification({
+    runAfterResponse(sendNotification({
       userId: declaration.applicant.user.id,
       type: "REVIEW_REJECTED",
       ...copy,
       dedupeKey: declaration.uniqueCode,
-    });
+    }), "notify:REVIEW_REJECTED");
   }
 
   return {

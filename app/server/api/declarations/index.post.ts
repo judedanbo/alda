@@ -2,6 +2,7 @@ import prisma from "~/server/utils/prisma";
 import { generateUniqueCode } from "~/server/utils/code-generator";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
 import { notifyUniqueCodeGenerated } from "~/server/services/notification.service";
+import { runAfterResponse } from "~/server/utils/after-response";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -124,7 +125,10 @@ export default defineEventHandler(async (event) => {
   });
 
   // Send notification with unique code
-  await notifyUniqueCodeGenerated(auth.userId, uniqueCode, profile.fullName);
+  runAfterResponse(
+    notifyUniqueCodeGenerated(auth.userId, uniqueCode, profile.fullName),
+    "notify:UNIQUE_CODE_GENERATED",
+  );
 
   return {
     success: true,
