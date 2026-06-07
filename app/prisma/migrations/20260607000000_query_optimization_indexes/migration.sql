@@ -35,11 +35,11 @@ CREATE INDEX "receipts_declaration_id_idx" ON "receipts"("declaration_id");
 
 -- 2. Composite filter+sort indexes (replace single-column equivalents) -------
 -- DropIndex (redundant with the unique constraint declarations_unique_code_key)
-DROP INDEX "declarations_unique_code_idx";
+DROP INDEX IF EXISTS "declarations_unique_code_idx";
 -- DropIndex (replaced by the (status, created_at) composite below)
-DROP INDEX "declarations_status_idx";
+DROP INDEX IF EXISTS "declarations_status_idx";
 -- DropIndex (replaced by the (verification_status, created_at) composite below)
-DROP INDEX "applicant_profiles_verification_status_idx";
+DROP INDEX IF EXISTS "applicant_profiles_verification_status_idx";
 -- CreateIndex (applicant's own declaration list: filter applicant_id, sort created_at)
 CREATE INDEX "declarations_applicant_id_created_at_idx" ON "declarations"("applicant_id", "created_at");
 -- CreateIndex (officer/admin list filtered by status, sorted created_at; also serves status-only count/groupBy)
@@ -51,8 +51,8 @@ CREATE INDEX "applicant_profiles_verification_status_created_at_idx" ON "applica
 
 -- 3. Drop redundant duplicate indexes on UNIQUE columns ----------------------
 -- DropIndex (redundant with refresh_tokens_token_key)
-DROP INDEX "refresh_tokens_token_idx";
+DROP INDEX IF EXISTS "refresh_tokens_token_idx";
 -- DropIndex (redundant with password_reset_tokens_token_key)
-DROP INDEX "password_reset_tokens_token_idx";
+DROP INDEX IF EXISTS "password_reset_tokens_token_idx";
 -- DropIndex (redundant with email_verification_tokens_token_key)
-DROP INDEX "email_verification_tokens_token_idx";
+DROP INDEX IF EXISTS "email_verification_tokens_token_idx";
