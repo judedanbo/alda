@@ -20,6 +20,7 @@ import { verificationApproved } from "./verification-approved";
 import { verificationRejected } from "./verification-rejected";
 import { verificationOnHold } from "./verification-on-hold";
 import { verificationMoreInfo } from "./verification-more-info";
+import { staffInvite } from "./staff-invite";
 import type { TemplateRenderer } from "./layout";
 
 export type EmailTemplate =
@@ -36,7 +37,8 @@ export type EmailTemplate =
   | "verification-approved"
   | "verification-rejected"
   | "verification-on-hold"
-  | "verification-more-info";
+  | "verification-more-info"
+  | "staff-invite";
 
 const TEMPLATES: Record<EmailTemplate, TemplateRenderer> = {
   "welcome": welcome,
@@ -53,6 +55,7 @@ const TEMPLATES: Record<EmailTemplate, TemplateRenderer> = {
   "verification-rejected": verificationRejected,
   "verification-on-hold": verificationOnHold,
   "verification-more-info": verificationMoreInfo,
+  "staff-invite": staffInvite,
 };
 
 export function renderEmail(template: EmailTemplate, data: Record<string, unknown>): string {
