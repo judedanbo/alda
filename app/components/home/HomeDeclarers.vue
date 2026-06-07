@@ -99,10 +99,10 @@ const branches: BranchTab[] = [
 </script>
 
 <template>
-  <section id="who-must-declare" class="py-20">
+  <section id="who-must-declare" class="py-16 sm:py-20">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-12">
-        <h2 class="text-3xl font-bold text-foreground mb-4">
+        <h2 class="text-3xl sm:text-4xl font-bold text-foreground mb-4">
           Who Must Declare?
         </h2>
         <p class="text-muted-foreground max-w-2xl mx-auto">
@@ -113,15 +113,23 @@ const branches: BranchTab[] = [
       </div>
 
       <Tabs default-value="executive">
-        <TabsList variant="line" class="w-full justify-start overflow-x-auto">
+        <TabsList
+          variant="line"
+          class="w-full justify-start overflow-x-auto"
+        >
           <TabsTrigger
             v-for="branch in branches"
             :key="branch.id"
             :value="branch.id"
-            class="gap-1.5"
+            class="gap-1.5 whitespace-nowrap"
           >
-            <component :is="branch.icon" class="size-4" />
-            <span class="hidden sm:inline">{{ branch.label }}</span>
+            <component :is="branch.icon" class="size-4 shrink-0" />
+            <span>{{ branch.label }}</span>
+            <span
+              class="ml-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground"
+            >
+              {{ branch.roles.length }}
+            </span>
           </TabsTrigger>
         </TabsList>
 
