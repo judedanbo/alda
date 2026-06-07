@@ -4,6 +4,8 @@ import prisma from "~/server/utils/prisma";
 // Mutable body the stubbed readBody returns; set before each handler call.
 let currentBody: unknown = {};
 vi.stubGlobal("readBody", async () => currentBody);
+let currentRouteId = "";
+vi.stubGlobal("getRouterParam", () => currentRouteId);
 // email sending must not actually fire; stub the helper the handler imports.
 vi.mock("~/server/services/email.service", () => ({
   sendStaffInviteEmail: vi.fn(async () => true),
@@ -11,6 +13,7 @@ vi.mock("~/server/services/email.service", () => ({
 
 const createUser = (await import("~/server/api/admin/users/index.post")).default;
 const acceptInvite = (await import("~/server/api/auth/accept-invite.post")).default;
+const updateOffices = (await import("~/server/api/admin/users/[id]/offices.put")).default;
 
 const TABLES = [
   "password_reset_tokens",
@@ -150,5 +153,44 @@ describe("POST /api/auth/accept-invite", () => {
     });
     currentBody = { token: token.token };
     await expect(acceptInvite(publicEvent())).rejects.toMatchObject({ statusCode: 400 });
+  });
+});
+
+describe("PUT /api/admin/users/[id]/offices", () => {
+  it("replaces a user's collection-office assignments", async () => {
+    currentBody = {
+      email: "officer2@adla.test",
+      roleNames: ["schedule_officer"],
+      collectionOfficeIds: [hqOfficeId],
+    };
+    await createUser(adminEvent());
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: "officer2@adla.test" } });
+
+    const other = await prisma.collectionOffice.create({
+      data: { name: "Kumasi Regional", type: "REGIONAL", region: "Ashanti" },
+    });
+
+    currentRouteId = user.id;
+    currentBody = { collectionOfficeIds: [other.id] };
+    const res = await updateOffices(adminEvent());
+    expect(res.success).toBe(true);
+
+    const after = await prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
+      include: { assignedOffices: true },
+    });
+    expect(after.assignedOffices.map((o) => o.collectionOfficeId)).toEqual([other.id]);
+  });
+
+  it("clears scope when given an empty list", async () => {
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: "officer2@adla.test" } });
+    currentRouteId = user.id;
+    currentBody = { collectionOfficeIds: [] };
+    await updateOffices(adminEvent());
+    const after = await prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
+      include: { assignedOffices: true },
+    });
+    expect(after.assignedOffices).toHaveLength(0);
   });
 });
