@@ -314,6 +314,11 @@ export async function statObjectMeta(key: string): Promise<{ size: number; conte
 /**
  * Trusted content type for an upload — one we can serve safely with the
  * matching response header.
+ *
+ * Source of truth for the safe-to-serve set. The serving boundary keeps a
+ * parallel inline allow-list (`INLINE_SAFE_TYPES` in
+ * `server/api/files/[...key].get.ts`) — adding a format here means updating
+ * that set too, or the new type will be force-downloaded instead of rendered.
  */
 export type SupportedUploadType = "image/jpeg" | "image/png" | "image/webp" | "application/pdf";
 

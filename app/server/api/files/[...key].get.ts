@@ -2,7 +2,8 @@ import { getObjectStream, statObjectMeta } from "~/server/services/storage.servi
 import { verifyFileSig } from "~/server/utils/file-url";
 
 // Content-types safe to render inline on this first-party origin. Mirrors what
-// the upload sniffer (`detectMagicType`) can ever produce. Anything else —
+// the upload sniffer (`detectMagicType`) can ever produce — keep in sync with
+// `SupportedUploadType` in server/services/storage.service.ts. Anything else —
 // notably text/html and image/svg+xml, which can execute script in the page's
 // own origin where the auth tokens live — is forced to download instead.
 const INLINE_SAFE_TYPES = new Set([
