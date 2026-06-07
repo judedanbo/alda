@@ -1,5 +1,5 @@
 import { fileURLToPath } from "node:url";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 const appRoot = fileURLToPath(new URL(".", import.meta.url));
 
@@ -15,6 +15,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["test/**/*.test.ts"],
+    // Integration tests need a real Postgres and run under their own config
+    // (vitest.integration.config.ts / `npm run test:integration`).
+    exclude: [...configDefaults.exclude, "test/integration/**"],
     setupFiles: ["./test/setup.ts"],
   },
 });

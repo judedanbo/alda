@@ -15,6 +15,22 @@ jobs:
       run:
         working-directory: app
 
+    # Postgres for the integration test tier (real-DB SQL/decrypt/index checks).
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: adla
+          POSTGRES_PASSWORD: adla
+          POSTGRES_DB: adla_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U adla"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       # L-6: actions pinned to full commit SHAs. The trailing comment
       # records the human-readable version; bump the SHA when upgrading.
@@ -40,6 +56,15 @@ jobs:
 
       - name: Unit tests
         run: npm run test:unit
+
+      # Real-DB tier: apply migrations to the service Postgres, then run the
+      # integration suite (SQL aggregates, decryption, index existence).
+      - name: Integration tests
+        env:
+          TEST_DATABASE_URL: postgresql://adla:adla@localhost:5432/adla_test
+        run: |
+          DATABASE_URL="$TEST_DATABASE_URL" npx prisma migrate deploy
+          npm run test:integration
 
       - name: Build
         run: npm run build
