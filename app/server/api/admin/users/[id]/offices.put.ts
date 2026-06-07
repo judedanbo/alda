@@ -56,19 +56,15 @@ export default defineEventHandler(async (event) => {
     }),
   ]);
 
-  try {
-    await logAction({
-      userId: auth.userId,
-      action: "office_assign",
-      entityType: "User",
-      entityId: userId,
-      oldValues: { collectionOfficeIds: oldOffices },
-      newValues: { collectionOfficeIds },
-      event,
-    });
-  } catch (e) {
-    console.error("[admin/users] audit log failed:", e);
-  }
+  await logAction({
+    userId: auth.userId,
+    action: "office_assign",
+    entityType: "User",
+    entityId: userId,
+    oldValues: { collectionOfficeIds: oldOffices },
+    newValues: { collectionOfficeIds },
+    event,
+  });
 
   return { success: true, message: "Office assignments updated" };
 });
