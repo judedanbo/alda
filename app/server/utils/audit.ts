@@ -106,6 +106,11 @@ export const AuditActions = {
   OFFICE_ADDED: "office_added",
   OFFICE_UPDATED: "office_updated",
   OFFICE_REMOVED: "office_removed",
+  OFFICE_ASSIGN: "office_assign",
+
+  // User Management
+  USER_CREATED: "user_created",
+  USER_INVITED: "user_invited",
 
   // Declarations
   DECLARATION_CREATED: "declaration_created",
