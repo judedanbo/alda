@@ -79,11 +79,23 @@ export default defineEventHandler(async (event) => {
       where,
       include: {
         applicant: {
-          include: {
+          // Projected to exactly what the response builds: the two *Cipher
+          // columns feed decryptProfileIds, the rest are rendered directly.
+          // Avoids pulling the @db.Text Ghana-Card image-URL columns, the
+          // hash columns, and timestamps for every list row.
+          select: {
+            fullName: true,
+            idType: true,
+            ghanaCardNumberCipher: true,
+            alternateIdNumberCipher: true,
             offices: {
-              include: {
-                officeCategory: true,
-                institution: true,
+              select: {
+                id: true,
+                designation: true,
+                startDate: true,
+                endDate: true,
+                officeCategory: { select: { name: true } },
+                institution: { select: { name: true } },
               },
               orderBy: { startDate: "desc" as const },
             },
