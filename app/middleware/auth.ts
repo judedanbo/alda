@@ -31,15 +31,17 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // Role-based access control
   const path = to.path;
 
+  // On a role violation, send the user to THEIR own dashboard rather than
+  // always the applicant one.
   if (path.startsWith("/admin") && !authStore.isAdmin) {
-    return navigateTo("/applicant/dashboard");
+    return navigateTo(authStore.dashboardPath);
   }
 
   if (path.startsWith("/officer") && !authStore.isOfficer && !authStore.isAdmin) {
-    return navigateTo("/applicant/dashboard");
+    return navigateTo(authStore.dashboardPath);
   }
 
   if (path.startsWith("/legal") && !authStore.isLegalUnit && !authStore.isAdmin) {
-    return navigateTo("/applicant/dashboard");
+    return navigateTo(authStore.dashboardPath);
   }
 });
