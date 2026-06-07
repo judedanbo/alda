@@ -2,6 +2,7 @@ import prisma from "~/server/utils/prisma";
 import { validateBody, formReturnRecordSchema } from "~/server/utils/validators";
 import { logAction, AuditActions } from "~/server/utils/audit";
 import { notifyDeclarationSubmitted } from "~/server/services/notification.service";
+import { runAfterResponse } from "~/server/utils/after-response";
 import { assertOfficerCanActOnOffice } from "~/server/utils/officer-scope";
 
 export default defineEventHandler(async (event) => {
@@ -106,10 +107,13 @@ export default defineEventHandler(async (event) => {
 
   // Send notification to applicant
   if (declaration.applicant.user) {
-    await notifyDeclarationSubmitted(
-      declaration.applicant.user.id,
-      declaration.uniqueCode,
-      declaration.applicant.fullName
+    runAfterResponse(
+      notifyDeclarationSubmitted(
+        declaration.applicant.user.id,
+        declaration.uniqueCode,
+        declaration.applicant.fullName,
+      ),
+      "notify:DECLARATION_SUBMITTED",
     );
   }
 

@@ -2,6 +2,7 @@ import prisma from "~/server/utils/prisma";
 import { validateBody, verificationReviewSchema } from "~/server/utils/validators";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
 import { notifyVerificationStatusChanged } from "~/server/services/notification.service";
+import { runAfterResponse } from "~/server/utils/after-response";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -87,12 +88,15 @@ export default defineEventHandler(async (event) => {
     newValues: { verificationStatus: body.status },
   });
 
-  await notifyVerificationStatusChanged(
-    profile.user.id,
-    body.status,
-    profile.fullName,
-    body.reason,
-    body.messageToApplicant,
+  runAfterResponse(
+    notifyVerificationStatusChanged(
+      profile.user.id,
+      body.status,
+      profile.fullName,
+      body.reason,
+      body.messageToApplicant,
+    ),
+    "notify:VERIFICATION_STATUS_CHANGED",
   );
 
   return {

@@ -6,6 +6,7 @@ import {
   notifyFormReissueDeclined,
 } from "~/server/services/notification.service";
 import { presignStored } from "~/server/services/storage.service";
+import { runAfterResponse } from "~/server/utils/after-response";
 
 const approverLabels: Record<string, string> = {
   AUDITOR_GENERAL: "the Auditor General",
@@ -117,9 +118,15 @@ export default defineEventHandler(async (event) => {
     const name = request.declaration.applicant.fullName;
 
     if (isApproved) {
-      await notifyFormReissueApproved(userId, code, name, id);
+      runAfterResponse(
+        notifyFormReissueApproved(userId, code, name, id),
+        "notify:FORM_REISSUE_APPROVED",
+      );
     } else {
-      await notifyFormReissueDeclined(userId, code, name, body.decisionReason!, id);
+      runAfterResponse(
+        notifyFormReissueDeclined(userId, code, name, body.decisionReason!, id),
+        "notify:FORM_REISSUE_DECLINED",
+      );
     }
   }
 

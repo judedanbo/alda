@@ -2,6 +2,7 @@ import prisma from "~/server/utils/prisma";
 import { validateBody, formCollectionRecordSchema } from "~/server/utils/validators";
 import { logAction, AuditActions } from "~/server/utils/audit";
 import { sendNotification } from "~/server/services/notification.service";
+import { runAfterResponse } from "~/server/utils/after-response";
 import { payloads } from "~/server/notifications/payloads";
 import { assertOfficerCanActOnOffice } from "~/server/utils/officer-scope";
 
@@ -143,7 +144,7 @@ export default defineEventHandler(async (event) => {
 
   // Create notification for applicant
   if (declaration.applicant.user) {
-    await sendNotification({
+    runAfterResponse(sendNotification({
       userId: declaration.applicant.user.id,
       type: "FORM_COLLECTED",
       ...payloads.formCollected({
@@ -152,7 +153,7 @@ export default defineEventHandler(async (event) => {
         declarationId: declaration.id,
       }),
       dedupeKey: formCollection.id,
-    });
+    }), "notify:FORM_COLLECTED");
   }
 
   return {

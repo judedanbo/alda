@@ -2,6 +2,7 @@ import prisma from "~/server/utils/prisma";
 import { validateBody, approveReviewSchema } from "~/server/utils/validators";
 import { logAction, AuditActions } from "~/server/utils/audit";
 import { sendNotification } from "~/server/services/notification.service";
+import { runAfterResponse } from "~/server/utils/after-response";
 import { payloads } from "~/server/notifications/payloads";
 import { assertOfficerCanActOnDeclaration } from "~/server/utils/officer-scope";
 
@@ -104,7 +105,7 @@ export default defineEventHandler(async (event) => {
   });
 
   if (declaration.applicant.user) {
-    await sendNotification({
+    runAfterResponse(sendNotification({
       userId: declaration.applicant.user.id,
       type: "REVIEW_APPROVED",
       ...payloads.declarationApproved({
@@ -113,7 +114,7 @@ export default defineEventHandler(async (event) => {
         declarationId: declaration.id,
       }),
       dedupeKey: declaration.uniqueCode,
-    });
+    }), "notify:REVIEW_APPROVED");
   }
 
   return {
