@@ -3,5 +3,7 @@ kind: ConfigMap
 metadata:
   name: adla-config
 data:
-  # TEMPORARY: matches the typo'd staging host until DNS is corrected
-  APP_URL: "https://ttaging-alda.audit.gov.gh"
+  # TEMPORARY: matches the typo'd staging host until DNS is corrected.
+  # NUXT_-prefixed so it overrides runtimeConfig.public.appUrl at runtime
+  # (plain APP_URL is ignored by a production Nuxt build — see base configmap).
+  NUXT_PUBLIC_APP_URL: "https://ttaging-alda.audit.gov.gh"

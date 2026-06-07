@@ -72,6 +72,14 @@ SMTP_PASS="${SMTP_PASS:-}"
 BOOTSTRAP_ADMIN_EMAIL="${BOOTSTRAP_ADMIN_EMAIL:-}"
 BOOTSTRAP_ADMIN_PASSWORD="${BOOTSTRAP_ADMIN_PASSWORD:-}"
 
+# Secrets are delivered under BOTH names on purpose:
+#   * plain names  — read via process.env directly (Prisma's DATABASE_URL, the
+#     production boot gate in config-validation.ts, REDIS_URL direct readers,
+#     PII_* and the SMS webhook secret) and by the data-tier StatefulSets.
+#   * NUXT_ copies — a production Nuxt build only overrides runtimeConfig from
+#     NUXT_-prefixed env vars at runtime; the app reads JWT/MinIO/Redis/SMTP/IP-
+#     salt via useRuntimeConfig(), so those each need a NUXT_ twin. (PII keys and
+#     the webhook secret are read straight from process.env, so they need no twin.)
 kubectl create secret generic adla-secrets \
   --namespace "$NAMESPACE" \
   --from-literal="DATABASE_URL=${DATABASE_URL}" \
@@ -91,6 +99,14 @@ kubectl create secret generic adla-secrets \
   --from-literal="SMTP_PASS=${SMTP_PASS}" \
   --from-literal="BOOTSTRAP_ADMIN_EMAIL=${BOOTSTRAP_ADMIN_EMAIL}" \
   --from-literal="BOOTSTRAP_ADMIN_PASSWORD=${BOOTSTRAP_ADMIN_PASSWORD}" \
+  --from-literal="NUXT_JWT_SECRET=${JWT_SECRET}" \
+  --from-literal="NUXT_JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}" \
+  --from-literal="NUXT_REDIS_URL=${REDIS_URL}" \
+  --from-literal="NUXT_MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}" \
+  --from-literal="NUXT_MINIO_SECRET_KEY=${MINIO_SECRET_KEY}" \
+  --from-literal="NUXT_ANALYTICS_IP_SALT=${ANALYTICS_IP_SALT}" \
+  --from-literal="NUXT_SMTP_USER=${SMTP_USER}" \
+  --from-literal="NUXT_SMTP_PASS=${SMTP_PASS}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 echo ""

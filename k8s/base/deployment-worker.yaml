@@ -31,10 +31,14 @@ spec:
                 name: adla-config
             - secretRef:
                 name: adla-secrets
+          # NUXT_-prefixed so they override runtimeConfig.notifications.* at
+          # runtime (plain names are ignored by a production Nuxt build — see
+          # base/configmap.yaml). The worker process must have the worker
+          # enabled; the app process keeps it disabled via the ConfigMap.
           env:
-            - name: NOTIFICATIONS_WORKER_ENABLED
+            - name: NUXT_NOTIFICATIONS_WORKER_ENABLED
               value: "true"
-            - name: NOTIFICATIONS_QUEUE_ENABLED
+            - name: NUXT_NOTIFICATIONS_QUEUE_ENABLED
               value: "true"
           resources:
             requests:
