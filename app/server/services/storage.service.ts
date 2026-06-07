@@ -42,6 +42,34 @@ function getMinioClient(): Client {
 }
 
 /**
+ * Run a MinIO operation, turning any low-level failure (connection refused,
+ * TLS handshake, AccessDenied, NoSuchBucket, …) into a logged, attributable
+ * 502 instead of an opaque unhandled 500. The log line names the operation +
+ * bucket/key so the cause is diagnosable in a single `kubectl logs` read; the
+ * client gets a usable message (rendered by the upload UI) rather than a bare
+ * stack. An error that already carries `statusCode` (e.g. our own validation
+ * 400s) is re-thrown unchanged.
+ */
+async function storageOp<T>(
+  operation: string,
+  ctx: Record<string, unknown>,
+  fn: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (err && typeof err === "object" && "statusCode" in err) throw err;
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error(`[storage] ${operation} failed`, { ...ctx, error: detail });
+    throw createError({
+      statusCode: 502,
+      statusMessage: "Bad Gateway",
+      message: "Storage backend is unavailable. Please try again shortly.",
+    });
+  }
+}
+
+/**
  * Ensure the bucket exists AND assert a deny-anonymous policy on every boot.
  * Idempotent: setBucketPolicy overwrites, so this is the durable source of
  * truth for the bucket being private even if a dev compose script or a hand-
@@ -49,9 +77,11 @@ function getMinioClient(): Client {
  */
 async function ensureBucket(bucketName: string): Promise<void> {
   const client = getMinioClient();
-  const exists = await client.bucketExists(bucketName);
+  const exists = await storageOp("bucketExists", { bucket: bucketName }, () =>
+    client.bucketExists(bucketName),
+  );
   if (!exists) {
-    await client.makeBucket(bucketName);
+    await storageOp("makeBucket", { bucket: bucketName }, () => client.makeBucket(bucketName));
   }
   try {
     await client.setBucketPolicy(bucketName, denyAnonymousPolicy());
@@ -76,7 +106,9 @@ export interface UploadResult {
 async function presignFresh(key: string, ttlSeconds = DEFAULT_PRESIGN_TTL_SECONDS): Promise<string> {
   const config = useRuntimeConfig();
   const client = getMinioClient();
-  return client.presignedGetObject(config.minioBucket, key, ttlSeconds);
+  return storageOp("presignedGetObject", { bucket: config.minioBucket, key }, () =>
+    client.presignedGetObject(config.minioBucket, key, ttlSeconds),
+  );
 }
 
 /** Upload a file to MinIO. The bucket is private; the returned `url` is a presigned URL valid for ~15 minutes. Persist `key`, not `url`. */
@@ -95,9 +127,9 @@ export async function uploadFile(
   const ext = originalName.split(".").pop() || "";
   const key = `${folder}/${randomUUID()}.${ext}`;
 
-  await client.putObject(bucket, key, file, file.length, {
-    "Content-Type": contentType,
-  });
+  await storageOp("putObject", { bucket, key }, () =>
+    client.putObject(bucket, key, file, file.length, { "Content-Type": contentType }),
+  );
 
   const url = await presignFresh(key);
   return { url, key, bucket, size: file.length, contentType };
@@ -120,9 +152,9 @@ export async function uploadGhanaCard(
   const ext = originalName.split(".").pop() || "jpg";
   const key = `ghana-cards/${userId}/${side}.${ext}`;
 
-  await client.putObject(bucket, key, file, file.length, {
-    "Content-Type": contentType,
-  });
+  await storageOp("putObject", { bucket, key }, () =>
+    client.putObject(bucket, key, file, file.length, { "Content-Type": contentType }),
+  );
 
   const url = await presignFresh(key);
   return { url, key, bucket, size: file.length, contentType };
@@ -151,9 +183,9 @@ export async function uploadAlternateIdScan(
   const safeType = idType.toLowerCase().replace(/[^a-z0-9_-]/g, "");
   const key = `alternate-ids/${userId}/${safeType}.${ext}`;
 
-  await client.putObject(bucket, key, file, file.length, {
-    "Content-Type": contentType,
-  });
+  await storageOp("putObject", { bucket, key }, () =>
+    client.putObject(bucket, key, file, file.length, { "Content-Type": contentType }),
+  );
 
   const url = await presignFresh(key);
   return { url, key, bucket, size: file.length, contentType };
@@ -171,9 +203,9 @@ export async function uploadBuffer(
 
   await ensureBucket(bucket);
 
-  await client.putObject(bucket, key, buffer, buffer.length, {
-    "Content-Type": contentType,
-  });
+  await storageOp("putObject", { bucket, key }, () =>
+    client.putObject(bucket, key, buffer, buffer.length, { "Content-Type": contentType }),
+  );
 
   return key;
 }
