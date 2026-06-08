@@ -57,7 +57,8 @@ const showRecordModal = ref(false);
 const returnOfficeId = ref("");
 const recordingNotes = ref("");
 const isRecording = ref(false);
-const recordError = ref("");
+
+const { toast } = useToast();
 
 const { data: officesResponse } = await useAsyncData(
   "collection-offices",
@@ -97,7 +98,6 @@ const openRecordModal = (declaration: Declaration) => {
   selectedDeclaration.value = declaration;
   returnOfficeId.value = "";
   recordingNotes.value = "";
-  recordError.value = "";
   showRecordModal.value = true;
 };
 
@@ -105,7 +105,6 @@ const recordReturn = async () => {
   if (!selectedDeclaration.value) return;
 
   isRecording.value = true;
-  recordError.value = "";
 
   try {
     await authFetch("/api/form-returns", {
@@ -120,9 +119,9 @@ const recordReturn = async () => {
     showRecordModal.value = false;
     selectedDeclaration.value = null;
     await fetchPendingReturns();
+    toast.success("Form return recorded.");
   } catch (error: unknown) {
-    const e = error as { data?: { statusMessage?: string } };
-    recordError.value = e.data?.statusMessage || "Failed to record form return";
+    toast.fromError(error, "Failed to record form return");
   } finally {
     isRecording.value = false;
   }
@@ -311,11 +310,6 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
               placeholder="Any notes about this returned form..."
             />
           </div>
-
-          <!-- Error -->
-          <Alert v-if="recordError" variant="destructive">
-            <AlertDescription>{{ recordError }}</AlertDescription>
-          </Alert>
         </div>
 
         <DialogFooter>

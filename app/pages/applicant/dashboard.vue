@@ -5,6 +5,7 @@ definePageMeta({
 });
 
 const { user, isEmailVerified, isPhoneVerified, isVerified, sendPhoneCode, verifyPhone } = useAuth();
+const { toast } = useToast();
 
 interface CodeHistoryEntry {
   id: string;
@@ -95,10 +96,9 @@ async function resendVerification() {
   resendLoading.value = true;
   try {
     await authFetch("/api/auth/resend-verification", { method: "POST" });
-    alert("Verification email sent! Check your inbox.");
+    toast.success("Verification email sent — check your inbox.");
   } catch (e) {
-    const err = e as { data?: { message?: string } };
-    alert(err.data?.message || "Failed to send verification email.");
+    toast.fromError(e, "Failed to send verification email.");
   } finally {
     resendLoading.value = false;
   }
@@ -137,6 +137,7 @@ async function handleSendPhoneCode() {
   if (result.success) {
     phoneCodeSent.value = true;
     startResendCountdown(60);
+    toast.success("Verification code sent to your phone.");
   } else {
     phoneCodeError.value = result.error || "Failed to send code";
     if (result.retryInSec) startResendCountdown(result.retryInSec);
@@ -156,6 +157,7 @@ async function handleVerifyPhone() {
     phoneCodeSent.value = false;
     phoneCodeInput.value = "";
     if (phoneResendTimer) clearInterval(phoneResendTimer);
+    toast.success("Phone number verified.");
   } else {
     phoneCodeError.value = result.error || "Verification failed";
   }

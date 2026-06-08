@@ -6,8 +6,12 @@
  * Mount once at the dashboard layout level. The bell/list components
  * read from the notifications store as usual.
  */
+import { useIntervalFn } from "@vueuse/core";
 import { useAuthStore } from "~/stores/auth";
 import { useNotificationStore } from "~/stores/notifications";
+
+/** Fallback poll cadence used when the SSE connection is unavailable. */
+const POLL_INTERVAL_MS = 30_000;
 
 interface NotificationEvent {
   type: "notification.created";
@@ -54,15 +58,18 @@ export function useNotificationStream() {
     source.addEventListener("notification", (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data) as NotificationEvent;
-        notifications.pushNotification({
-          id: data.notificationId,
-          type: data.notificationType,
-          title: data.title,
-          message: data.message,
-          metadata: data.metadata ?? null,
-          readAt: null,
-          createdAt: data.createdAt,
-        });
+        notifications.pushNotification(
+          {
+            id: data.notificationId,
+            type: data.notificationType,
+            title: data.title,
+            message: data.message,
+            metadata: data.metadata ?? null,
+            readAt: null,
+            createdAt: data.createdAt,
+          },
+          { toast: true },
+        );
       } catch (err) {
         console.error("[notification-stream] failed to parse event", err);
       }
@@ -86,9 +93,27 @@ export function useNotificationStream() {
     source = null;
   }
 
+  // 30s poll fallback. SSE is primary (instant); this catches notifications
+  // missed while the EventSource was disconnected, and self-heals the badge
+  // count. Dedupe in the store means overlap with SSE never double-toasts.
+  const { pause: pausePoll, resume: resumePoll } = useIntervalFn(
+    () => notifications.pollNew(),
+    POLL_INTERVAL_MS,
+    { immediate: false },
+  );
+
   // Auto-start on mount; cleanup on unmount.
-  onMounted(() => connect());
-  onBeforeUnmount(stop);
+  onMounted(async () => {
+    // Seed a baseline so pre-existing unread notifications are never toasted
+    // as "new" by the first poll tick (pushNotification dedupes by id).
+    await notifications.fetchNotifications({ limit: 20 });
+    connect();
+    resumePoll();
+  });
+  onBeforeUnmount(() => {
+    pausePoll();
+    stop();
+  });
 
   return { stop };
 }

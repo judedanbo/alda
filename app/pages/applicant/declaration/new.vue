@@ -23,8 +23,9 @@ definePageMeta({
 
 const { isEmailVerified } = useAuth();
 
+const { toast } = useToast();
+
 const isLoading = ref(false);
-const error = ref("");
 const createdDeclaration = ref<{ id: string; uniqueCode: string } | null>(null);
 
 // Check for active declaration — redirect if one exists
@@ -47,7 +48,6 @@ const profile = computed(() => profileData.value?.data);
 
 // Create new declaration
 const handleCreate = async () => {
-  error.value = "";
   isLoading.value = true;
 
   try {
@@ -60,10 +60,10 @@ const handleCreate = async () => {
         id: response.data.id,
         uniqueCode: response.data.uniqueCode,
       };
+      toast.success("Declaration created — your unique code has been issued.");
     }
   } catch (err: unknown) {
-    const e = err as { data?: { message?: string } };
-    error.value = e.data?.message || "Failed to create declaration";
+    toast.fromError(err, "Failed to create declaration");
   } finally {
     isLoading.value = false;
   }
@@ -192,11 +192,6 @@ const handleCreate = async () => {
             I understand that providing false information is a punishable offence under the laws of Ghana.
           </p>
         </div>
-
-        <!-- Error Alert -->
-        <Alert v-if="error" variant="destructive" class="mb-6">
-          <AlertDescription>{{ error }}</AlertDescription>
-        </Alert>
 
         <div class="flex items-center justify-between">
           <Button variant="ghost" as-child>

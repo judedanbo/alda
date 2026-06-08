@@ -18,7 +18,7 @@ const loading = ref(true);
 const showModal = ref(false);
 const isEditing = ref(false);
 const saving = ref(false);
-const errorMessage = ref("");
+const { toast } = useToast();
 const { fieldErrors, clearFieldError, clearAll: clearFieldErrors } = useFieldErrors();
 
 const formData = ref({
@@ -50,7 +50,6 @@ await fetchCategories();
 
 const openCreateModal = () => {
   isEditing.value = false;
-  errorMessage.value = "";
   clearFieldErrors();
   formData.value = {
     id: 0,
@@ -64,7 +63,6 @@ const openCreateModal = () => {
 
 const openEditModal = (category: Category) => {
   isEditing.value = true;
-  errorMessage.value = "";
   clearFieldErrors();
   formData.value = {
     id: category.id,
@@ -78,7 +76,6 @@ const openEditModal = (category: Category) => {
 
 const closeModal = () => {
   showModal.value = false;
-  errorMessage.value = "";
   clearFieldErrors();
   formData.value = {
     id: 0,
@@ -90,7 +87,6 @@ const closeModal = () => {
 };
 
 const saveCategory = async () => {
-  errorMessage.value = "";
   clearFieldErrors();
 
   if (!formData.value.name.trim()) {
@@ -121,11 +117,11 @@ const saveCategory = async () => {
       });
     }
     await fetchCategories();
+    const wasEditing = isEditing.value;
     closeModal();
+    toast.success(wasEditing ? "Category updated." : "Category created.");
   } catch (error: unknown) {
-    const err = error as { data?: { message?: string }; statusMessage?: string };
-    errorMessage.value =
-      err.data?.message || err.statusMessage || "Failed to save category";
+    toast.fromError(error, "Failed to save category");
   } finally {
     saving.value = false;
   }
@@ -138,6 +134,7 @@ const toggleStatus = async (category: Category) => {
         method: "DELETE",
       });
       category.isActive = false;
+      toast.success("Category deactivated.");
     } else {
       await authFetch(`/api/admin/categories/${category.id}`, {
         method: "PUT",
@@ -146,9 +143,10 @@ const toggleStatus = async (category: Category) => {
         },
       });
       category.isActive = true;
+      toast.success("Category activated.");
     }
   } catch (error) {
-    console.error("Failed to toggle category status:", error);
+    toast.fromError(error, "Failed to update category status");
   }
 };
 </script>
@@ -233,10 +231,6 @@ const toggleStatus = async (category: Category) => {
         <DialogHeader>
           <DialogTitle>{{ isEditing ? "Edit Category" : "Add Category" }}</DialogTitle>
         </DialogHeader>
-
-        <Alert v-if="errorMessage" variant="destructive">
-          <AlertDescription>{{ errorMessage }}</AlertDescription>
-        </Alert>
 
         <div class="space-y-4">
           <FormField

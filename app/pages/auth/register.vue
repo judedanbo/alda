@@ -17,11 +17,11 @@ const form = reactive({
   acceptTerms: false,
 });
 
-const error = ref("");
 const isLoading = ref(false);
 const submitted = ref(false);
 const phoneChecking = ref(false);
 const phoneTaken = ref(false);
+const { toast } = useToast();
 const { fieldErrors, clearFieldError, clearAll } = useFieldErrors();
 
 // E.164: leading +, country code 1-9, total 8-15 digits.
@@ -116,7 +116,6 @@ const isFormValid = computed(() => {
 const handleSubmit = async () => {
   submitted.value = true;
   clearAll();
-  error.value = "";
 
   if (!form.email) fieldErrors.email = "Email is required";
   if (!form.password) fieldErrors.password = "Password is required";
@@ -138,6 +137,7 @@ const handleSubmit = async () => {
   );
 
   if (result.success) {
+    toast.success("Account created — let's set up your profile.");
     router.push("/applicant/profile/setup");
   } else {
     if (result.fieldErrors) {
@@ -146,7 +146,7 @@ const handleSubmit = async () => {
       }
     }
     if (!result.fieldErrors || Object.keys(result.fieldErrors).length === 0) {
-      error.value = result.error || "Registration failed";
+      toast.error(result.error || "Registration failed");
     }
   }
 
@@ -164,11 +164,6 @@ const handleSubmit = async () => {
 
       <CardContent>
         <form class="space-y-5" @submit.prevent="handleSubmit">
-          <!-- Error Alert -->
-          <Alert v-if="error" variant="destructive">
-            <AlertDescription>{{ error }}</AlertDescription>
-          </Alert>
-
           <!-- Email Field -->
           <FormField
             v-slot="{ id, ariaInvalid, ariaDescribedby }"

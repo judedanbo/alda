@@ -129,7 +129,7 @@ const formatDate = (dateStr: string) => {
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 };
 
-const error = ref("");
+const { toast } = useToast();
 const isLoading = ref(false);
 const currentStep = ref(1);
 const totalSteps = 3;
@@ -176,10 +176,10 @@ const uploadGhanaCard = async (file: File, side: "front" | "back") => {
         form.ghanaCardBackUrl = response.data.key;
         form.ghanaCardBackPreviewUrl = response.data.url;
       }
+      toast.success(`Ghana Card ${side} uploaded.`);
     }
   } catch (err: unknown) {
-    const e = err as { data?: { message?: string } };
-    error.value = e.data?.message || `Failed to upload Ghana Card ${side}`;
+    toast.fromError(err, `Failed to upload Ghana Card ${side}`);
   } finally {
     if (side === "front") uploadingFront.value = false;
     else uploadingBack.value = false;
@@ -202,10 +202,10 @@ const uploadAlternateIdScan = async (file: File) => {
       form.alternateIdScanUrl = response.data.key;
       form.alternateIdScanPreviewUrl = response.data.url;
       clearFieldError("alternateIdScan");
+      toast.success("ID scan uploaded.");
     }
   } catch (err: unknown) {
-    const e = err as { data?: { message?: string } };
-    error.value = e.data?.message || "Failed to upload ID scan";
+    toast.fromError(err, "Failed to upload ID scan");
   } finally {
     uploadingAlternate.value = false;
   }
@@ -353,9 +353,12 @@ const nextStep = async () => {
       const e = err as { status?: number; statusCode?: number; data?: { statusCode?: number } };
       const status = e?.status ?? e?.statusCode ?? e?.data?.statusCode;
       if (status !== 409) {
+        // A 409 means the profile already exists — proceed silently. Any other
+        // failure surfaces inline field errors (via handleServerError) plus a toast.
+        const message = handleServerError(err);
+        if (message) toast.error(message);
         return;
       }
-      error.value = "";
     }
     currentStep.value = 3;
     return;
@@ -376,7 +379,6 @@ const prevStep = () => {
 
 // Create profile (called when moving from step 2 to step 3)
 const createProfile = async () => {
-  error.value = "";
   isLoading.value = true;
 
   const body = isGhanaCard.value
@@ -398,9 +400,6 @@ const createProfile = async () => {
 
   try {
     await authFetch("/api/profile", { method: "POST", body });
-  } catch (err: unknown) {
-    error.value = handleServerError(err);
-    throw err;
   } finally {
     isLoading.value = false;
   }
@@ -429,7 +428,6 @@ const addOffice = async () => {
   if (!validateOfficeForm()) return;
 
   addingOffice.value = true;
-  error.value = "";
 
   try {
     const response = await authFetch<{ success: boolean; data: OfficeApiResponse }>("/api/profile/offices", {
@@ -461,9 +459,11 @@ const addOffice = async () => {
       officeForm.startDate = new Date().toISOString().split("T")[0]!;
       officeForm.endDate = "";
       clearAll();
+      toast.success("Office added.");
     }
   } catch (err: unknown) {
-    error.value = handleServerError(err);
+    const message = handleServerError(err);
+    if (message) toast.error(message);
   } finally {
     addingOffice.value = false;
   }
@@ -474,15 +474,17 @@ const removeOffice = async (officeId: string) => {
   try {
     await authFetch(`/api/profile/offices/${officeId}`, { method: "DELETE" });
     offices.value = offices.value.filter((o) => o.id !== officeId);
+    toast.success("Office removed.");
   } catch (err: unknown) {
-    error.value = handleServerError(err);
+    const message = handleServerError(err);
+    if (message) toast.error(message);
   }
 };
 
 // Complete setup
 const handleSubmit = async () => {
   if (offices.value.length === 0) {
-    error.value = "Please add at least one office.";
+    toast.error("Please add at least one office.");
     return;
   }
 
@@ -542,11 +544,6 @@ const handleSubmit = async () => {
             />
           </div>
         </div>
-
-        <!-- Error Alert -->
-        <Alert v-if="error" variant="destructive" class="mb-6">
-          <AlertDescription>{{ error }}</AlertDescription>
-        </Alert>
 
         <form novalidate @submit.prevent="currentStep === totalSteps ? handleSubmit() : nextStep()">
           <!-- Step 1: Personal Information -->

@@ -13,9 +13,9 @@ const verifiedEmail = ref("");
 
 const password = ref("");
 const confirmPassword = ref("");
-const submitError = ref("");
 const success = ref(false);
 const isLoading = ref(false);
+const { toast } = useToast();
 const { fieldErrors, clearFieldError, clearAll, handleServerError } = useFieldErrors();
 
 const passwordStrength = computed(() => {
@@ -70,7 +70,6 @@ onMounted(async () => {
 });
 
 const handleSubmit = async () => {
-  submitError.value = "";
   clearAll();
 
   if (!password.value) {
@@ -93,8 +92,10 @@ const handleSubmit = async () => {
       body: { token: token.value, password: password.value },
     });
     success.value = true;
+    toast.success("Account activated — you can now sign in.");
   } catch (err: unknown) {
-    submitError.value = handleServerError(err);
+    const message = handleServerError(err);
+    if (message) toast.error(message);
   } finally {
     isLoading.value = false;
   }
@@ -184,11 +185,6 @@ const handleSubmit = async () => {
 
         <CardContent>
           <form class="space-y-6" @submit.prevent="handleSubmit">
-            <!-- Error Alert -->
-            <Alert v-if="submitError" variant="destructive">
-              <AlertDescription>{{ submitError }}</AlertDescription>
-            </Alert>
-
             <!-- Password Field -->
             <FormField
               v-slot="{ id, ariaInvalid, ariaDescribedby }"

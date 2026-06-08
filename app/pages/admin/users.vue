@@ -58,25 +58,12 @@ const table = useDataTable<User>("/api/admin/users", {
 const roles = ref<Role[]>([]);
 const offices = ref<CollectionOffice[]>([]);
 
-// Page-level feedback (this page has no toast system; mirror the Alert pattern
-// used elsewhere, e.g. settings/preferences.vue).
-const successMessage = ref("");
-const errorMessage = ref("");
-let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
+// Page-level feedback via the app-wide toast system.
+const { toast } = useToast();
 
 const flash = (message: string, kind: "success" | "error" = "success") => {
-  if (kind === "success") {
-    successMessage.value = message;
-    errorMessage.value = "";
-  } else {
-    errorMessage.value = message;
-    successMessage.value = "";
-  }
-  if (feedbackTimer) clearTimeout(feedbackTimer);
-  feedbackTimer = setTimeout(() => {
-    successMessage.value = "";
-    errorMessage.value = "";
-  }, 5000);
+  if (kind === "error") toast.error(message);
+  else toast.success(message);
 };
 
 // Roles selectable in the CREATE modal (applicant excluded).
@@ -330,6 +317,7 @@ const toggleUserStatus = async (user: User) => {
     });
     if (response.success) {
       table.refresh();
+      flash(user.isActive ? "User deactivated." : "User activated.");
     }
   } catch (error) {
     console.error("Failed to toggle user status:", error);
@@ -368,17 +356,6 @@ const resendInvite = async (user: User) => {
         <Button @click="openCreateModal">Create user</Button>
       </template>
     </PageHeader>
-
-    <!-- Page feedback -->
-    <Alert
-      v-if="successMessage"
-      class="border-green-200 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950/50 dark:text-green-300"
-    >
-      <AlertDescription>{{ successMessage }}</AlertDescription>
-    </Alert>
-    <Alert v-if="errorMessage" variant="destructive">
-      <AlertDescription>{{ errorMessage }}</AlertDescription>
-    </Alert>
 
     <!-- Filters -->
     <Card>

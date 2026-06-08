@@ -39,6 +39,8 @@ const emit = defineEmits<{
   reviewed: [];
 }>();
 
+const { toast } = useToast();
+
 const isSubmitting = ref(false);
 const isResolving = ref<string | null>(null);
 const submitError = ref("");
@@ -136,10 +138,10 @@ const submitSectionReview = async () => {
         })),
       },
     });
+    toast.success("Section review submitted.");
     emit("reviewed");
   } catch (error: unknown) {
-    const e = error as { data?: { statusMessage?: string } };
-    submitError.value = e.data?.statusMessage || "Failed to submit review";
+    toast.fromError(error, "Failed to submit review");
   } finally {
     isSubmitting.value = false;
   }
@@ -151,10 +153,10 @@ const resolveIssue = async (reviewId: string) => {
     await authFetch(`/api/reviews/sections/${reviewId}/resolve`, {
       method: "PATCH",
     });
+    toast.success("Issue resolved.");
     emit("reviewed");
   } catch (error: unknown) {
-    const e = error as { data?: { statusMessage?: string } };
-    submitError.value = e.data?.statusMessage || "Failed to resolve issue";
+    toast.fromError(error, "Failed to resolve issue");
   } finally {
     isResolving.value = null;
   }
@@ -168,10 +170,10 @@ const approveDeclaration = async () => {
       method: "POST",
       body: { declarationId: props.declaration.id },
     });
+    toast.success("Declaration approved.");
     emit("reviewed");
   } catch (error: unknown) {
-    const e = error as { data?: { statusMessage?: string } };
-    submitError.value = e.data?.statusMessage || "Failed to approve";
+    toast.fromError(error, "Failed to approve");
   } finally {
     isSubmitting.value = false;
   }
@@ -199,15 +201,18 @@ const rejectDeclaration = async () => {
         ...(reissueCode.value && reissueStage.value === "FORM_COLLECTED" ? { collectionOfficeId: collectionOfficeId.value } : {}),
       },
     });
+    const issuedNewCode = reissueCode.value;
     showRejectModal.value = false;
     rejectionReason.value = "";
     reissueCode.value = false;
     reissueStage.value = "FORM_COLLECTED";
     collectionOfficeId.value = "";
+    toast.success(issuedNewCode ? "Declaration rejected and a new code issued." : "Declaration rejected.");
     emit("reviewed");
   } catch (error: unknown) {
-    const e = error as { data?: { statusMessage?: string } };
-    rejectError.value = e.data?.statusMessage || "Failed to reject";
+    // Keep the inline error in the (still-open) modal, and surface a toast too.
+    rejectError.value = toastErrorMessage(error, "Failed to reject");
+    toast.error(rejectError.value);
   } finally {
     isRejecting.value = false;
   }
