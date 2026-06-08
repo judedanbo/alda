@@ -13,12 +13,11 @@ const form = reactive({
   password: "",
 });
 
-const error = ref("");
 const isLoading = ref(false);
+const { toast } = useToast();
 const { fieldErrors, clearFieldError, clearAll } = useFieldErrors();
 
 const handleSubmit = async () => {
-  error.value = "";
   clearAll();
 
   if (!form.email) fieldErrors.email = "Email is required";
@@ -30,6 +29,7 @@ const handleSubmit = async () => {
   const result = await authStore.login(form.email, form.password);
 
   if (result.success) {
+    toast.success("Signed in successfully.");
     // New applicants without a profile go to setup first; everyone else
     // (and applicants who already have a profile) goes to their dashboard.
     if (authStore.dashboardPath === "/applicant/dashboard" && !result.hasProfile) {
@@ -44,7 +44,7 @@ const handleSubmit = async () => {
       }
     }
     if (!result.fieldErrors || Object.keys(result.fieldErrors).length === 0) {
-      error.value = result.error || "Login failed";
+      toast.error(result.error || "Login failed");
     }
   }
 
@@ -62,11 +62,6 @@ const handleSubmit = async () => {
 
       <CardContent>
         <form class="space-y-6" @submit.prevent="handleSubmit">
-          <!-- Error Alert -->
-          <Alert v-if="error" variant="destructive">
-            <AlertDescription>{{ error }}</AlertDescription>
-          </Alert>
-
           <!-- Email Field -->
           <FormField
             v-slot="{ id, ariaInvalid, ariaDescribedby }"

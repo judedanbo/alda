@@ -96,15 +96,49 @@ export const useNotificationStore = defineStore("notifications", () => {
   }
 
   /**
-   * Prepend a newly-arrived notification (pushed over SSE) into the
+   * Prepend a newly-arrived notification (pushed over SSE or poll) into the
    * local store and bump unreadCount. No-op if it's already present —
-   * dedupes against concurrent fetches.
+   * dedupes against concurrent fetches, which also guarantees a notification
+   * delivered by *both* SSE and the poll fallback only ever toasts once.
+   *
+   * Pass `{ toast: true }` from live transports (SSE / poll) to raise a toast
+   * for a genuinely-new unread notification. Initial/baseline loads use
+   * `fetchNotifications` (which sets state directly) so they never toast.
    */
-  function pushNotification(n: Notification) {
+  function pushNotification(n: Notification, opts: { toast?: boolean } = {}) {
     if (notifications.value.some((existing) => existing.id === n.id)) return;
     notifications.value = [n, ...notifications.value];
     if (!n.readAt) unreadCount.value += 1;
     total.value += 1;
+
+    if (opts.toast && !n.readAt) {
+      const { toast } = useToast();
+      toast.info(n.message, {
+        title: n.title,
+        action: { label: "View", onClick: () => { navigateTo("/notifications"); } },
+      });
+    }
+  }
+
+  /**
+   * Poll fallback for the live bell — used when the SSE connection drops.
+   * Fetches the most recent notifications, reconciles the unread count, and
+   * toasts any that aren't already known (dedupe handles the overlap with SSE).
+   */
+  async function pollNew() {
+    try {
+      const response = await authFetch<{ success: boolean; data: { notifications: Notification[]; unreadCount: number } }>(
+        "/api/notifications?limit=10",
+      );
+      if (!response.success) return;
+      unreadCount.value = response.data.unreadCount;
+      // oldest → newest so the resulting toast stack is in chronological order.
+      for (const n of [...response.data.notifications].reverse()) {
+        pushNotification(n, { toast: true });
+      }
+    } catch (error) {
+      console.error("Failed to poll notifications:", error);
+    }
   }
 
   return {
@@ -122,5 +156,6 @@ export const useNotificationStore = defineStore("notifications", () => {
     markAllAsRead,
     refreshUnreadCount,
     pushNotification,
+    pollNew,
   };
 });

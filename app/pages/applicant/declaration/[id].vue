@@ -72,11 +72,12 @@ const getTimelineIcon = (status: string) => {
   return icons[status] || icons.CREATED;
 };
 
+const { toast } = useToast();
+
 // Lost-form reissue request
 const showReissueModal = ref(false);
 const reissueNote = ref("");
 const submittingReissue = ref(false);
-const reissueError = ref("");
 
 const canRequestReissue = computed(
   () =>
@@ -86,7 +87,6 @@ const canRequestReissue = computed(
 
 const submitReissueRequest = async () => {
   submittingReissue.value = true;
-  reissueError.value = "";
   try {
     await authFetch(`/api/declarations/${id}/reissue-request`, {
       method: "POST",
@@ -95,10 +95,9 @@ const submitReissueRequest = async () => {
     showReissueModal.value = false;
     reissueNote.value = "";
     await refresh();
+    toast.success("Reissue request submitted — the Legal Unit has been notified.");
   } catch (err: unknown) {
-    const e = err as { data?: { message?: string; statusMessage?: string } };
-    reissueError.value =
-      e.data?.message || e.data?.statusMessage || "Failed to submit reissue request";
+    toast.fromError(err, "Failed to submit reissue request");
   } finally {
     submittingReissue.value = false;
   }
@@ -375,10 +374,6 @@ const submitReissueRequest = async () => {
                 placeholder="Brief context about how the form was lost..."
               />
             </div>
-
-            <Alert v-if="reissueError" variant="destructive">
-              <AlertDescription>{{ reissueError }}</AlertDescription>
-            </Alert>
           </div>
 
           <DialogFooter>

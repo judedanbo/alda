@@ -8,6 +8,7 @@ const token = computed(() => route.query.token as string | undefined);
 
 const status = ref<"loading" | "success" | "error">("loading");
 const message = ref("");
+const { toast } = useToast();
 
 onMounted(async () => {
   if (!token.value) {
@@ -22,11 +23,13 @@ onMounted(async () => {
     );
     message.value = result.message || "Your email has been verified.";
     status.value = "success";
+    toast.success(message.value);
   } catch (err: unknown) {
     const e = err as { data?: { message?: string }; message?: string };
     message.value =
       e?.data?.message || e?.message || "Verification failed. The link may have expired.";
     status.value = "error";
+    toast.error(message.value);
   }
 });
 </script>

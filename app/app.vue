@@ -46,5 +46,6 @@ useHead({
   <ClientOnly>
     <AppAccessibilityWidget />
     <DevUserSwitcher v-if="config.public.devMode" />
+    <ToastContainer />
   </ClientOnly>
 </template>

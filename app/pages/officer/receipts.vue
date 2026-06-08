@@ -40,8 +40,9 @@ const limit = 10;
 
 const selectedDeclaration = ref<Declaration | null>(null);
 const isGenerating = ref(false);
-const generateError = ref("");
 const showGenerateModal = ref(false);
+
+const { toast } = useToast();
 
 const fetchPendingReceipts = async () => {
   loading.value = true;
@@ -70,7 +71,6 @@ watch(currentPage, fetchPendingReceipts);
 
 const openGenerateModal = (declaration: Declaration) => {
   selectedDeclaration.value = declaration;
-  generateError.value = "";
   showGenerateModal.value = true;
 };
 
@@ -78,12 +78,19 @@ const generateReceipt = async () => {
   if (!selectedDeclaration.value) return;
 
   isGenerating.value = true;
-  generateError.value = "";
 
   try {
-    const response = await authFetch<{ success: boolean; data: { receipt: { pdfUrl: string | null } } }>(`/api/receipts/${selectedDeclaration.value.id}`, {
-      method: "POST",
-    });
+    const response = await toast.promise(
+      authFetch<{ success: boolean; data: { receipt: { pdfUrl: string | null } } }>(
+        `/api/receipts/${selectedDeclaration.value.id}`,
+        { method: "POST" },
+      ),
+      {
+        loading: "Generating receipt…",
+        success: "Receipt generated.",
+        error: (e) => toastErrorMessage(e, "Failed to generate receipt"),
+      },
+    );
 
     if (response.success && response.data.receipt.pdfUrl) {
       window.open(response.data.receipt.pdfUrl, "_blank");
@@ -92,9 +99,8 @@ const generateReceipt = async () => {
     showGenerateModal.value = false;
     selectedDeclaration.value = null;
     await fetchPendingReceipts();
-  } catch (error: unknown) {
-    const e = error as { data?: { statusMessage?: string } };
-    generateError.value = e.data?.statusMessage || "Failed to generate receipt";
+  } catch {
+    // toast.promise already surfaced the error to the user.
   } finally {
     isGenerating.value = false;
   }
@@ -231,10 +237,6 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
             <AlertDescription>
               This will generate an official PDF receipt and notify the applicant via email and SMS.
             </AlertDescription>
-          </Alert>
-
-          <Alert v-if="generateError" variant="destructive">
-            <AlertDescription>{{ generateError }}</AlertDescription>
           </Alert>
         </div>
 

@@ -26,6 +26,7 @@ const selectedStatus = ref("");
 const showModal = ref(false);
 const isEditing = ref(false);
 const saving = ref(false);
+const { toast } = useToast();
 const { fieldErrors, clearFieldError, clearAll: clearFieldErrors } = useFieldErrors();
 
 const formData = ref({
@@ -117,9 +118,11 @@ const saveInstitution = async () => {
       });
     }
     await fetchInstitutions();
+    const wasEditing = isEditing.value;
     closeModal();
+    toast.success(wasEditing ? "Institution updated." : "Institution created.");
   } catch (error) {
-    console.error("Failed to save institution:", error);
+    toast.fromError(error, "Failed to save institution");
   } finally {
     saving.value = false;
   }
@@ -136,8 +139,9 @@ const toggleStatus = async (institution: Institution) => {
       },
     });
     institution.isActive = !institution.isActive;
+    toast.success(institution.isActive ? "Institution activated." : "Institution deactivated.");
   } catch (error) {
-    console.error("Failed to toggle institution status:", error);
+    toast.fromError(error, "Failed to update institution status");
   }
 };
 

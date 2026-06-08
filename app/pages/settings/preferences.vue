@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/com
 import { Label } from "~/components/ui/label";
 import { Switch } from "~/components/ui/switch";
 import { Button } from "~/components/ui/button";
-import { Alert, AlertDescription } from "~/components/ui/alert";
 import { Separator } from "~/components/ui/separator";
 import { Skeleton } from "~/components/ui/skeleton";
 
@@ -46,8 +45,7 @@ interface GroupState {
 
 const loading = ref(true);
 const saving = ref(false);
-const successMessage = ref("");
-const errorMessage = ref("");
+const { toast } = useToast();
 
 const channels = reactive<ChannelFlags>({
   emailEnabled: true,
@@ -61,7 +59,6 @@ const mode = computed<"category" | "type">(() =>
 );
 const groups = ref<GroupState[]>([]);
 
-let successTimer: ReturnType<typeof setTimeout> | null = null;
 const savedSnapshot = ref("");
 
 function takeSnapshot(): string {
@@ -111,8 +108,7 @@ onMounted(async () => {
       savedSnapshot.value = takeSnapshot();
     }
   } catch (err: unknown) {
-    const e = err as { data?: { message?: string } };
-    errorMessage.value = e.data?.message || "Failed to load notification preferences.";
+    toast.fromError(err, "Failed to load notification preferences.");
   } finally {
     loading.value = false;
   }
@@ -133,8 +129,6 @@ function setCategoryEnabled(group: GroupState, value: boolean) {
 
 const savePreferences = async () => {
   saving.value = true;
-  errorMessage.value = "";
-  successMessage.value = "";
 
   try {
     const typePreferences = groups.value.flatMap((group) =>
@@ -166,24 +160,13 @@ const savePreferences = async () => {
       savedSnapshot.value = takeSnapshot();
     }
 
-    successMessage.value = "Your notification preferences have been saved.";
-
-    if (successTimer) clearTimeout(successTimer);
-    successTimer = setTimeout(() => {
-      successMessage.value = "";
-    }, 3000);
+    toast.success("Your notification preferences have been saved.");
   } catch (err: unknown) {
-    const e = err as { data?: { message?: string; statusMessage?: string } };
-    errorMessage.value =
-      e.data?.message || e.data?.statusMessage || "Failed to save preferences. Please try again.";
+    toast.fromError(err, "Failed to save preferences. Please try again.");
   } finally {
     saving.value = false;
   }
 };
-
-onUnmounted(() => {
-  if (successTimer) clearTimeout(successTimer);
-});
 </script>
 
 <template>
@@ -199,19 +182,6 @@ onUnmounted(() => {
     </div>
 
     <template v-else>
-      <!-- Success alert -->
-      <Alert
-        v-if="successMessage"
-        class="mb-4 border-green-200 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950/50 dark:text-green-300"
-      >
-        <AlertDescription>{{ successMessage }}</AlertDescription>
-      </Alert>
-
-      <!-- Error alert -->
-      <Alert v-if="errorMessage" variant="destructive" class="mb-4">
-        <AlertDescription>{{ errorMessage }}</AlertDescription>
-      </Alert>
-
       <!-- Display & Accessibility -->
       <Card>
         <CardHeader>

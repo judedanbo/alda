@@ -111,9 +111,8 @@ const decisionForm = ref({
 
 const letterScanUrl = ref("");
 const uploadingLetter = ref(false);
-const uploadError = ref("");
 const submitting = ref(false);
-const submitError = ref("");
+const { toast } = useToast();
 
 async function handleLetterUpload(event: Event) {
   const target = event.target as HTMLInputElement;
@@ -121,7 +120,6 @@ async function handleLetterUpload(event: Event) {
   if (!file) return;
 
   uploadingLetter.value = true;
-  uploadError.value = "";
   try {
     const formData = new FormData();
     formData.append("file", file);
@@ -130,10 +128,9 @@ async function handleLetterUpload(event: Event) {
       { method: "POST", body: formData }
     );
     letterScanUrl.value = response.data.url;
+    toast.success("Approved letter uploaded.");
   } catch (e: unknown) {
-    const err = e as { data?: { message?: string; statusMessage?: string } };
-    uploadError.value =
-      err.data?.message || err.data?.statusMessage || "Failed to upload letter";
+    toast.fromError(e, "Failed to upload letter");
   } finally {
     uploadingLetter.value = false;
   }
@@ -153,7 +150,6 @@ async function submitDecision() {
   if (!canSubmit.value) return;
 
   submitting.value = true;
-  submitError.value = "";
   try {
     await authFetch(`/api/legal/form-reissues/${id}/decision`, {
       method: "POST",
@@ -169,12 +165,13 @@ async function submitDecision() {
         decisionReason: decisionForm.value.decisionReason || undefined,
       },
     });
+    const wasApproved = decisionForm.value.status === "APPROVED";
     decisionForm.value = { status: "", approverType: "", approverDetail: "", decisionReason: "" };
     letterScanUrl.value = "";
     await refresh();
+    toast.success(wasApproved ? "Reissue approved — the form has been reissued." : "Reissue request declined.");
   } catch (e: unknown) {
-    const err = e as { data?: { message?: string; statusMessage?: string } };
-    submitError.value = err.data?.message || err.data?.statusMessage || "Failed to submit decision";
+    toast.fromError(e, "Failed to submit decision");
   } finally {
     submitting.value = false;
   }
@@ -373,9 +370,6 @@ const formatDate = (date: string) =>
                       <p v-else-if="letterScanUrl" class="mt-1 text-xs text-green-600 dark:text-green-400">
                         Letter uploaded
                       </p>
-                      <p v-if="uploadError" class="mt-1 text-xs text-destructive">
-                        {{ uploadError }}
-                      </p>
                     </template>
                   </FormField>
 
@@ -433,8 +427,6 @@ const formatDate = (date: string) =>
                     placeholder="Explain why the reissue is declined..."
                   />
                 </FormField>
-
-                <div v-if="submitError" class="text-sm text-destructive">{{ submitError }}</div>
 
                 <Button
                   class="w-full"

@@ -31,8 +31,8 @@ const form = reactive({
 });
 
 const isLoading = ref(false);
-const error = ref("");
 const success = ref(false);
+const { toast } = useToast();
 const { fieldErrors, clearFieldError, clearAll, handleServerError } = useFieldErrors();
 
 const isFormValid = computed(() => {
@@ -45,7 +45,6 @@ const isFormValid = computed(() => {
 });
 
 const handleSubmit = async () => {
-  error.value = "";
   clearAll();
 
   if (!form.name.trim()) fieldErrors.name = "Full name is required";
@@ -78,9 +77,11 @@ const handleSubmit = async () => {
       form.category = "GENERAL_INQUIRY";
       form.subject = "";
       form.message = "";
+      toast.success("Message sent — we'll respond within 2-3 business days.");
     }
   } catch (err: unknown) {
-    error.value = handleServerError(err);
+    const message = handleServerError(err);
+    if (message) toast.error(message);
   } finally {
     isLoading.value = false;
   }
@@ -110,11 +111,6 @@ const handleSubmit = async () => {
         </Alert>
 
         <form v-if="!success" class="space-y-5" @submit.prevent="handleSubmit">
-          <!-- Error Alert -->
-          <Alert v-if="error" variant="destructive">
-            <AlertDescription>{{ error }}</AlertDescription>
-          </Alert>
-
           <!-- Name Field -->
           <div class="space-y-2">
             <Label for="name">

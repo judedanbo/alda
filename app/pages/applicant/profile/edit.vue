@@ -36,8 +36,7 @@ const readOnly = reactive({
 });
 
 const isLoading = ref(true);
-const error = ref("");
-const success = ref("");
+const { toast } = useToast();
 const { fieldErrors, clearFieldError, clearAll, handleServerError } = useFieldErrors();
 
 const offices = ref<Office[]>([]);
@@ -126,8 +125,6 @@ async function saveOffice() {
   if (!validateOfficeForm()) return;
 
   savingOffice.value = true;
-  error.value = "";
-  success.value = "";
 
   const body = {
     designation: officeForm.designation,
@@ -153,7 +150,7 @@ async function saveOffice() {
             endDate: response.data.endDate ? response.data.endDate.split("T")[0] ?? null : null,
           };
         }
-        success.value = "Office updated successfully.";
+        toast.success("Office updated successfully.");
       }
     } else {
       const response = await authFetch<{ success: boolean; data: Office }>("/api/profile/offices", {
@@ -167,31 +164,30 @@ async function saveOffice() {
           startDate: response.data.startDate.split("T")[0] ?? "",
           endDate: response.data.endDate ? response.data.endDate.split("T")[0] ?? null : null,
         });
-        success.value = "Office added successfully.";
+        toast.success("Office added successfully.");
       }
     }
 
     resetOfficeForm();
   } catch (err: unknown) {
-    error.value = handleServerError(err);
+    const message = handleServerError(err);
+    if (message) toast.error(message);
   } finally {
     savingOffice.value = false;
   }
 }
 
 async function removeOffice(officeId: string) {
-  error.value = "";
-  success.value = "";
-
   try {
     await authFetch(`/api/profile/offices/${officeId}`, { method: "DELETE" });
     offices.value = offices.value.filter((o) => o.id !== officeId);
-    success.value = "Office removed successfully.";
+    toast.success("Office removed successfully.");
     if (editingOfficeId.value === officeId) {
       resetOfficeForm();
     }
   } catch (err: unknown) {
-    error.value = handleServerError(err);
+    const message = handleServerError(err);
+    if (message) toast.error(message);
   }
 }
 
@@ -239,17 +235,6 @@ function formatDate(dateStr: string | null): string {
         </FormField>
       </CardContent>
     </Card>
-
-    <!-- Success / Error alerts -->
-    <Alert
-      v-if="success"
-      class="mb-6 border-green-200 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950/50 dark:text-green-300"
-    >
-      <AlertDescription>{{ success }}</AlertDescription>
-    </Alert>
-    <Alert v-if="error" variant="destructive" class="mb-6">
-      <AlertDescription>{{ error }}</AlertDescription>
-    </Alert>
 
     <Card>
       <CardHeader>

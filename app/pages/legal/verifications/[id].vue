@@ -95,13 +95,12 @@ const reviewForm = ref({
 });
 
 const submitting = ref(false);
-const submitError = ref("");
+const { toast } = useToast();
 
 async function submitReview() {
   if (!reviewForm.value.status || !reviewForm.value.reason) return;
 
   submitting.value = true;
-  submitError.value = "";
 
   try {
     await authFetch(`/api/legal/verifications/${id}/review`, {
@@ -115,9 +114,9 @@ async function submitReview() {
 
     reviewForm.value = { status: "", reason: "", messageToApplicant: "" };
     await refresh();
+    toast.success("Verification decision submitted.");
   } catch (e: unknown) {
-    const err = e as { data?: { message?: string } };
-    submitError.value = err.data?.message || "Failed to submit review";
+    toast.fromError(e, "Failed to submit review");
   } finally {
     submitting.value = false;
   }
@@ -442,8 +441,6 @@ const formatDate = (date: string) =>
                     placeholder="Specific message to the applicant..."
                   />
                 </FormField>
-
-                <div v-if="submitError" class="text-sm text-destructive">{{ submitError }}</div>
 
                 <Button
                   class="w-full"

@@ -8,13 +8,12 @@ definePageMeta({
 const authStore = useAuthStore();
 
 const email = ref("");
-const error = ref("");
 const success = ref(false);
 const isLoading = ref(false);
+const { toast } = useToast();
 const { fieldErrors, clearFieldError, clearAll } = useFieldErrors();
 
 const handleSubmit = async () => {
-  error.value = "";
   clearAll();
 
   if (!email.value) {
@@ -29,7 +28,7 @@ const handleSubmit = async () => {
   if (result.success) {
     success.value = true;
   } else {
-    error.value = result.error || "Failed to send reset email";
+    toast.error(result.error || "Failed to send reset email");
   }
 
   isLoading.value = false;
@@ -68,11 +67,6 @@ const handleSubmit = async () => {
 
         <CardContent>
           <form class="space-y-6" @submit.prevent="handleSubmit">
-            <!-- Error Alert -->
-            <Alert v-if="error" variant="destructive">
-              <AlertDescription>{{ error }}</AlertDescription>
-            </Alert>
-
             <!-- Email Field -->
             <FormField
               v-slot="{ id, ariaInvalid, ariaDescribedby }"

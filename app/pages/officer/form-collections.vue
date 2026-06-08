@@ -53,7 +53,8 @@ const showRecordModal = ref(false);
 const selectedOfficeId = ref("");
 const recordingNotes = ref("");
 const isRecording = ref(false);
-const recordError = ref("");
+
+const { toast } = useToast();
 
 const fetchPendingCollections = async () => {
   loading.value = true;
@@ -98,7 +99,6 @@ const openRecordModal = (declaration: Declaration) => {
   selectedDeclaration.value = declaration;
   selectedOfficeId.value = "";
   recordingNotes.value = "";
-  recordError.value = "";
   showRecordModal.value = true;
 };
 
@@ -106,7 +106,6 @@ const recordCollection = async () => {
   if (!selectedDeclaration.value || !selectedOfficeId.value) return;
 
   isRecording.value = true;
-  recordError.value = "";
 
   try {
     await authFetch("/api/form-collections", {
@@ -121,9 +120,9 @@ const recordCollection = async () => {
     showRecordModal.value = false;
     selectedDeclaration.value = null;
     await fetchPendingCollections();
+    toast.success("Form collection recorded.");
   } catch (error: unknown) {
-    const e = error as { data?: { statusMessage?: string } };
-    recordError.value = e.data?.statusMessage || "Failed to record form collection";
+    toast.fromError(error, "Failed to record form collection");
   } finally {
     isRecording.value = false;
   }
@@ -315,11 +314,6 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
               placeholder="Any notes about this form collection..."
             />
           </div>
-
-          <!-- Error -->
-          <Alert v-if="recordError" variant="destructive">
-            <AlertDescription>{{ recordError }}</AlertDescription>
-          </Alert>
         </div>
 
         <DialogFooter>

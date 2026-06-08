@@ -46,6 +46,8 @@ export async function authFetch<T = unknown>(
       if (refreshed) {
         return (await rawFetch(url, buildOptions())) as T;
       }
+      const { toast } = useToast();
+      toast.error("Your session expired — please sign in again.");
       await authStore.logout();
       await navigateTo("/auth/login");
     }
