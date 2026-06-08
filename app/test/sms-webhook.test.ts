@@ -11,6 +11,9 @@ const prismaMock = vi.hoisted(() => ({
     findFirst: vi.fn(),
     update: vi.fn(),
   },
+  // verifyWebhookSecret now resolves the secret via the credential resolver,
+  // which reads DB overrides first. Empty → falls back to the env secret.
+  notificationCredential: { findMany: vi.fn(() => []) },
 }));
 vi.mock("~/server/utils/prisma", () => ({ default: prismaMock }));
 
@@ -51,29 +54,29 @@ function fakeEvent(headers: Record<string, string> = {}, query: Record<string, s
 }
 
 describe("verifyWebhookSecret", () => {
-  it("accepts any request when no secret is configured (dev mode)", () => {
+  it("accepts any request when no secret is configured (dev mode)", async () => {
     delete process.env.NOTIFICATIONS_SMS_WEBHOOK_SECRET;
-    expect(verifyWebhookSecret(fakeEvent())).toBe(true);
+    expect(await verifyWebhookSecret(fakeEvent())).toBe(true);
   });
 
-  it("rejects when secret configured but header missing", () => {
+  it("rejects when secret configured but header missing", async () => {
     process.env.NOTIFICATIONS_SMS_WEBHOOK_SECRET = "topsecret";
-    expect(verifyWebhookSecret(fakeEvent())).toBe(false);
+    expect(await verifyWebhookSecret(fakeEvent())).toBe(false);
   });
 
-  it("accepts when x-webhook-secret matches", () => {
+  it("accepts when x-webhook-secret matches", async () => {
     process.env.NOTIFICATIONS_SMS_WEBHOOK_SECRET = "topsecret";
-    expect(verifyWebhookSecret(fakeEvent({ "x-webhook-secret": "topsecret" }))).toBe(true);
+    expect(await verifyWebhookSecret(fakeEvent({ "x-webhook-secret": "topsecret" }))).toBe(true);
   });
 
-  it("accepts when ?secret= query string matches", () => {
+  it("accepts when ?secret= query string matches", async () => {
     process.env.NOTIFICATIONS_SMS_WEBHOOK_SECRET = "topsecret";
-    expect(verifyWebhookSecret(fakeEvent({}, { secret: "topsecret" }))).toBe(true);
+    expect(await verifyWebhookSecret(fakeEvent({}, { secret: "topsecret" }))).toBe(true);
   });
 
-  it("rejects on mismatched secret", () => {
+  it("rejects on mismatched secret", async () => {
     process.env.NOTIFICATIONS_SMS_WEBHOOK_SECRET = "topsecret";
-    expect(verifyWebhookSecret(fakeEvent({ "x-webhook-secret": "wrong" }))).toBe(false);
+    expect(await verifyWebhookSecret(fakeEvent({ "x-webhook-secret": "wrong" }))).toBe(false);
   });
 });
 

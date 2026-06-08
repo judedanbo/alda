@@ -30,7 +30,7 @@ function mapArkeselStatus(status: string | undefined): "DELIVERED" | "FAILED" | 
 }
 
 export default defineEventHandler(async (event) => {
-  if (!verifyWebhookSecret(event)) {
+  if (!(await verifyWebhookSecret(event))) {
     throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
   }
 

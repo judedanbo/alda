@@ -4,6 +4,13 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// sendSms resolves provider config via the credential resolver, which reads DB
+// overrides first; empty → env fallback (these tests drive config via process.env).
+const prismaMock = vi.hoisted(() => ({
+  notificationCredential: { findMany: vi.fn(() => []) },
+}));
+vi.mock("~/server/utils/prisma", () => ({ default: prismaMock }));
+
 const { formatGhanaPhone, isValidGhanaPhone, sendSms } = await import(
   "~/server/services/sms.service"
 );

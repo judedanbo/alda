@@ -30,7 +30,7 @@ function mapHubtelStatus(status: string | undefined): "DELIVERED" | "FAILED" | n
 }
 
 export default defineEventHandler(async (event) => {
-  if (!verifyWebhookSecret(event)) {
+  if (!(await verifyWebhookSecret(event))) {
     throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
   }
 

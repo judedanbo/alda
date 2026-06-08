@@ -375,6 +375,18 @@ export const adminInstitutionUpdateSchema = z.object({
 });
 
 /**
+ * Notification credential overrides (Notifications → Settings). `set` maps a
+ * registry key → new value to store (encrypted); `clear` lists keys whose DB
+ * override should be removed (revert to env). Key membership and per-field
+ * value rules (port numeric, provider enum) are enforced in the handler against
+ * the CREDENTIAL_FIELDS registry.
+ */
+export const notificationCredentialsSchema = z.object({
+  set: z.record(z.string(), z.string()).optional(),
+  clear: z.array(z.string()).optional(),
+});
+
+/**
  * Validate request body against a schema
  */
 export async function validateBody<T extends z.ZodSchema>(

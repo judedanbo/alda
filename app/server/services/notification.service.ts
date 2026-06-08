@@ -5,7 +5,13 @@ import { sendSms } from "./sms.service";
 import {
   enqueueEmailJob,
   enqueueSmsJob,
+  reenqueueEmailJob,
+  reenqueueSmsJob,
+  processEmailJob,
+  processSmsJob,
   isQueueEnabled,
+  type EmailJobData,
+  type SmsJobData,
 } from "~/server/utils/notification-queue";
 import { payloads } from "~/server/notifications/payloads";
 import { checkRateLimit } from "~/server/utils/rate-limit";
@@ -353,6 +359,114 @@ function mapNotificationTypeToEmailTemplate(type: NotificationType): EmailTempla
     VERIFICATION_MORE_INFO_REQUIRED: "verification-more-info",
   };
   return mapping[type] || "welcome";
+}
+
+export interface RetryResult {
+  deliveryLogId: string;
+  channel: NotificationChannel;
+  status: "PENDING" | "DELIVERED" | "FAILED";
+  /** true when re-enqueued (worker will update the log later); false when sent inline. */
+  queued: boolean;
+}
+
+/**
+ * Admin action: retry a single FAILED delivery log.
+ *
+ * Rebuilds the provider payload faithfully from the stored Notification + User
+ * (identical to the original dispatch in sendNotificationInternal), then
+ * re-enqueues it — or sends inline when the queue is disabled. It does NOT go
+ * through sendNotification(), so it skips dedupe/rate-limit and never creates
+ * duplicate Notification rows; it reuses the existing delivery log. IN_APP has
+ * no provider send and cannot be retried.
+ *
+ * Throws createError (404/400) on invalid input; the caller writes the audit log.
+ */
+export async function retryDelivery(deliveryLogId: string): Promise<RetryResult> {
+  const log = await prisma.notificationDeliveryLog.findUnique({
+    where: { id: deliveryLogId },
+    include: {
+      notification: { include: { user: { include: { applicantProfile: true } } } },
+    },
+  });
+
+  if (!log) {
+    throw createError({ statusCode: 404, statusMessage: "Delivery log not found" });
+  }
+  if (log.status !== "FAILED") {
+    throw createError({ statusCode: 400, statusMessage: "Only FAILED deliveries can be retried" });
+  }
+  if (log.channel === "IN_APP") {
+    throw createError({ statusCode: 400, statusMessage: "IN_APP notifications cannot be retried" });
+  }
+
+  const { notification } = log;
+  const user = notification.user;
+  const metadata = (notification.metadata ?? {}) as Record<string, unknown>;
+
+  // Reset to in-flight so the UI reflects the retry immediately.
+  await prisma.notificationDeliveryLog.update({
+    where: { id: log.id },
+    data: { status: "PENDING", providerResponse: Prisma.JsonNull },
+  });
+
+  const attemptsMade = log.retryCount + 1;
+
+  if (log.channel === "EMAIL") {
+    if (!user.email) {
+      throw createError({ statusCode: 400, statusMessage: "Recipient has no email address" });
+    }
+    const jobData: EmailJobData = {
+      deliveryLogId: log.id,
+      to: user.email,
+      subject: notification.title,
+      template: mapNotificationTypeToEmailTemplate(notification.type),
+      data: { name: user.applicantProfile?.fullName || user.email, ...metadata },
+    };
+    if (isQueueEnabled()) {
+      await reenqueueEmailJob(jobData);
+      return { deliveryLogId: log.id, channel: "EMAIL", status: "PENDING", queued: true };
+    }
+    await runInlineRetry(() =>
+      processEmailJob({ data: jobData, attemptsMade } as Parameters<typeof processEmailJob>[0]),
+    );
+  } else {
+    if (!user.phone) {
+      throw createError({ statusCode: 400, statusMessage: "Recipient has no phone number" });
+    }
+    const jobData: SmsJobData = { deliveryLogId: log.id, to: user.phone, message: notification.message };
+    if (isQueueEnabled()) {
+      await reenqueueSmsJob(jobData);
+      return { deliveryLogId: log.id, channel: "SMS", status: "PENDING", queued: true };
+    }
+    await runInlineRetry(() =>
+      processSmsJob({ data: jobData, attemptsMade } as Parameters<typeof processSmsJob>[0]),
+    );
+  }
+
+  // Inline path: process*Job already updated the log (and threw on failure).
+  const updated = await prisma.notificationDeliveryLog.findUnique({
+    where: { id: log.id },
+    select: { status: true },
+  });
+  return {
+    deliveryLogId: log.id,
+    channel: log.channel,
+    status: (updated?.status ?? "FAILED") as "DELIVERED" | "FAILED",
+    queued: false,
+  };
+}
+
+/**
+ * process*Job throws on send failure (so BullMQ would retry). For an inline
+ * admin retry we don't want that surfaced as a 500 — the delivery log already
+ * records the DELIVERED/FAILED outcome, which the caller reads back.
+ */
+async function runInlineRetry(fn: () => Promise<void>): Promise<void> {
+  try {
+    await fn();
+  } catch {
+    /* outcome captured on the delivery log */
+  }
 }
 
 /**

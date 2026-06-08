@@ -2,6 +2,7 @@ import type { Component } from "vue";
 import {
   ActivityIcon,
   BarChart3Icon,
+  BellIcon,
   BuildingIcon,
   CheckCircleIcon,
   CircleHelpIcon,
@@ -39,6 +40,7 @@ const iconMap: Record<string, Component> = {
   "tag": TagIcon,
   "shield": ShieldIcon,
   "activity": ActivityIcon,
+  "bell": BellIcon,
 };
 
 export function navIcon(name: string): Component {

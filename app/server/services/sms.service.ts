@@ -3,29 +3,15 @@
  * Routes Ghana numbers through Hubtel / Arkesel (local providers) and
  * any other country code through Twilio, when configured.
  */
-import { DEFAULT_SMS_SENDER_ID } from "~/server/utils/branding";
 import { isGhanaPhone, normalizePhoneE164 } from "~/server/utils/phone";
+import { getResolvedSmsConfig, type ResolvedSmsConfig } from "~/server/utils/notification-config";
 
 export type SmsProvider = "hubtel" | "arkesel" | "twilio";
 type GhanaProvider = Extract<SmsProvider, "hubtel" | "arkesel">;
 
-interface SmsConfig {
-  provider: GhanaProvider;
-  hubtel?: {
-    clientId: string;
-    clientSecret: string;
-    senderId: string;
-  };
-  arkesel?: {
-    apiKey: string;
-    senderId: string;
-  };
-  twilio?: {
-    accountSid: string;
-    authToken: string;
-    fromNumber: string;
-  };
-}
+// Resolved SMS config (in-app DB override → env fallback). Sub-objects are
+// always present; the per-provider send fns still guard on empty credentials.
+type SmsConfig = ResolvedSmsConfig;
 
 interface SmsResult {
   success: boolean;
@@ -33,36 +19,6 @@ interface SmsResult {
   error?: string;
   /** Which provider actually delivered the message (set on success). */
   provider?: SmsProvider;
-}
-
-/**
- * Get SMS configuration from runtime config
- */
-function getSmsConfig(): SmsConfig {
-  const _config = useRuntimeConfig();
-
-  // Default to Hubtel for Ghana traffic. Only "hubtel" and "arkesel" are
-  // valid here — Twilio is selected automatically based on destination.
-  const rawProvider = (process.env.SMS_PROVIDER as SmsProvider) || "hubtel";
-  const provider: GhanaProvider = rawProvider === "arkesel" ? "arkesel" : "hubtel";
-
-  return {
-    provider,
-    hubtel: {
-      clientId: process.env.HUBTEL_CLIENT_ID || "",
-      clientSecret: process.env.HUBTEL_CLIENT_SECRET || "",
-      senderId: process.env.HUBTEL_SENDER_ID || DEFAULT_SMS_SENDER_ID,
-    },
-    arkesel: {
-      apiKey: process.env.ARKESEL_API_KEY || "",
-      senderId: process.env.ARKESEL_SENDER_ID || DEFAULT_SMS_SENDER_ID,
-    },
-    twilio: {
-      accountSid: process.env.SMS_TWILIO_ACCOUNT_SID || "",
-      authToken: process.env.SMS_TWILIO_AUTH_TOKEN || "",
-      fromNumber: process.env.SMS_TWILIO_FROM_NUMBER || "",
-    },
-  };
 }
 
 /**
@@ -239,7 +195,7 @@ export async function sendSms(to: string, message: string): Promise<SmsResult> {
     return { success: false, error: "Invalid phone number" };
   }
 
-  const config = getSmsConfig();
+  const config = await getResolvedSmsConfig();
 
   if (isGhanaPhone(normalized)) {
     const order = providerOrder(config.provider);

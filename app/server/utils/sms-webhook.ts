@@ -16,10 +16,13 @@
 import { timingSafeEqual } from "node:crypto";
 import type { H3Event } from "h3";
 import prisma from "~/server/utils/prisma";
+import { getCredential } from "~/server/utils/notification-config";
 import type { DeliveryStatus, Prisma } from "@prisma/client";
 
-export function getWebhookSecret(): string | null {
-  return process.env.NOTIFICATIONS_SMS_WEBHOOK_SECRET || null;
+/** Resolved webhook secret: in-app DB override → NOTIFICATIONS_SMS_WEBHOOK_SECRET env. */
+export async function getWebhookSecret(): Promise<string | null> {
+  const v = await getCredential("sms.webhookSecret");
+  return v ? v : null;
 }
 
 /**
@@ -44,8 +47,8 @@ function safeEqual(a: string | undefined, b: string): boolean {
  * - In dev / test: missing secret accepts any caller, so the SMS-provider
  *   localhost callback doesn't need a copy of the production key.
  */
-export function verifyWebhookSecret(event: H3Event): boolean {
-  const configured = getWebhookSecret();
+export async function verifyWebhookSecret(event: H3Event): Promise<boolean> {
+  const configured = await getWebhookSecret();
   if (!configured) {
     // Production deploys without the secret set: explicitly refuse, even
     // though the C-1 gate should have prevented startup. Defence in depth.
