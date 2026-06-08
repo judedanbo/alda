@@ -14,6 +14,10 @@ interface TimelineRow {
   count: bigint;
 }
 
+interface CountRow {
+  count: bigint;
+}
+
 export default defineEventHandler(async (event) => {
   requireAdmin(event);
   const { range, since, grain } = resolveRange(getQuery(event).range);
@@ -27,7 +31,6 @@ export default defineEventHandler(async (event) => {
     topTargets,
     topOffenders,
     uniqueActorRows,
-    highSeverityCount,
     recentAttempts,
   ] = await Promise.all([
     prisma.fuzzingAttempt.count({ where: { detectedAt: { gte: since } } }),
@@ -67,15 +70,9 @@ export default defineEventHandler(async (event) => {
       take: 10,
     }),
 
-    prisma.fuzzingAttempt.findMany({
-      where: { detectedAt: { gte: since } },
-      distinct: ["ipHash"],
-      select: { ipHash: true },
-    }),
-
-    prisma.fuzzingAttempt.count({
-      where: { detectedAt: { gte: since }, severity: { in: ["HIGH", "CRITICAL"] } },
-    }),
+    prisma.$queryRaw<CountRow[]>`
+      SELECT COUNT(DISTINCT ip_hash)::bigint AS count
+      FROM fuzzing_attempts WHERE detected_at >= ${since}`,
 
     prisma.fuzzingAttempt.findMany({
       where: { detectedAt: { gte: since } },
@@ -96,14 +93,19 @@ export default defineEventHandler(async (event) => {
     }),
   ]);
 
+  // Derived from bySeverity rather than a separate count query (same window).
+  const highSeverity = bySeverity
+    .filter((r) => r.severity === "HIGH" || r.severity === "CRITICAL")
+    .reduce((sum, r) => sum + r._count._all, 0);
+
   return {
     success: true,
     data: {
       range,
       summary: {
         totalAttempts: total,
-        uniqueActors: uniqueActorRows.length,
-        highSeverity: highSeverityCount,
+        uniqueActors: num(uniqueActorRows[0]?.count ?? BigInt(0)),
+        highSeverity,
         bySeverity: bySeverity.map((r) => ({ label: r.severity, count: r._count._all })),
       },
       byCategory: byCategory.map((r) => ({ label: r.category, count: r._count._all })),

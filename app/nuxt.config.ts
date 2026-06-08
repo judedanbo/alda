@@ -139,6 +139,7 @@ export default defineNuxtConfig({
       respectDnt: envBool(process.env.ANALYTICS_RESPECT_DNT, true),
       retentionDays: envNum(process.env.ANALYTICS_RETENTION_DAYS, 30),
       rollupRetentionDays: envNum(process.env.ANALYTICS_ROLLUP_RETENTION_DAYS, 365),
+      fuzzingRetentionDays: envNum(process.env.ANALYTICS_FUZZING_RETENTION_DAYS, 90),
       excludePaths: process.env.ANALYTICS_EXCLUDE_PATHS
         || "/_nuxt,/__nuxt,/_ipx,/favicon.ico,/api/health,/api/admin/analytics",
       storageDriver: analyticsUsesRedis ? "redis" : "memory",

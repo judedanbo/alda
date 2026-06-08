@@ -37,6 +37,8 @@ export interface AnalyticsConfig {
   retentionDays: number;
   /** Days to keep rollup aggregates. */
   rollupRetentionDays: number;
+  /** Days to keep raw per-request fuzzing-attempt records. */
+  fuzzingRetentionDays: number;
   /** Path prefixes excluded from capture + enforcement. */
   excludePaths: string[];
   /** Active counter storage backend. */
@@ -105,6 +107,7 @@ export function getAnalyticsConfig(): AnalyticsConfig {
     respectDnt: raw.respectDnt !== false,
     retentionDays: Number(raw.retentionDays) || 30,
     rollupRetentionDays: Number(raw.rollupRetentionDays) || 365,
+    fuzzingRetentionDays: Number(raw.fuzzingRetentionDays) || 90,
     excludePaths: String(raw.excludePaths || "")
       .split(",")
       .map((p) => p.trim())
