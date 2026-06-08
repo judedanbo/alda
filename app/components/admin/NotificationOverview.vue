@@ -66,7 +66,7 @@ const failureSeries = computed(() => [
   { name: "Failed", data: stats.value?.failuresByType.map((f) => f.failed) ?? [] },
 ]);
 const failureOptions = computed(() => ({
-  chart: { type: "bar" },
+  // chart type is set via the AppChartCard `type` prop
   xaxis: { categories: stats.value?.failuresByType.map((f) => f.type) ?? [] },
   colors: ["#dc2626"],
   plotOptions: { bar: { horizontal: true } },
