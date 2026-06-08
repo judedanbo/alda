@@ -42,7 +42,7 @@ async function load() {
     smsFields.value = res.data.sms;
     for (const f of [...res.data.smtp, ...res.data.sms]) {
       original[f.key] = f.secret ? "" : (f.value ?? "");
-      form[f.key] = original[f.key];
+      form[f.key] = original[f.key] ?? "";
       pendingClear[f.key] = false;
     }
   } catch (err: unknown) {
@@ -71,7 +71,7 @@ function markClear(f: Field) {
 }
 function undoClear(f: Field) {
   pendingClear[f.key] = false;
-  form[f.key] = original[f.key];
+  form[f.key] = original[f.key] ?? "";
 }
 
 const hasChanges = computed(() => {

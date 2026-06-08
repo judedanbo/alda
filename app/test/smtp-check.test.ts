@@ -33,6 +33,17 @@ vi.stubGlobal("useRuntimeConfig", () => ({ smtpHost: "smtp.example.com", smtpPor
 
 const handler = (await import("~/server/api/admin/smtp-check.get")).default;
 
+/** Flattened shape of the endpoint's discriminated-union response, for assertions. */
+type CheckResult = {
+  ok: boolean;
+  authConfigured: boolean;
+  host?: string;
+  port?: number;
+  hint?: string;
+  code?: string;
+  responseCode?: number;
+};
+
 /** nodemailer-style error: an Error carrying a `.code` (and optional SMTP status). */
 function smtpError(code: string, responseCode?: number) {
   return Object.assign(new Error(`simulated ${code}`), { code, responseCode });
@@ -83,7 +94,7 @@ describe("GET /api/admin/smtp-check — probe outcomes", () => {
   it("short-circuits with a NUXT_-prefix hint when credentials are unconfigured", async () => {
     isSmtpAuthConfiguredMock.mockReturnValue(false);
 
-    const result = await handler(fakeEvent());
+    const result = (await handler(fakeEvent())) as CheckResult;
 
     expect(result).toMatchObject({ ok: false, authConfigured: false });
     expect(result.hint).toMatch(/NUXT_SMTP_USER/);
@@ -92,7 +103,7 @@ describe("GET /api/admin/smtp-check — probe outcomes", () => {
   });
 
   it("returns ok:true with connection target on a successful verify", async () => {
-    const result = await handler(fakeEvent());
+    const result = (await handler(fakeEvent())) as CheckResult;
 
     expect(result).toEqual({
       ok: true,
@@ -106,7 +117,7 @@ describe("GET /api/admin/smtp-check — probe outcomes", () => {
   it("classifies EAUTH as an authentication failure", async () => {
     verifyEmailConnectionMock.mockRejectedValue(smtpError("EAUTH", 535));
 
-    const result = await handler(fakeEvent());
+    const result = (await handler(fakeEvent())) as CheckResult;
 
     expect(result).toMatchObject({ ok: false, authConfigured: true, code: "EAUTH", responseCode: 535 });
     expect(result.hint).toMatch(/[Aa]uthentication/);
@@ -115,7 +126,7 @@ describe("GET /api/admin/smtp-check — probe outcomes", () => {
   it("classifies ECONNECTION as a connection problem and names host:port", async () => {
     verifyEmailConnectionMock.mockRejectedValue(smtpError("ECONNECTION"));
 
-    const result = await handler(fakeEvent());
+    const result = (await handler(fakeEvent())) as CheckResult;
 
     expect(result).toMatchObject({ ok: false, code: "ECONNECTION" });
     expect(result.hint).toContain("smtp.example.com:587");
@@ -124,7 +135,7 @@ describe("GET /api/admin/smtp-check — probe outcomes", () => {
   it("classifies ETIMEDOUT as a firewall/egress timeout", async () => {
     verifyEmailConnectionMock.mockRejectedValue(smtpError("ETIMEDOUT"));
 
-    const result = await handler(fakeEvent());
+    const result = (await handler(fakeEvent())) as CheckResult;
 
     expect(result).toMatchObject({ ok: false, code: "ETIMEDOUT" });
     expect(result.hint).toMatch(/timed out|firewall/i);
@@ -133,7 +144,7 @@ describe("GET /api/admin/smtp-check — probe outcomes", () => {
   it("falls back to a generic hint for an unrecognized error code", async () => {
     verifyEmailConnectionMock.mockRejectedValue(smtpError("ESOMETHINGELSE"));
 
-    const result = await handler(fakeEvent());
+    const result = (await handler(fakeEvent())) as CheckResult;
 
     expect(result).toMatchObject({ ok: false, code: "ESOMETHINGELSE" });
     expect(result.hint).toMatch(/server logs/i);

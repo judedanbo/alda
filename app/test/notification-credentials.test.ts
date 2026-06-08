@@ -5,6 +5,7 @@
  *    key/value validation, audit)
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { H3Event } from "h3";
 
 const prismaMock = vi.hoisted(() => ({
   notificationCredential: {
@@ -85,7 +86,7 @@ describe("credential resolver", () => {
 
 describe("PUT /api/admin/notifications/credentials", () => {
   const fakeEvent = (role = "admin") =>
-    ({ context: { auth: { userId: "admin-1", email: "a@b.c", roles: [role] } } }) as unknown;
+    ({ context: { auth: { userId: "admin-1", email: "a@b.c", roles: [role] } } }) as unknown as H3Event;
 
   beforeEach(() => {
     prismaMock.userRole.findMany.mockResolvedValue([{ role: { name: "admin" } }]);

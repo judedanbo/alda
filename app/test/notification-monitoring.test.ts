@@ -6,6 +6,7 @@
  *  - POST /api/admin/notifications/[id]/retry (audit log + delegation)
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { H3Event } from "h3";
 
 const prismaMock = vi.hoisted(() => ({
   notificationDeliveryLog: { findUnique: vi.fn(), update: vi.fn(), findMany: vi.fn(), count: vi.fn() },
@@ -137,7 +138,7 @@ describe("retryDelivery", () => {
 });
 
 describe("GET /api/admin/notifications", () => {
-  let listHandler: (event: unknown) => Promise<unknown>;
+  let listHandler: (event: H3Event) => Promise<unknown>;
   let currentQuery: Record<string, unknown> = {};
 
   beforeEach(async () => {
@@ -149,7 +150,7 @@ describe("GET /api/admin/notifications", () => {
     prismaMock.notificationDeliveryLog.count.mockResolvedValue(0);
   });
 
-  const eventWith = (auth: unknown) => ({ context: { auth } }) as unknown;
+  const eventWith = (auth: unknown) => ({ context: { auth } }) as unknown as H3Event;
 
   it("rejects unauthenticated callers with 401", async () => {
     await expect(listHandler(eventWith(undefined))).rejects.toMatchObject({ statusCode: 401 });
@@ -185,7 +186,7 @@ describe("GET /api/admin/notifications", () => {
 });
 
 describe("POST /api/admin/notifications/[id]/retry", () => {
-  let retryHandler: (event: unknown) => Promise<unknown>;
+  let retryHandler: (event: H3Event) => Promise<unknown>;
 
   beforeEach(async () => {
     vi.doMock("~/server/services/notification.service", () => ({ retryDelivery: retryDeliveryMock }));
@@ -202,7 +203,7 @@ describe("POST /api/admin/notifications/[id]/retry", () => {
 
   afterEach(() => vi.doUnmock("~/server/services/notification.service"));
 
-  const eventWith = (auth: unknown) => ({ context: { auth } }) as unknown;
+  const eventWith = (auth: unknown) => ({ context: { auth } }) as unknown as H3Event;
 
   it("retries and writes an audit log", async () => {
     const res = await retryHandler(eventWith({ userId: "admin", email: "a@b.c", roles: ["admin"] }));
