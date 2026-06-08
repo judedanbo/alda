@@ -23,7 +23,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: migrate
-          image: regisry.azurecr.io/adla-migrate:latest
+          image: regisry.azurecr.io/adla-migrate:staging-latest
           envFrom:
             - configMapRef:
                 name: adla-config

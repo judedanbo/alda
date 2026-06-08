@@ -269,7 +269,7 @@ kubectl rollout status statefulset/adla-minio    -n <ns> --timeout=300s
 # 4. Run the migration against the ready database. migration-job.yaml already has
 #    envFrom (config+secret) and the part-of label; just substitute the image tag.
 kubectl -n <ns> delete job adla-migrate --ignore-not-found
-sed "s|adla-migrate:latest|adla-migrate:<tag>|" k8s/base/migration-job.yaml \
+sed "s|adla-migrate:staging-latest|adla-migrate:<tag>|" k8s/base/migration-job.yaml \
   | kubectl -n <ns> apply -f -
 kubectl -n <ns> wait --for=condition=complete job/adla-migrate --timeout=300s
 

@@ -25,7 +25,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: bootstrap-admin
-          image: regisry.azurecr.io/adla-migrate:latest
+          image: regisry.azurecr.io/adla-migrate:staging-latest
           command: ["npx", "tsx", "prisma/bootstrap-admin.ts"]
           envFrom:
             - configMapRef:

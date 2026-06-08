@@ -23,7 +23,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: seed-demo
-          image: regisry.azurecr.io/adla-migrate:latest
+          image: regisry.azurecr.io/adla-migrate:staging-latest
           command: ["npx", "tsx", "prisma/seed-demo.ts"]
           envFrom:
             - configMapRef:
