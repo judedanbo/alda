@@ -1,5 +1,6 @@
 import prisma from "~/server/utils/prisma";
 import { verifyEmailConnection, isSmtpAuthConfigured } from "~/server/services/email.service";
+import { getResolvedEmailConfig } from "~/server/utils/notification-config";
 
 /**
  * On-demand SMTP health probe. Admin-only. Opens an authenticated connection
@@ -29,12 +30,14 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const config = useRuntimeConfig();
+  // Resolved config = in-app DB override → env fallback, so the check validates
+  // the effective credentials the app actually sends with.
+  const resolved = await getResolvedEmailConfig();
   // Safe to surface — these are non-secret connection coordinates, useful for
   // confirming the box is pointed at the right server. Never include the
   // user/pass here.
-  const target = { host: config.smtpHost, port: config.smtpPort };
-  const authConfigured = isSmtpAuthConfigured();
+  const target = { host: resolved.host, port: resolved.port };
+  const authConfigured = await isSmtpAuthConfigured();
 
   // Short-circuit: with no credentials, verify() would fail with a confusing
   // auth error. Empty creds on a prod build almost always means the env vars

@@ -13,11 +13,18 @@ const prismaMock = vi.hoisted(() => ({
 }));
 const verifyEmailConnectionMock = vi.hoisted(() => vi.fn());
 const isSmtpAuthConfiguredMock = vi.hoisted(() => vi.fn());
+const getResolvedEmailConfigMock = vi.hoisted(() =>
+  vi.fn(() => Promise.resolve({ host: "smtp.example.com", port: 587, user: "", pass: "", from: "" })),
+);
 
 vi.mock("~/server/utils/prisma", () => ({ default: prismaMock }));
 vi.mock("~/server/services/email.service", () => ({
   verifyEmailConnection: verifyEmailConnectionMock,
   isSmtpAuthConfigured: isSmtpAuthConfiguredMock,
+}));
+// The endpoint resolves host/port via the credential resolver (DB→env).
+vi.mock("~/server/utils/notification-config", () => ({
+  getResolvedEmailConfig: getResolvedEmailConfigMock,
 }));
 
 // The endpoint reads host/port from runtimeConfig for the response. Override

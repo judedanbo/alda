@@ -71,6 +71,7 @@ export function useDashboardNav() {
         { name: "Institutions", href: "/admin/institutions", icon: "building", tour: "nav-institutions" },
         { name: "Categories", href: "/admin/categories", icon: "tag", tour: "nav-categories" },
         { name: "Audit Logs", href: "/admin/audit-logs", icon: "shield", tour: "nav-audit-logs" },
+        { name: "Notifications", href: "/admin/notifications", icon: "bell", tour: "nav-notifications" },
         { name: "Compliance", href: "/admin/compliance", icon: "clipboard-check", tour: "nav-compliance" },
         { name: "Analytics", href: "/admin/analytics", icon: "bar-chart", tour: "nav-analytics" },
         { name: "Web Analytics", href: "/admin/web-analytics", icon: "activity", tour: "nav-web-analytics" },

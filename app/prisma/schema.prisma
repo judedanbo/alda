@@ -668,7 +668,28 @@ model NotificationDeliveryLog {
 
   @@index([notificationId])
   @@index([status])
+  // Admin monitoring: filterable log + time-bucketed metrics over the
+  // delivery-log grain (status/channel filters, createdAt range + ordering).
+  @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([channel, createdAt])
   @@map("notification_delivery_logs")
+}
+
+/**
+ * In-app overrides for notification credentials (SMTP + SMS provider keys).
+ * One row per registry key (see server/utils/notification-config.ts). The
+ * value is AES-256-GCM encrypted at rest via encryptPii(); a DB value takes
+ * precedence over the env/runtimeConfig fallback. Absence of a row = use env.
+ */
+model NotificationCredential {
+  key         String   @id @db.VarChar(64)
+  valueCipher String   @map("value_cipher") @db.Text
+  updatedById String?  @map("updated_by_id") @db.Uuid
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("notification_credentials")
 }
 
 // ============================================

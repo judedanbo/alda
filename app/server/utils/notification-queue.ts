@@ -118,6 +118,25 @@ export async function enqueueSmsJob(data: SmsJobData): Promise<void> {
 }
 
 /**
+ * Re-enqueue a job for a delivery log that already ran (admin retry).
+ *
+ * Jobs are keyed by `deliveryLogId`, and a previously-failed job lingers in
+ * BullMQ's `failed` set for 7 days — `add()` with the same jobId would be
+ * rejected as a duplicate and silently no-op. So we remove any existing job
+ * with that id first (best-effort), then add a fresh one that re-enters the
+ * normal retry/backoff pipeline.
+ */
+export async function reenqueueEmailJob(data: EmailJobData): Promise<void> {
+  await getEmailQueue().remove(data.deliveryLogId).catch(() => {});
+  await enqueueEmailJob(data);
+}
+
+export async function reenqueueSmsJob(data: SmsJobData): Promise<void> {
+  await getSmsQueue().remove(data.deliveryLogId).catch(() => {});
+  await enqueueSmsJob(data);
+}
+
+/**
  * Process an email job. Called by the BullMQ worker; throws on send
  * failure so BullMQ retries with the configured backoff.
  *

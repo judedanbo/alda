@@ -10,6 +10,9 @@ const prismaMock = vi.hoisted(() => ({
     findFirst: vi.fn(),
     update: vi.fn(),
   },
+  // verifyWebhookSecret resolves the secret via the credential resolver, which
+  // reads DB overrides first; empty → env fallback (set in these tests).
+  notificationCredential: { findMany: vi.fn(() => []) },
 }));
 vi.mock("~/server/utils/prisma", () => ({ default: prismaMock }));
 

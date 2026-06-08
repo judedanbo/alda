@@ -171,6 +171,9 @@ export const AuditActions = {
 
   // Notifications
   NOTIFICATION_TEST_SENT: "notification_test_sent",
+  NOTIFICATION_DELIVERY_RETRIED: "notification_delivery_retried",
+  NOTIFICATION_CREDENTIAL_UPDATED: "notification_credential_updated",
+  NOTIFICATION_CREDENTIAL_CLEARED: "notification_credential_cleared",
 
   // Web analytics, abuse detection & rate limiting
   ABUSE_DETECTED: "abuse_detected",
