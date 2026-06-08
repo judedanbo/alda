@@ -39,6 +39,9 @@ export default defineTask({
       const abuseDeleted = await prisma.abuseEvent.deleteMany({
         where: { detectedAt: { lt: new Date(Date.now() - rollupDays * 86_400_000) } },
       });
+      const fuzzingDeleted = await prisma.fuzzingAttempt.deleteMany({
+        where: { detectedAt: { lt: new Date(Date.now() - rollupDays * 86_400_000) } },
+      });
 
       // Deactivate enforcement actions whose temporary block has expired.
       const enforcementExpired = await prisma.enforcementAction.updateMany({
@@ -52,6 +55,7 @@ export default defineTask({
         hourlyDeleted,
         dailyDeleted,
         abuseDeleted: abuseDeleted.count,
+        fuzzingDeleted: fuzzingDeleted.count,
         enforcementExpired: enforcementExpired.count,
       };
     } catch (error) {

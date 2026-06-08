@@ -20,6 +20,8 @@ export interface AnalyticsConfig {
   aiDetectionEnabled: boolean;
   /** Enforce layered rate limits. */
   rateLimitEnabled: boolean;
+  /** Capture classified fuzzing/probing attempts as durable records. */
+  fuzzingEnabled: boolean;
   /** Salt for hashing client IPs before storage. */
   ipSalt: string;
   /**
@@ -95,6 +97,7 @@ export function getAnalyticsConfig(): AnalyticsConfig {
     abuseEnabled: raw.abuseEnabled !== false,
     aiDetectionEnabled: raw.aiDetectionEnabled !== false,
     rateLimitEnabled: raw.rateLimitEnabled !== false,
+    fuzzingEnabled: raw.fuzzingEnabled !== false,
     ipSalt: String(raw.ipSalt || "adla-analytics-default-salt"),
     trustedProxies: Array.isArray(raw.trustedProxies)
       ? (raw.trustedProxies as unknown[]).map((p) => String(p).trim()).filter(Boolean)

@@ -127,6 +127,7 @@ export default defineNuxtConfig({
       abuseEnabled: envBool(process.env.ANALYTICS_ABUSE_ENABLED, true),
       aiDetectionEnabled: envBool(process.env.ANALYTICS_AI_DETECTION_ENABLED, true),
       rateLimitEnabled: envBool(process.env.ANALYTICS_RATE_LIMIT_ENABLED, true),
+      fuzzingEnabled: envBool(process.env.ANALYTICS_FUZZING_ENABLED, true),
       ipSalt: process.env.ANALYTICS_IP_SALT || "change-this-analytics-ip-salt-in-production",
       // Comma-separated CIDRs (IPv4/IPv6) whose `X-Forwarded-For` is honored.
       // Empty = trust no forwarding headers; use the socket peer. See

@@ -138,6 +138,36 @@ interface RateLimitData {
     createdAt: string;
   }>;
 }
+interface FuzzingData {
+  range: string;
+  summary: {
+    totalAttempts: number;
+    uniqueActors: number;
+    highSeverity: number;
+    bySeverity: LabelCount[];
+  };
+  byCategory: LabelCount[];
+  timeline: { buckets: string[]; counts: number[] };
+  topTargets: LabelCount[];
+  topOffenders: Array<{
+    ipTruncated: string;
+    actorKey: string;
+    attempts: number;
+    lastSeen: string | null;
+  }>;
+  recentAttempts: Array<{
+    id: string;
+    detectedAt: string;
+    category: string;
+    severity: string;
+    method: string;
+    path: string;
+    statusCode: number;
+    ipTruncated: string | null;
+    country: string | null;
+    details: unknown;
+  }>;
+}
 
 // --- state ---------------------------------------------------------------
 const ranges = [
@@ -155,6 +185,7 @@ const realtime = ref<RealtimeData | null>(null);
 const abuse = ref<AbuseData | null>(null);
 const ai = ref<AiData | null>(null);
 const ratelimit = ref<RateLimitData | null>(null);
+const fuzzing = ref<FuzzingData | null>(null);
 
 const loading = reactive<Record<string, boolean>>({
   overview: false,
@@ -162,6 +193,7 @@ const loading = reactive<Record<string, boolean>>({
   abuse: false,
   ai: false,
   ratelimit: false,
+  fuzzing: false,
 });
 const loaded = reactive<Record<string, boolean>>({
   overview: false,
@@ -169,6 +201,7 @@ const loaded = reactive<Record<string, boolean>>({
   abuse: false,
   ai: false,
   ratelimit: false,
+  fuzzing: false,
 });
 
 // --- helpers -------------------------------------------------------------
@@ -208,6 +241,19 @@ function statusColor(code: number): string {
   if (code >= 400) return "bg-amber-100 text-amber-800";
   return "bg-green-100 text-green-800";
 }
+function fuzzCategoryLabel(c: string): string {
+  return (
+    (
+      {
+        SUSPICIOUS_PATH: "Suspicious path",
+        AUTH_FUZZING: "Auth fuzzing",
+        FORM_VALIDATION: "Form validation",
+        PARAM_TAMPERING: "Param tampering",
+        PATH_PROBE: "Path probe",
+      } as Record<string, string>
+    )[c] || c
+  );
+}
 function severityColor(s: string): string {
   return (
     (
@@ -234,6 +280,7 @@ async function fetchTab(tab: string) {
       else if (tab === "abuse") abuse.value = res.data as AbuseData;
       else if (tab === "ai") ai.value = res.data as AiData;
       else if (tab === "ratelimit") ratelimit.value = res.data as RateLimitData;
+      else if (tab === "fuzzing") fuzzing.value = res.data as FuzzingData;
       loaded[tab] = true;
     }
   } catch (error) {
@@ -399,6 +446,19 @@ const rlTimelineChart = computed(() => {
     } as ApexOptions,
   };
 });
+
+const fuzzingTimelineChart = computed(() => {
+  const t = fuzzing.value?.timeline;
+  return {
+    series: [
+      { name: "Fuzzing attempts", data: t?.counts ?? [] },
+    ] as ApexOptions["series"],
+    options: {
+      xaxis: { categories: (t?.buckets ?? []).map(shortTime) },
+      colors: ["#7C3AED"],
+    } as ApexOptions,
+  };
+});
 </script>
 
 <template>
@@ -447,6 +507,11 @@ const rlTimelineChart = computed(() => {
           value="ratelimit"
           class="rounded-lg px-5 py-5 text-base font-semibold data-active:bg-primary data-active:text-primary-foreground"
           >Rate Limiting</TabsTrigger
+        >
+        <TabsTrigger
+          value="fuzzing"
+          class="rounded-lg px-5 py-5 text-base font-semibold data-active:bg-primary data-active:text-primary-foreground"
+          >Fuzzing</TabsTrigger
         >
       </TabsList>
 
@@ -1114,6 +1179,175 @@ const rlTimelineChart = computed(() => {
             :height="300"
           />
         </div>
+      </TabsContent>
+
+      <!-- ============ FUZZING ============ -->
+      <TabsContent value="fuzzing" class="space-y-4 mt-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatCard
+            label="Fuzzing attempts"
+            :value="fmt(fuzzing?.summary.totalAttempts)"
+            :loading="loading.fuzzing"
+            footnote="malformed payloads, probed URLs, suspicious paths"
+          />
+          <StatCard
+            label="Unique actors"
+            :value="fmt(fuzzing?.summary.uniqueActors)"
+            :loading="loading.fuzzing"
+            footnote="distinct hashed IPs"
+          />
+          <StatCard
+            label="High / critical"
+            :value="fmt(fuzzing?.summary.highSeverity)"
+            :loading="loading.fuzzing"
+            :value-color="
+              (fuzzing?.summary.highSeverity ?? 0) > 0
+                ? 'text-orange-600'
+                : 'text-foreground'
+            "
+          />
+          <StatCard
+            label="Categories"
+            :value="fmt(fuzzing?.byCategory.length)"
+            :loading="loading.fuzzing"
+          />
+        </div>
+
+        <ChartCard
+          title="Fuzzing attempts over time"
+          type="bar"
+          :series="fuzzingTimelineChart.series"
+          :options="fuzzingTimelineChart.options"
+          :loading="loading.fuzzing"
+          :height="240"
+        />
+
+        <div class="grid lg:grid-cols-2 gap-4">
+          <ChartCard
+            title="By category"
+            type="donut"
+            :series="donut(fuzzing?.byCategory ?? [], fuzzCategoryLabel).series"
+            :options="donut(fuzzing?.byCategory ?? [], fuzzCategoryLabel).options"
+            :loading="loading.fuzzing"
+            :height="280"
+          />
+          <ChartCard
+            title="By severity"
+            type="donut"
+            :series="donut(fuzzing?.summary.bySeverity ?? []).series"
+            :options="donut(fuzzing?.summary.bySeverity ?? []).options"
+            :loading="loading.fuzzing"
+            :height="280"
+          />
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-4">
+          <ChartCard
+            title="Most targeted endpoints"
+            type="bar"
+            :series="hbar(fuzzing?.topTargets ?? []).series"
+            :options="hbar(fuzzing?.topTargets ?? []).options"
+            :loading="loading.fuzzing"
+            :height="300"
+          />
+          <Card>
+            <CardHeader
+              ><CardTitle class="text-base"
+                >Top offending IPs</CardTitle
+              ></CardHeader
+            >
+            <CardContent class="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow
+                    ><TableHead>IP</TableHead><TableHead>Attempts</TableHead
+                    ><TableHead>Last seen</TableHead></TableRow
+                  >
+                </TableHeader>
+                <TableBody>
+                  <TableRow v-if="!fuzzing?.topOffenders.length">
+                    <TableCell
+                      colspan="3"
+                      class="text-center py-6 text-muted-foreground"
+                      >No fuzzing detected</TableCell
+                    >
+                  </TableRow>
+                  <TableRow
+                    v-for="o in fuzzing?.topOffenders"
+                    :key="o.actorKey"
+                  >
+                    <TableCell class="text-xs font-mono">{{
+                      o.ipTruncated
+                    }}</TableCell>
+                    <TableCell class="text-sm">{{ o.attempts }}</TableCell>
+                    <TableCell
+                      class="text-xs text-muted-foreground whitespace-nowrap"
+                      >{{ o.lastSeen ? shortTime(o.lastSeen) : "-" }}</TableCell
+                    >
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader
+            ><CardTitle class="text-base"
+              >Recent fuzzing attempts</CardTitle
+            ></CardHeader
+          >
+          <CardContent class="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Time</TableHead><TableHead>Category</TableHead
+                  ><TableHead>Severity</TableHead><TableHead>Method</TableHead
+                  ><TableHead>Status</TableHead><TableHead>Path</TableHead
+                  ><TableHead>IP</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow v-if="!fuzzing?.recentAttempts.length">
+                  <TableCell
+                    colspan="7"
+                    class="text-center py-6 text-muted-foreground"
+                    >No fuzzing attempts</TableCell
+                  >
+                </TableRow>
+                <TableRow v-for="a in fuzzing?.recentAttempts" :key="a.id">
+                  <TableCell
+                    class="text-xs text-muted-foreground whitespace-nowrap"
+                    >{{ shortTime(a.detectedAt) }}</TableCell
+                  >
+                  <TableCell class="text-xs">{{
+                    fuzzCategoryLabel(a.category)
+                  }}</TableCell>
+                  <TableCell
+                    ><Badge :class="severityColor(a.severity)">{{
+                      a.severity
+                    }}</Badge></TableCell
+                  >
+                  <TableCell class="text-xs font-mono">{{
+                    a.method
+                  }}</TableCell>
+                  <TableCell
+                    ><Badge :class="statusColor(a.statusCode)">{{
+                      a.statusCode
+                    }}</Badge></TableCell
+                  >
+                  <TableCell class="text-xs font-mono max-w-xs truncate">{{
+                    a.path
+                  }}</TableCell>
+                  <TableCell class="text-xs font-mono text-muted-foreground"
+                    >{{ a.ipTruncated || "-"
+                    }}<span v-if="a.country"> · {{ a.country }}</span></TableCell
+                  >
+                </TableRow>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </TabsContent>
     </Tabs>
   </div>

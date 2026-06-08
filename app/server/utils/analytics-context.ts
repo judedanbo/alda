@@ -29,8 +29,16 @@ export interface AnalyticsRequestContext {
   aiVerified: AiVerificationVerdict | null;
 }
 
+/** Validation-failure metadata set by `validateBody`, read by the traffic
+ * plugin to record a FORM_VALIDATION fuzzing attempt. Field NAMES only. */
+export interface FuzzingRequestContext {
+  validationFailed?: boolean;
+  fields?: string[];
+}
+
 declare module "h3" {
   interface H3EventContext {
     analytics?: AnalyticsRequestContext;
+    fuzzing?: FuzzingRequestContext;
   }
 }

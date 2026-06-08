@@ -36,6 +36,7 @@ import {
   persistAbuseEscalation,
   recordAiAbuseEvent,
 } from "~/server/utils/abuse";
+import { classifyFuzzingAttempt, recordFuzzingAttempt } from "~/server/utils/fuzzing";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
 import type { AnalyticsRequestContext } from "~/server/utils/analytics-context";
 
@@ -296,6 +297,42 @@ export default defineNitroPlugin((nitroApp) => {
             userId: auth?.userId ?? null,
             path,
             userAgent,
+          });
+        }
+      }
+
+      // Fuzzing detection — record every classified probing attempt (malformed
+      // payloads, probed URLs, suspicious paths, auth/param fuzzing) as its own
+      // durable row for the admin Fuzzing analytics tab.
+      if (config.fuzzingEnabled) {
+        const fuzz = classifyFuzzingAttempt({
+          method,
+          path,
+          statusCode: status,
+          isApi,
+          validation: event.context.fuzzing,
+        });
+        if (fuzz) {
+          await recordFuzzingAttempt(event, {
+            category: fuzz.category,
+            severity: fuzz.severity,
+            method,
+            path,
+            routePattern: routePatternFromPath(path),
+            statusCode: status,
+            ipHash: actx.ipHash,
+            ipTruncated: actx.ipTruncated,
+            country: actx.country,
+            userAgent,
+            visitorClass: classification.visitorClass,
+            userId: auth?.userId ?? null,
+            userRole: auth?.roles?.[0] ?? null,
+            sessionId: actx.sessionId,
+            visitorId: actx.visitorId,
+            requestId: actx.requestId,
+            details: event.context.fuzzing
+              ? { fields: event.context.fuzzing.fields ?? [] }
+              : null,
           });
         }
       }
