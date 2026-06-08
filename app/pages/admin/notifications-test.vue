@@ -78,6 +78,37 @@ async function send() {
     sending.value = false;
   }
 }
+
+// SMTP connection probe — mirrors the GET /api/admin/smtp-check response.
+// The endpoint returns HTTP 200 even when ok:false (a reachable-but-rejected
+// server), so a thrown error here means transport/auth failure (401/403/5xx),
+// not a bad SMTP config — the two are surfaced separately.
+type SmtpCheck = {
+  ok: boolean;
+  authConfigured: boolean;
+  host?: string;
+  port?: number;
+  hint?: string;
+  code?: string;
+};
+
+const checkingSmtp = ref(false);
+const smtpResult = ref<SmtpCheck | null>(null);
+const smtpError = ref<string | null>(null);
+
+async function checkSmtp() {
+  checkingSmtp.value = true;
+  smtpResult.value = null;
+  smtpError.value = null;
+  try {
+    smtpResult.value = await authFetch<SmtpCheck>("/api/admin/smtp-check");
+  } catch (err: unknown) {
+    const e = err as { data?: { message?: string; statusMessage?: string } };
+    smtpError.value = e.data?.message || e.data?.statusMessage || "SMTP check failed";
+  } finally {
+    checkingSmtp.value = false;
+  }
+}
 </script>
 
 <template>
@@ -90,6 +121,39 @@ async function send() {
     <Alert v-if="result" :variant="result.ok ? undefined : 'destructive'" class="mb-4">
       <AlertDescription>{{ result.message }}</AlertDescription>
     </Alert>
+
+    <Card class="mb-4">
+      <CardHeader>
+        <CardTitle>Email server (SMTP) connection</CardTitle>
+        <CardDescription>
+          Opens an authenticated connection to the mail server without sending an email. Run this
+          after changing SMTP credentials to confirm they took effect.
+        </CardDescription>
+      </CardHeader>
+      <CardContent class="space-y-4">
+        <Alert v-if="smtpError" variant="destructive">
+          <AlertDescription>{{ smtpError }}</AlertDescription>
+        </Alert>
+
+        <Alert v-else-if="smtpResult" :variant="smtpResult.ok ? undefined : 'destructive'">
+          <AlertDescription>
+            <span class="font-medium">
+              {{ smtpResult.ok ? "🟢 SMTP connection OK" : "🔴 SMTP check failed" }}
+            </span>
+            <span v-if="smtpResult.host" class="block text-xs mt-1 font-mono">
+              {{ smtpResult.host }}:{{ smtpResult.port }}<template v-if="smtpResult.code">
+                · {{ smtpResult.code }}</template>
+            </span>
+            <span v-if="smtpResult.hint" class="block text-xs mt-1">{{ smtpResult.hint }}</span>
+          </AlertDescription>
+        </Alert>
+
+        <Button :disabled="checkingSmtp" @click="checkSmtp">
+          <span v-if="checkingSmtp">Checking...</span>
+          <span v-else>Check email delivery</span>
+        </Button>
+      </CardContent>
+    </Card>
 
     <Card>
       <CardHeader>

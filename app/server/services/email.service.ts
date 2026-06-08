@@ -29,6 +29,31 @@ function getTransporter(): Transporter {
 }
 
 /**
+ * Open a connection to the SMTP server and authenticate, WITHOUT sending mail.
+ * Uses the same cached transporter (and therefore the same resolved
+ * runtimeConfig credentials) that real sends use, so a success here means
+ * real mail would authenticate too.
+ *
+ * Resolves `true` on success; rejects with the underlying nodemailer error,
+ * which carries a `.code` (e.g. "EAUTH", "ECONNECTION", "ETIMEDOUT") and a
+ * `.responseCode` SMTP status the caller can classify.
+ */
+export function verifyEmailConnection(): Promise<true> {
+  return getTransporter()
+    .verify()
+    .then(() => true as const);
+}
+
+/**
+ * Whether SMTP auth credentials are actually present in the resolved
+ * runtimeConfig. Empty here on a prod `.output` build is the classic symptom
+ * of plain `SMTP_USER`/`SMTP_PASS` env vars that should be `NUXT_`-prefixed.
+ */
+export function isSmtpAuthConfigured(): boolean {
+  return Boolean(useRuntimeConfig().smtpUser);
+}
+
+/**
  * Email data for templates
  */
 export interface EmailData {
