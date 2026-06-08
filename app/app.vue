@@ -23,6 +23,18 @@ useHead({
     { name: "description", content: "Ghana Asset Declaration System under Article 286(5)" },
     { name: "viewport", content: "width=device-width, initial-scale=1" },
     { name: "color-scheme", content: "light dark" },
+    // Colors the mobile browser chrome (address bar) with the Ghana Green brand.
+    { name: "theme-color", content: "#006B3F" },
+  ],
+  link: [
+    // ICO is the multi-resolution (16+32px) fallback the tab bar and legacy
+    // browsers reach for; modern browsers prefer the explicit PNG sizes below.
+    { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
+    { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicon-16x16.png" },
+    { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon.png" },
+    { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
+    // PWA manifest references the 192/512 android-chrome icons.
+    { rel: "manifest", href: "/site.webmanifest" },
   ],
   htmlAttrs: {
     lang: "en",
