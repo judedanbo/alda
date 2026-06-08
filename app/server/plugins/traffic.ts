@@ -36,6 +36,7 @@ import {
   persistAbuseEscalation,
   recordAiAbuseEvent,
 } from "~/server/utils/abuse";
+import { classifyFuzzingAttempt, recordFuzzingAttempt } from "~/server/utils/fuzzing";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
 import type { AnalyticsRequestContext } from "~/server/utils/analytics-context";
 
@@ -182,20 +183,63 @@ export default defineNitroPlugin((nitroApp) => {
   nitroApp.hooks.hook("afterResponse", async (event, response) => {
     const actx = event.context.analytics;
     if (!actx || actx.excluded) return;
+
+    const url = getRequestURL(event);
+    const path = url.pathname;
+    const method = (event.method || "GET").toUpperCase();
+    const status = getResponseStatus(event) || 200;
+    const isApi = path.startsWith("/api/");
+    const auth = event.context.auth;
+    const userAgent = getHeader(event, "user-agent") ?? null;
+
+    // Fuzzing detection runs independently of capture — security probing must
+    // still be recorded even when raw traffic capture is disabled. Wrapped in
+    // its own fail-open try so it never affects the capture/abuse path below.
+    if (config.fuzzingEnabled) {
+      try {
+        const fuzz = classifyFuzzingAttempt({
+          method,
+          path,
+          statusCode: status,
+          isApi,
+          authenticated: !!auth,
+          validation: event.context.fuzzing,
+        });
+        if (fuzz) {
+          await recordFuzzingAttempt(event, {
+            category: fuzz.category,
+            severity: fuzz.severity,
+            method,
+            path,
+            routePattern: routePatternFromPath(path),
+            statusCode: status,
+            ipHash: actx.ipHash,
+            ipTruncated: actx.ipTruncated,
+            country: actx.country,
+            userAgent,
+            visitorClass: actx.classification.visitorClass,
+            userId: auth?.userId ?? null,
+            userRole: auth?.roles?.[0] ?? null,
+            sessionId: actx.sessionId,
+            visitorId: actx.visitorId,
+            requestId: actx.requestId,
+            details: event.context.fuzzing
+              ? { fields: event.context.fuzzing.fields ?? [] }
+              : null,
+          });
+        }
+      } catch (err) {
+        console.error("[traffic] fuzzing detection failed:", err);
+      }
+    }
+
     if (!config.captureEnabled) return;
 
     try {
-      const url = getRequestURL(event);
-      const path = url.pathname;
-      const method = (event.method || "GET").toUpperCase();
-      const status = getResponseStatus(event) || 200;
       const duration = Math.max(0, Date.now() - actx.startTime);
       const bytes = estimateBytes(event, (response as { body?: unknown } | undefined)?.body);
-      const isApi = path.startsWith("/api/");
       const isContentRoute = !isApi;
       const storage = getAnalyticsStorage();
-      const auth = event.context.auth;
-      const userAgent = getHeader(event, "user-agent") ?? null;
       const referer = actx.dnt ? null : (getHeader(event, "referer") ?? null);
 
       let classification = actx.classification;

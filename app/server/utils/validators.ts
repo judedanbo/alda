@@ -385,10 +385,18 @@ export async function validateBody<T extends z.ZodSchema>(
   const result = schema.safeParse(body);
 
   if (!result.success) {
+    const flat = result.error.flatten();
+    // Stash failure metadata (field NAMES only, never submitted values) so the
+    // traffic plugin can classify + record this as a FORM_VALIDATION fuzzing
+    // attempt in its afterResponse hook. See server/utils/fuzzing.ts.
+    event.context.fuzzing = {
+      validationFailed: true,
+      fields: Object.keys(flat.fieldErrors),
+    };
     throw createError({
       statusCode: 400,
       statusMessage: "Validation Error",
-      data: result.error.flatten(),
+      data: flat,
     });
   }
 

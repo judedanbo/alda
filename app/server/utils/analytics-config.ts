@@ -20,6 +20,8 @@ export interface AnalyticsConfig {
   aiDetectionEnabled: boolean;
   /** Enforce layered rate limits. */
   rateLimitEnabled: boolean;
+  /** Capture classified fuzzing/probing attempts as durable records. */
+  fuzzingEnabled: boolean;
   /** Salt for hashing client IPs before storage. */
   ipSalt: string;
   /**
@@ -35,6 +37,8 @@ export interface AnalyticsConfig {
   retentionDays: number;
   /** Days to keep rollup aggregates. */
   rollupRetentionDays: number;
+  /** Days to keep raw per-request fuzzing-attempt records. */
+  fuzzingRetentionDays: number;
   /** Path prefixes excluded from capture + enforcement. */
   excludePaths: string[];
   /** Active counter storage backend. */
@@ -95,6 +99,7 @@ export function getAnalyticsConfig(): AnalyticsConfig {
     abuseEnabled: raw.abuseEnabled !== false,
     aiDetectionEnabled: raw.aiDetectionEnabled !== false,
     rateLimitEnabled: raw.rateLimitEnabled !== false,
+    fuzzingEnabled: raw.fuzzingEnabled !== false,
     ipSalt: String(raw.ipSalt || "adla-analytics-default-salt"),
     trustedProxies: Array.isArray(raw.trustedProxies)
       ? (raw.trustedProxies as unknown[]).map((p) => String(p).trim()).filter(Boolean)
@@ -102,6 +107,7 @@ export function getAnalyticsConfig(): AnalyticsConfig {
     respectDnt: raw.respectDnt !== false,
     retentionDays: Number(raw.retentionDays) || 30,
     rollupRetentionDays: Number(raw.rollupRetentionDays) || 365,
+    fuzzingRetentionDays: Number(raw.fuzzingRetentionDays) || 90,
     excludePaths: String(raw.excludePaths || "")
       .split(",")
       .map((p) => p.trim())

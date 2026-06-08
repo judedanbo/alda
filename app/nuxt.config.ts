@@ -127,6 +127,7 @@ export default defineNuxtConfig({
       abuseEnabled: envBool(process.env.ANALYTICS_ABUSE_ENABLED, true),
       aiDetectionEnabled: envBool(process.env.ANALYTICS_AI_DETECTION_ENABLED, true),
       rateLimitEnabled: envBool(process.env.ANALYTICS_RATE_LIMIT_ENABLED, true),
+      fuzzingEnabled: envBool(process.env.ANALYTICS_FUZZING_ENABLED, true),
       ipSalt: process.env.ANALYTICS_IP_SALT || "change-this-analytics-ip-salt-in-production",
       // Comma-separated CIDRs (IPv4/IPv6) whose `X-Forwarded-For` is honored.
       // Empty = trust no forwarding headers; use the socket peer. See
@@ -138,6 +139,7 @@ export default defineNuxtConfig({
       respectDnt: envBool(process.env.ANALYTICS_RESPECT_DNT, true),
       retentionDays: envNum(process.env.ANALYTICS_RETENTION_DAYS, 30),
       rollupRetentionDays: envNum(process.env.ANALYTICS_ROLLUP_RETENTION_DAYS, 365),
+      fuzzingRetentionDays: envNum(process.env.ANALYTICS_FUZZING_RETENTION_DAYS, 90),
       excludePaths: process.env.ANALYTICS_EXCLUDE_PATHS
         || "/_nuxt,/__nuxt,/_ipx,/favicon.ico,/api/health,/api/admin/analytics",
       storageDriver: analyticsUsesRedis ? "redis" : "memory",

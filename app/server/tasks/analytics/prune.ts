@@ -7,8 +7,12 @@ import { getAnalyticsConfig } from "~/server/utils/analytics-config";
  *
  * Enforces the retention policy: raw `traffic_events` are deleted past
  * `retentionDays` (default 30) — this is the privacy guarantee that raw
- * per-request data is short-lived. Rollup aggregates and abuse history are
- * kept longer (`rollupRetentionDays`, default 365) so trends remain visible
+ * per-request data is short-lived. `fuzzing_attempts` carry raw per-request
+ * fields (path, user agent, country) but are security-relevant, so they get
+ * their own window (`fuzzingRetentionDays`, default 90) — long enough to
+ * investigate a probing campaign, while durable evidence of HIGH/CRITICAL
+ * probes also lives in `audit_logs`. Rollup aggregates and abuse history are
+ * kept longest (`rollupRetentionDays`, default 365) so trends remain visible
  * after the raw data is gone. Expired enforcement actions are deactivated.
  */
 
@@ -25,6 +29,7 @@ export default defineTask({
 
     const rawDays = Math.max(1, config.retentionDays);
     const rollupDays = Math.max(rawDays, config.rollupRetentionDays);
+    const fuzzingDays = Math.max(1, config.fuzzingRetentionDays);
 
     try {
       const rawDeleted = await prisma.$executeRaw(
@@ -39,6 +44,9 @@ export default defineTask({
       const abuseDeleted = await prisma.abuseEvent.deleteMany({
         where: { detectedAt: { lt: new Date(Date.now() - rollupDays * 86_400_000) } },
       });
+      const fuzzingDeleted = await prisma.fuzzingAttempt.deleteMany({
+        where: { detectedAt: { lt: new Date(Date.now() - fuzzingDays * 86_400_000) } },
+      });
 
       // Deactivate enforcement actions whose temporary block has expired.
       const enforcementExpired = await prisma.enforcementAction.updateMany({
@@ -52,6 +60,7 @@ export default defineTask({
         hourlyDeleted,
         dailyDeleted,
         abuseDeleted: abuseDeleted.count,
+        fuzzingDeleted: fuzzingDeleted.count,
         enforcementExpired: enforcementExpired.count,
       };
     } catch (error) {

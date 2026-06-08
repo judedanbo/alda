@@ -180,6 +180,7 @@ export const AuditActions = {
   AI_AGENT_BLOCKED: "ai_agent_blocked",
   AI_AGENT_SPOOFED: "ai_agent_spoofed",
   AI_ROBOTS_VIOLATION: "ai_robots_violation",
+  FUZZING_DETECTED: "fuzzing_detected",
   ACTOR_MANUALLY_BLOCKED: "actor_manually_blocked",
   ACTOR_MANUALLY_UNBLOCKED: "actor_manually_unblocked",
   ACTOR_MANUALLY_ALLOWED: "actor_manually_allowed",

@@ -801,6 +801,18 @@ enum AccessActorType {
   @@map("access_actor_type")
 }
 
+/// Classifies a single detected fuzzing/probing attempt. See
+/// server/utils/fuzzing.ts:classifyFuzzingAttempt for the detection rules.
+enum FuzzingCategory {
+  SUSPICIOUS_PATH
+  AUTH_FUZZING
+  FORM_VALIDATION
+  PARAM_TAMPERING
+  PATH_PROBE
+
+  @@map("fuzzing_category")
+}
+
 /// Raw, high-write-volume traffic log. Pruned past the retention window by a
 /// scheduled task. Dashboard queries read the rollup tables, not this one.
 model TrafficEvent {
@@ -975,4 +987,38 @@ model ActorAccessRule {
   @@unique([actorType, actorValue, ruleType])
   @@index([active])
   @@map("actor_access_rules")
+}
+
+/// One detected fuzzing attempt (malformed payload, probed URL, suspicious
+/// path, auth/param fuzzing). Unlike `AbuseEvent` — which is only persisted on
+/// tier escalation — every classified attempt is recorded here so operators can
+/// see the full picture on the admin Fuzzing analytics tab. `details` holds
+/// failed validation field NAMES only (never submitted values) to avoid PII.
+model FuzzingAttempt {
+  id           String          @id @default(uuid()) @db.Uuid
+  detectedAt   DateTime        @default(now()) @map("detected_at")
+  category     FuzzingCategory
+  severity     AbuseSeverity
+  method       String          @db.VarChar(10)
+  path         String          @db.Text
+  routePattern String          @map("route_pattern") @db.VarChar(255)
+  statusCode   Int             @map("status_code")
+  ipHash       String          @map("ip_hash") @db.VarChar(64)
+  ipTruncated  String?         @map("ip_truncated") @db.VarChar(45)
+  country      String?         @db.VarChar(2)
+  userAgent    String?         @map("user_agent") @db.Text
+  visitorClass VisitorClass    @default(HUMAN) @map("visitor_class")
+  userId       String?         @map("user_id") @db.Uuid
+  userRole     String?         @map("user_role") @db.VarChar(30)
+  sessionId    String?         @map("session_id") @db.VarChar(64)
+  visitorId    String?         @map("visitor_id") @db.VarChar(64)
+  requestId    String?         @map("request_id") @db.VarChar(64)
+  details      Json?
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  @@index([detectedAt])
+  @@index([category, detectedAt])
+  @@index([severity, detectedAt])
+  @@index([ipHash])
+  @@map("fuzzing_attempts")
 }
