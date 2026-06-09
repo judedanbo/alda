@@ -116,6 +116,38 @@ async function checkSmtp() {
     checkingSmtp.value = false;
   }
 }
+
+// Arkesel SMS-credit probe — mirrors the SMTP check above. The endpoint returns
+// HTTP 200 even when ok:false (unset/invalid key), so a thrown error here means
+// a transport failure (5xx), surfaced separately from a bad-key result.
+type SmsBalance = {
+  ok: boolean;
+  configured: boolean;
+  balance?: number;
+  user?: string;
+  country?: string;
+  low?: boolean;
+  threshold?: number;
+  hint?: string;
+};
+
+const checkingBalance = ref(false);
+const balanceResult = ref<SmsBalance | null>(null);
+const balanceError = ref<string | null>(null);
+
+async function checkSmsBalance() {
+  checkingBalance.value = true;
+  balanceResult.value = null;
+  balanceError.value = null;
+  try {
+    balanceResult.value = await authFetch<SmsBalance>("/api/admin/notifications/sms-balance");
+  } catch (err: unknown) {
+    const e = err as { data?: { message?: string; statusMessage?: string } };
+    balanceError.value = e.data?.message || e.data?.statusMessage || "SMS balance check failed";
+  } finally {
+    checkingBalance.value = false;
+  }
+}
 </script>
 
 <template>
@@ -153,6 +185,54 @@ async function checkSmtp() {
         <Button :disabled="checkingSmtp" @click="checkSmtp">
           <span v-if="checkingSmtp">Checking...</span>
           <span v-else>Check email delivery</span>
+        </Button>
+      </CardContent>
+    </Card>
+
+    <Card class="mb-4">
+      <CardHeader>
+        <CardTitle>SMS balance (Arkesel)</CardTitle>
+        <CardDescription>
+          Checks the remaining SMS credit on the Arkesel account using the API key currently in
+          effect (a Settings-tab override, otherwise the deployment's env value).
+        </CardDescription>
+      </CardHeader>
+      <CardContent class="space-y-4">
+        <Alert v-if="balanceError" variant="destructive">
+          <AlertDescription>{{ balanceError }}</AlertDescription>
+        </Alert>
+
+        <Alert
+          v-else-if="balanceResult"
+          :variant="balanceResult.ok && !balanceResult.low ? undefined : 'destructive'"
+        >
+          <AlertDescription>
+            <template v-if="balanceResult.ok">
+              <span class="font-medium">
+                {{ balanceResult.low ? "🟠" : "🟢" }} {{ balanceResult.balance }} SMS remaining
+              </span>
+              <span v-if="balanceResult.user" class="block text-xs mt-1 font-mono">
+                {{ balanceResult.user }}<template v-if="balanceResult.country"> ·
+                  {{ balanceResult.country }}</template>
+              </span>
+              <span v-if="balanceResult.low" class="block text-xs mt-1">
+                Top up soon — below {{ balanceResult.threshold }} SMS.
+              </span>
+            </template>
+            <template v-else-if="!balanceResult.configured">
+              <span class="font-medium">🔴 No Arkesel API key set</span>
+              <span class="block text-xs mt-1">Add it on the Settings tab.</span>
+            </template>
+            <template v-else>
+              <span class="font-medium">🔴 Balance check failed</span>
+              <span v-if="balanceResult.hint" class="block text-xs mt-1">{{ balanceResult.hint }}</span>
+            </template>
+          </AlertDescription>
+        </Alert>
+
+        <Button :disabled="checkingBalance" @click="checkSmsBalance">
+          <span v-if="checkingBalance">Checking...</span>
+          <span v-else>Check SMS balance</span>
         </Button>
       </CardContent>
     </Card>
