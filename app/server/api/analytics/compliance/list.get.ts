@@ -44,7 +44,9 @@ export default defineEventHandler(async (event) => {
 
   const serializedItems = data.items.map((item) => ({
     ...item,
-    dueDate: item.dueDate.toISOString().slice(0, 10),
+    // `data` may come from the analytics cache, where a JSON round-trip turns
+    // `dueDate` from a Date into an ISO string. Normalise both shapes here.
+    dueDate: new Date(item.dueDate).toISOString().slice(0, 10),
   }));
 
   return {

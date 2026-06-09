@@ -208,6 +208,9 @@ const entityTypes = [
       <DialogScrollContent v-if="selectedLog" class="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Audit Log Details</DialogTitle>
+          <DialogDescription>
+            {{ selectedLog.action }}{{ selectedLog.entityType ? ` · ${selectedLog.entityType}` : '' }}
+          </DialogDescription>
         </DialogHeader>
         <div class="space-y-4">
           <div class="grid grid-cols-2 gap-4 text-sm">

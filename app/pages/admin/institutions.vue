@@ -299,6 +299,9 @@ const institutionTypes = [
       <DialogContent class="max-w-md">
         <DialogHeader>
           <DialogTitle>{{ isEditing ? 'Edit Institution' : 'Add Institution' }}</DialogTitle>
+          <DialogDescription>
+            {{ isEditing ? "Update this institution's details." : "Add a new institution." }}
+          </DialogDescription>
         </DialogHeader>
 
         <div class="space-y-4">

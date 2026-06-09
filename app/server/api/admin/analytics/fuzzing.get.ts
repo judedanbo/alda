@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import prisma from "~/server/utils/prisma";
 import { resolveRange, num, requireAdmin } from "~/server/utils/analytics-query";
 
@@ -21,7 +20,6 @@ interface CountRow {
 export default defineEventHandler(async (event) => {
   requireAdmin(event);
   const { range, since, grain } = resolveRange(getQuery(event).range);
-  const truncExpr = Prisma.raw(grain === "hour" ? "hour" : "day");
 
   const [
     total,
@@ -49,7 +47,7 @@ export default defineEventHandler(async (event) => {
     }),
 
     prisma.$queryRaw<TimelineRow[]>`
-      SELECT date_trunc(${truncExpr}, detected_at) AS bucket, COUNT(*)::bigint AS count
+      SELECT date_trunc(${grain}, detected_at) AS bucket, COUNT(*)::bigint AS count
       FROM fuzzing_attempts WHERE detected_at >= ${since}
       GROUP BY 1 ORDER BY 1 ASC`,
 

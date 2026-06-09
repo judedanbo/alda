@@ -4,6 +4,7 @@ import type { NavItem } from "~/composables/useDashboardNav";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "~/components/ui/sheet";
@@ -70,6 +71,7 @@ watch(() => route.path, () => closeMobile());
     <SheetContent side="left" class="w-64 p-0">
       <SheetHeader class="p-4 border-b text-left">
         <SheetTitle>Navigation</SheetTitle>
+        <SheetDescription class="sr-only">Primary navigation menu</SheetDescription>
       </SheetHeader>
       <nav
         class="px-2 py-4 flex flex-col gap-1 overflow-y-auto"

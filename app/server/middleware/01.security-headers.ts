@@ -30,11 +30,14 @@ const CSP_DIRECTIVES = [
   // hydration. Switch to nonces (and drop 'unsafe-inline') when ready.
   "script-src 'self' 'unsafe-inline'",
   // Vue scoped styles and Tailwind v4 emit inline <style> in SSR / dev.
-  "style-src 'self' 'unsafe-inline'",
+  // fonts.googleapis.com serves the Geist / Atkinson Hyperlegible @import
+  // stylesheets pulled in by assets/css/main.css.
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   // MinIO endpoints — dev is http://localhost:9000, prod typically HTTPS.
   // Tightening to the configured MinIO host is a future improvement.
   "img-src 'self' data: blob: http: https:",
-  "font-src 'self' data:",
+  // fonts.gstatic.com serves the actual .woff2 files for the Google Fonts above.
+  "font-src 'self' data: https://fonts.gstatic.com",
   "connect-src 'self'",
   "frame-ancestors 'none'",
   "base-uri 'self'",
