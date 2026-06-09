@@ -6,6 +6,7 @@ import { Input } from "~/components/ui/input";
 import { Badge } from "~/components/ui/badge";
 import { Alert, AlertDescription } from "~/components/ui/alert";
 import { TONE_BADGE } from "~/utils/statusStyles";
+import ConfirmDialog from "~/components/app/ConfirmDialog.vue";
 
 interface Field {
   key: string;
@@ -22,15 +23,20 @@ const smtpFields = ref<Field[]>([]);
 const smsFields = ref<Field[]>([]);
 const allFields = computed(() => [...smtpFields.value, ...smsFields.value]);
 
-// form[key] = current input; original[key] = loaded value (non-secret only);
-// pendingClear[key] = queued to revert to env on save.
+// form[key] = current input; original[key] = loaded value (non-secret only).
 const form = reactive<Record<string, string>>({});
 const original = reactive<Record<string, string>>({});
-const pendingClear = reactive<Record<string, boolean>>({});
 
 const loading = ref(true);
 const saving = ref(false);
 const banner = ref<{ ok: boolean; message: string } | null>(null);
+
+// Reverting to env fallback happens immediately (no Save). `reverting[key]`
+// disables a single field's button while its request is in flight;
+// `revertingAll` / `confirmAllOpen` drive the bulk action + its guard dialog.
+const reverting = reactive<Record<string, boolean>>({});
+const revertingAll = ref(false);
+const confirmAllOpen = ref(false);
 
 async function load() {
   loading.value = true;
@@ -43,7 +49,6 @@ async function load() {
     for (const f of [...res.data.smtp, ...res.data.sms]) {
       original[f.key] = f.secret ? "" : (f.value ?? "");
       form[f.key] = original[f.key] ?? "";
-      pendingClear[f.key] = false;
     }
   } catch (err: unknown) {
     const e = err as { data?: { message?: string; statusMessage?: string } };
@@ -65,18 +70,50 @@ function secretStatus(source: Field["source"]) {
   return "Not configured";
 }
 
-function markClear(f: Field) {
-  pendingClear[f.key] = true;
-  form[f.key] = "";
+// Keys currently backed by an in-app DB override — the only ones a revert can act on.
+const dbKeys = computed(() => allFields.value.filter((f) => f.source === "db").map((f) => f.key));
+const hasDbOverrides = computed(() => dbKeys.value.length > 0);
+
+// Immediately delete the given overrides so they fall back to env, then reload
+// so badges/values reflect the new source. Returns false (and sets the banner)
+// on failure. Shared by the single-field and bulk reverts.
+async function clearKeys(keys: string[]): Promise<boolean> {
+  if (keys.length === 0) return false;
+  banner.value = null;
+  try {
+    await authFetch("/api/admin/notifications/credentials", { method: "PUT", body: { clear: keys } });
+    await load();
+    return true;
+  } catch (err: unknown) {
+    const e = err as { data?: { message?: string; statusMessage?: string } };
+    banner.value = { ok: false, message: e.data?.message || e.data?.statusMessage || "Revert failed" };
+    return false;
+  }
 }
-function undoClear(f: Field) {
-  pendingClear[f.key] = false;
-  form[f.key] = original[f.key] ?? "";
+
+async function revertField(f: Field) {
+  reverting[f.key] = true;
+  const ok = await clearKeys([f.key]);
+  if (ok) banner.value = { ok: true, message: `Reverted ${f.label} to env fallback.` };
+  reverting[f.key] = false;
+}
+// Bulk "Revert all to env fallback" — the ConfirmDialog's on-confirm handler.
+// Clears every field currently backed by a DB override; env/unset fields have
+// no override row, so they're naturally excluded.
+async function revertAll() {
+  // Snapshot keys + count BEFORE clearing: clearKeys() reloads, which resets
+  // every field's source and empties dbKeys.
+  const keys = dbKeys.value;
+  const count = keys.length;
+  revertingAll.value = true;
+  const ok = await clearKeys(keys);
+  if (ok) banner.value = { ok: true, message: `Reverted ${count} field(s) to env fallback.` };
+  revertingAll.value = false;
+  confirmAllOpen.value = false;
 }
 
 const hasChanges = computed(() => {
   for (const f of allFields.value) {
-    if (pendingClear[f.key]) return true;
     const v = form[f.key] ?? "";
     if (f.secret ? v !== "" : v !== original[f.key]) return true;
   }
@@ -89,10 +126,6 @@ async function save() {
   const set: Record<string, string> = {};
   const clear: string[] = [];
   for (const f of allFields.value) {
-    if (pendingClear[f.key]) {
-      clear.push(f.key);
-      continue;
-    }
     const v = form[f.key] ?? "";
     if (f.secret) {
       if (v !== "") set[f.key] = v;
@@ -154,24 +187,32 @@ async function checkSmtp() {
       </CardHeader>
       <CardContent class="space-y-5">
         <div v-for="f in grp.fields" :key="f.key" class="space-y-1.5">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between gap-2">
             <Label :for="f.key">{{ f.label }}</Label>
-            <Badge :class="sourceBadge(f.source).class">{{ sourceBadge(f.source).label }}</Badge>
+            <div class="flex items-center gap-2">
+              <Badge :class="sourceBadge(f.source).class">{{ sourceBadge(f.source).label }}</Badge>
+              <!-- Per-field revert: only meaningful when this field is backed by an
+                   in-app DB override (source === 'db'); clears it so the field falls
+                   back to env. Shown inline with the badge that signals the override. -->
+              <Button
+                v-if="f.source === 'db'"
+                variant="outline"
+                size="sm"
+                class="h-7 px-2 text-xs"
+                :disabled="reverting[f.key]"
+                @click="revertField(f)"
+              >
+                {{ reverting[f.key] ? 'Reverting…' : 'Revert to env' }}
+              </Button>
+            </div>
           </div>
 
           <!-- Secret: write-only -->
           <template v-if="f.secret">
             <p class="text-xs text-muted-foreground">{{ secretStatus(f.source) }}</p>
-            <template v-if="pendingClear[f.key]">
-              <p class="text-xs text-amber-600">Will revert to env fallback on save.</p>
-              <Button variant="outline" size="sm" @click="undoClear(f)">Undo</Button>
-            </template>
-            <template v-else>
-              <Input
-:id="f.key" v-model="form[f.key]" type="password" autocomplete="new-password"
-                     placeholder="Enter a new value to override" />
-              <Button v-if="f.source === 'db'" variant="ghost" size="sm" @click="markClear(f)">Clear override</Button>
-            </template>
+            <Input
+              :id="f.key" v-model="form[f.key]" type="password" autocomplete="new-password"
+              placeholder="Enter a new value to override" />
           </template>
 
           <!-- Non-secret: provider select or text/number, prefilled with effective value -->
@@ -207,6 +248,13 @@ async function checkSmtp() {
       <Button variant="outline" :disabled="checkingSmtp" @click="checkSmtp">
         {{ checkingSmtp ? 'Checking…' : 'Check email delivery' }}
       </Button>
+      <Button
+        variant="outline"
+        :disabled="!hasDbOverrides || revertingAll"
+        @click="confirmAllOpen = true"
+      >
+        {{ revertingAll ? 'Reverting…' : 'Revert all to env fallback' }}
+      </Button>
     </div>
 
     <Alert v-if="smtpResult" :variant="smtpResult.ok ? undefined : 'destructive'">
@@ -216,5 +264,15 @@ async function checkSmtp() {
         <span v-if="smtpResult.hint" class="block text-xs mt-1">{{ smtpResult.hint }}</span>
       </AlertDescription>
     </Alert>
+
+    <ConfirmDialog
+      :open="confirmAllOpen"
+      title="Revert all to env fallback?"
+      :description="`This removes ${dbKeys.length} in-app override(s) and reverts those fields to the deployment's environment / configmap values. Secrets will need to be re-entered to override them again.`"
+      confirm-label="Revert all"
+      destructive
+      @confirm="revertAll"
+      @cancel="confirmAllOpen = false"
+    />
   </div>
 </template>
