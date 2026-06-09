@@ -187,9 +187,24 @@ async function checkSmtp() {
       </CardHeader>
       <CardContent class="space-y-5">
         <div v-for="f in grp.fields" :key="f.key" class="space-y-1.5">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between gap-2">
             <Label :for="f.key">{{ f.label }}</Label>
-            <Badge :class="sourceBadge(f.source).class">{{ sourceBadge(f.source).label }}</Badge>
+            <div class="flex items-center gap-2">
+              <Badge :class="sourceBadge(f.source).class">{{ sourceBadge(f.source).label }}</Badge>
+              <!-- Per-field revert: only meaningful when this field is backed by an
+                   in-app DB override (source === 'db'); clears it so the field falls
+                   back to env. Shown inline with the badge that signals the override. -->
+              <Button
+                v-if="f.source === 'db'"
+                variant="outline"
+                size="sm"
+                class="h-7 px-2 text-xs"
+                :disabled="reverting[f.key]"
+                @click="revertField(f)"
+              >
+                {{ reverting[f.key] ? 'Reverting…' : 'Revert to env' }}
+              </Button>
+            </div>
           </div>
 
           <!-- Secret: write-only -->
@@ -198,15 +213,6 @@ async function checkSmtp() {
             <Input
               :id="f.key" v-model="form[f.key]" type="password" autocomplete="new-password"
               placeholder="Enter a new value to override" />
-            <Button
-              v-if="f.source === 'db'"
-              variant="ghost"
-              size="sm"
-              :disabled="reverting[f.key]"
-              @click="revertField(f)"
-            >
-              {{ reverting[f.key] ? 'Reverting…' : 'Revert to env fallback' }}
-            </Button>
           </template>
 
           <!-- Non-secret: provider select or text/number, prefilled with effective value -->
@@ -230,15 +236,6 @@ async function checkSmtp() {
               :inputmode="f.kind === 'number' ? 'numeric' : undefined"
               placeholder="Leave blank to use env fallback"
             />
-            <Button
-              v-if="f.source === 'db'"
-              variant="ghost"
-              size="sm"
-              :disabled="reverting[f.key]"
-              @click="revertField(f)"
-            >
-              {{ reverting[f.key] ? 'Reverting…' : 'Revert to env fallback' }}
-            </Button>
           </template>
         </div>
       </CardContent>
