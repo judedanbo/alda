@@ -336,6 +336,55 @@ async function sendSmsInline(
 }
 
 /**
+ * Record an already-sent phone-verification SMS in the notification log.
+ *
+ * The OTP send itself stays in `send-phone-code.post.ts` as a DIRECT,
+ * synchronous `sendSms()` call (so that endpoint can return 502 on failure and
+ * the code always goes out regardless of the user's SMS preference). This
+ * helper just mirrors the result into a Notification + NotificationDeliveryLog
+ * row so it shows up alongside every other SMS in the admin Notification log.
+ *
+ * It deliberately does NOT receive the code, so the OTP can never be persisted
+ * or surfaced to an admin. Best-effort: it never throws — bookkeeping must not
+ * break the verification response.
+ */
+export async function recordPhoneVerificationSms(
+  userId: string,
+  result: { success: boolean; messageId?: string; error?: string; provider?: string },
+): Promise<void> {
+  try {
+    const notification = await prisma.notification.create({
+      data: {
+        userId,
+        type: "PHONE_VERIFICATION_CODE",
+        channel: "SMS",
+        title: "Phone verification code",
+        // Redacted on purpose — the OTP is never passed in or stored.
+        message: "A phone verification code was sent by SMS.",
+      },
+    });
+
+    await prisma.notificationDeliveryLog.create({
+      data: {
+        notificationId: notification.id,
+        channel: "SMS",
+        status: result.success ? "DELIVERED" : "FAILED",
+        sentAt: new Date(),
+        deliveredAt: result.success ? new Date() : null,
+        providerResponse: result.success
+          ? { messageId: result.messageId, provider: result.provider }
+          : { error: result.error },
+      },
+    });
+  } catch (error) {
+    console.error("[notification.service] recordPhoneVerificationSms failed", {
+      userId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+/**
  * Map notification type to email template
  */
 function mapNotificationTypeToEmailTemplate(type: NotificationType): EmailTemplate {
@@ -357,6 +406,9 @@ function mapNotificationTypeToEmailTemplate(type: NotificationType): EmailTempla
     VERIFICATION_REJECTED: "verification-rejected",
     VERIFICATION_ON_HOLD: "verification-on-hold",
     VERIFICATION_MORE_INFO_REQUIRED: "verification-more-info",
+    // SMS-only type — never emailed (recorded via recordPhoneVerificationSms);
+    // present solely to satisfy the exhaustive Record.
+    PHONE_VERIFICATION_CODE: "welcome",
   };
   return mapping[type] || "welcome";
 }
@@ -400,6 +452,17 @@ export async function retryDelivery(deliveryLogId: string): Promise<RetryResult>
   }
 
   const { notification } = log;
+
+  // Phone verification codes are single-use and time-boxed, and the stored
+  // message is redacted (never holds the OTP). Re-sending it would deliver a
+  // code-less, useless SMS — the applicant must request a fresh code instead.
+  if (notification.type === "PHONE_VERIFICATION_CODE") {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Phone verification codes cannot be retried — ask the applicant to request a new code",
+    });
+  }
+
   const user = notification.user;
   const metadata = (notification.metadata ?? {}) as Record<string, unknown>;
 

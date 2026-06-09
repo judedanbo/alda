@@ -196,7 +196,10 @@ the StatefulSets:
 This writes Secret `adla-secrets` containing: `JWT_SECRET`, `JWT_REFRESH_SECRET`,
 `ANALYTICS_IP_SALT`, `NOTIFICATIONS_SMS_WEBHOOK_SECRET`, `PII_ENCRYPTION_KEY`,
 `PII_HMAC_KEY`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `POSTGRES_USER/PASSWORD/DB`,
-`DATABASE_URL`, `REDIS_URL`, and (blank) `SMTP_USER/SMTP_PASS`.
+`DATABASE_URL`, `REDIS_URL`, (blank) `SMTP_USER/SMTP_PASS`, and (blank) SMS provider
+creds `ARKESEL_API_KEY`, `HUBTEL_CLIENT_ID/SECRET`, `SMS_TWILIO_ACCOUNT_SID/AUTH_TOKEN`.
+(Non-secret SMS settings — `SMS_PROVIDER`, `*_SENDER_ID`, `SMS_TWILIO_FROM_NUMBER` —
+live in ConfigMap `adla-config`.)
 
 > The script refuses to overwrite an existing `adla-secrets` (use `FORCE=1` only if
 > you understand it will rotate `POSTGRES_PASSWORD`, which won't change an

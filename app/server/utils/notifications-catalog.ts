@@ -67,6 +67,7 @@ export const TYPE_LABELS: Record<string, string> = {
   VERIFICATION_REJECTED: "Verification rejected",
   VERIFICATION_ON_HOLD: "Verification on hold",
   VERIFICATION_MORE_INFO_REQUIRED: "More information required",
+  PHONE_VERIFICATION_CODE: "Phone verification code",
 };
 
 /** The user-controllable notification types, in catalog order. */

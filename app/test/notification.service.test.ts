@@ -18,6 +18,7 @@ const prismaMock = vi.hoisted(() => ({
   notificationDeliveryLog: {
     create: vi.fn(),
     update: vi.fn(),
+    findUnique: vi.fn(),
   },
 }));
 
@@ -29,7 +30,9 @@ vi.mock("~/server/services/email.service", () => ({ sendEmail: emailMock.sendEma
 vi.mock("~/server/services/sms.service", () => ({ sendSms: smsMock.sendSms }));
 
 // Imported after mocks so the service binds to the mocked dependencies.
-const { sendNotification } = await import("~/server/services/notification.service");
+const { sendNotification, recordPhoneVerificationSms, retryDelivery } = await import(
+  "~/server/services/notification.service"
+);
 
 function makeUser(overrides: {
   email?: string;
@@ -323,5 +326,72 @@ describe("sendNotification — preferences", () => {
     const update = prismaMock.notificationDeliveryLog.update.mock.calls[0]![0];
     expect(update.data.status).toBe("FAILED");
     expect(update.data.deliveredAt).toBeNull();
+  });
+});
+
+describe("recordPhoneVerificationSms — admin-log visibility for the direct OTP send", () => {
+  it("records a PHONE_VERIFICATION_CODE SMS notification + DELIVERED log on success", async () => {
+    await recordPhoneVerificationSms("user-1", {
+      success: true,
+      messageId: "msg-9",
+      provider: "arkesel",
+    });
+
+    const notif = prismaMock.notification.create.mock.calls[0]![0];
+    expect(notif.data.type).toBe("PHONE_VERIFICATION_CODE");
+    expect(notif.data.channel).toBe("SMS");
+
+    const log = prismaMock.notificationDeliveryLog.create.mock.calls[0]![0];
+    expect(log.data.channel).toBe("SMS");
+    expect(log.data.status).toBe("DELIVERED");
+    expect(log.data.deliveredAt).toBeInstanceOf(Date);
+    expect(log.data.providerResponse).toMatchObject({ messageId: "msg-9", provider: "arkesel" });
+  });
+
+  it("never persists the actual OTP (the recorder is not even given the code)", async () => {
+    await recordPhoneVerificationSms("user-1", { success: true, messageId: "m", provider: "hubtel" });
+
+    const notif = prismaMock.notification.create.mock.calls[0]![0];
+    // No 4+ digit run anywhere in the stored title/message.
+    expect(`${notif.data.title} ${notif.data.message}`).not.toMatch(/\d{4,}/);
+  });
+
+  it("records a FAILED log with the provider error when the send failed", async () => {
+    await recordPhoneVerificationSms("user-1", { success: false, error: "provider down" });
+
+    const log = prismaMock.notificationDeliveryLog.create.mock.calls[0]![0];
+    expect(log.data.status).toBe("FAILED");
+    expect(log.data.deliveredAt).toBeNull();
+    expect(log.data.providerResponse).toMatchObject({ error: "provider down" });
+  });
+
+  it("never throws — admin-log bookkeeping must not break the verify response", async () => {
+    prismaMock.notification.create.mockRejectedValueOnce(new Error("db down"));
+
+    await expect(
+      recordPhoneVerificationSms("user-1", { success: true, messageId: "m", provider: "arkesel" }),
+    ).resolves.toBeUndefined();
+  });
+});
+
+describe("retryDelivery — phone verification codes are not retriable", () => {
+  it("rejects a retry of a PHONE_VERIFICATION_CODE delivery log", async () => {
+    prismaMock.notificationDeliveryLog.findUnique.mockResolvedValue({
+      id: "log-1",
+      status: "FAILED",
+      channel: "SMS",
+      retryCount: 0,
+      notification: {
+        type: "PHONE_VERIFICATION_CODE",
+        title: "Phone verification code",
+        message: "A phone verification code was sent by SMS.",
+        metadata: null,
+        user: { phone: "233241234567", applicantProfile: { fullName: "Test User" } },
+      },
+    });
+
+    await expect(retryDelivery("log-1")).rejects.toMatchObject({ statusCode: 400 });
+    // Must not have attempted to resend (no status reset to PENDING).
+    expect(prismaMock.notificationDeliveryLog.update).not.toHaveBeenCalled();
   });
 });

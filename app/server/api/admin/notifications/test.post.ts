@@ -40,6 +40,7 @@ const NOTIFICATION_TYPES: [NotificationType, ...NotificationType[]] = [
   "VERIFICATION_REJECTED",
   "VERIFICATION_ON_HOLD",
   "VERIFICATION_MORE_INFO_REQUIRED",
+  "PHONE_VERIFICATION_CODE",
 ];
 
 const testNotificationSchema = z.object({
@@ -145,6 +146,12 @@ function buildSamplePayload(type: NotificationType, name: string): {
         title: "Verify Your Email",
         message: "Click the link in your email to verify your address (preview).",
         metadata: { name, verificationUrl: "https://example.invalid/verify" },
+      };
+    case "PHONE_VERIFICATION_CODE":
+      return {
+        title: "Phone verification code",
+        message: `Your phone verification code is ${SAMPLE_CODE} (preview).`,
+        metadata: { name },
       };
   }
 }
