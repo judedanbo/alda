@@ -20,7 +20,7 @@ export function requireRoles(event: H3Event, roles: string[]): JwtPayload {
     throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
   }
   const allowed = new Set([...roles, "admin"]);
-  if (!auth.roles?.some((r) => allowed.has(r))) {
+  if (!auth.roles?.some((r: string) => allowed.has(r))) {
     throw createError({
       statusCode: 403,
       statusMessage: "Forbidden",
