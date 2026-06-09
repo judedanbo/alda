@@ -32,7 +32,15 @@ export default defineEventHandler(async (event) => {
   const role = query.role as string | undefined;
   const status = query.status as string | undefined;
 
-  const where: Record<string, unknown> = {};
+  // Honor the sort sent by useDataTable. Whitelist the columns the table marks
+  // sortable so an arbitrary `sortBy` can't reach Prisma; fall back to newest.
+  const SORTABLE = new Set(["email", "isActive", "lastLoginAt", "createdAt"]);
+  const sortBy = SORTABLE.has(String(query.sortBy)) ? String(query.sortBy) : "createdAt";
+  const sortDir = query.sortDir === "asc" ? "asc" : "desc";
+  const orderBy = { [sortBy]: sortDir } as Record<string, "asc" | "desc">;
+
+  // Soft-deleted users are hidden everywhere in the admin UI.
+  const where: Record<string, unknown> = { deletedAt: null };
 
   if (search) {
     where.OR = [
@@ -90,7 +98,7 @@ export default defineEventHandler(async (event) => {
           },
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy,
       take: limit,
       skip: offset,
     }),

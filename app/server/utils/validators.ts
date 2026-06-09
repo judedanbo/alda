@@ -359,6 +359,24 @@ export const adminUserOfficesSchema = z.object({
   collectionOfficeIds: z.array(z.string().uuid()),
 });
 
+/**
+ * Admin edit of a staff user's contact details. Both fields are optional so the
+ * admin can update one without the other; at least one must be present. Phone
+ * may be sent as null to clear it. Roles/offices/status have their own endpoints.
+ */
+export const adminUpdateUserSchema = z
+  .object({
+    email: z.string().email("Invalid email address").optional(),
+    phone: z
+      .string()
+      .regex(e164PhoneRegex, "Invalid phone number — include country code, e.g. +14155551234")
+      .nullable()
+      .optional(),
+  })
+  .refine((v) => v.email !== undefined || v.phone !== undefined, {
+    message: "Provide an email or phone number to update",
+  });
+
 export const acceptInviteSchema = z.object({
   token: z.string().min(1, "Token is required"),
 });

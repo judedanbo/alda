@@ -219,98 +219,11 @@ const submitCreate = async () => {
 };
 
 // ---------------------------------------------------------------------------
-// Edit modal (roles + offices)
+// Detail page navigation — editing (profile, roles, offices, security) lives
+// on /admin/users/[id].
 // ---------------------------------------------------------------------------
-const showEditModal = ref(false);
-const editingUser = ref<User | null>(null);
-const selectedRoles = ref<number[]>([]);
-const selectedOffices = ref<string[]>([]);
-const savingRoles = ref(false);
-const savingOffices = ref(false);
-
-const editHasOfficerRole = computed(() => {
-  const officerRole = roles.value.find((r) => r.name === "schedule_officer");
-  return officerRole ? selectedRoles.value.includes(officerRole.id) : false;
-});
-
-const openEditModal = (user: User) => {
-  editingUser.value = user;
-  selectedRoles.value = roles.value
-    .filter((r) => user.roles.includes(r.name))
-    .map((r) => r.id);
-  selectedOffices.value = user.collectionOffices.map((o) => o.id);
-  showEditModal.value = true;
-};
-
-const closeEditModal = () => {
-  showEditModal.value = false;
-  editingUser.value = null;
-  selectedRoles.value = [];
-  selectedOffices.value = [];
-};
-
-const toggleRole = (roleId: number, checked: boolean) => {
-  if (checked) {
-    if (!selectedRoles.value.includes(roleId)) selectedRoles.value.push(roleId);
-  } else {
-    selectedRoles.value = selectedRoles.value.filter((id) => id !== roleId);
-  }
-};
-
-const toggleEditOffice = (officeId: string, checked: boolean) => {
-  if (checked) {
-    if (!selectedOffices.value.includes(officeId)) selectedOffices.value.push(officeId);
-  } else {
-    selectedOffices.value = selectedOffices.value.filter((id) => id !== officeId);
-  }
-};
-
-const saveUserRoles = async () => {
-  if (!editingUser.value) return;
-  savingRoles.value = true;
-  try {
-    const response = await authFetch<{ success: boolean }>(
-      `/api/admin/users/${editingUser.value.id}/roles`,
-      {
-        method: "PUT",
-        body: { roleIds: selectedRoles.value },
-      },
-    );
-    if (response.success) {
-      flash("User roles updated");
-      table.refresh();
-      closeEditModal();
-    }
-  } catch (error) {
-    console.error("Failed to update user roles:", error);
-    flash("Failed to update user roles", "error");
-  } finally {
-    savingRoles.value = false;
-  }
-};
-
-const saveUserOffices = async () => {
-  if (!editingUser.value) return;
-  savingOffices.value = true;
-  try {
-    const response = await authFetch<{ success: boolean }>(
-      `/api/admin/users/${editingUser.value.id}/offices`,
-      {
-        method: "PUT",
-        body: { collectionOfficeIds: selectedOffices.value },
-      },
-    );
-    if (response.success) {
-      flash("Collection offices updated");
-      table.refresh();
-      closeEditModal();
-    }
-  } catch (error) {
-    console.error("Failed to update user offices:", error);
-    flash("Failed to update collection offices", "error");
-  } finally {
-    savingOffices.value = false;
-  }
+const openUser = (user: User) => {
+  navigateTo(`/admin/users/${user.id}`);
 };
 
 const toggleUserStatus = async (user: User) => {
@@ -428,6 +341,7 @@ const resendInvite = async (user: User) => {
         empty-message="No users found"
         @sort="table.setSort"
         @page-change="table.setPage"
+        @row-click="openUser"
       >
         <template #cell-email="{ row }">
           <div class="flex flex-col gap-1">
@@ -464,8 +378,8 @@ const resendInvite = async (user: User) => {
         </template>
         <template #cell-actions="{ row }">
           <div class="flex items-center gap-2">
-            <Button variant="outline" size="sm" @click.stop="openEditModal(row as User)">
-              Edit
+            <Button variant="outline" size="sm" @click.stop="openUser(row as User)">
+              Manage
             </Button>
             <Button
               v-if="!(row as User).activated"
@@ -579,89 +493,6 @@ const resendInvite = async (user: User) => {
           <Button :disabled="creating" @click="submitCreate">
             {{ creating ? 'Creating...' : 'Create & Invite' }}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-
-    <!-- Edit Modal (roles + offices) -->
-    <Dialog :open="showEditModal" @update:open="(v: boolean) => { if (!v) closeEditModal() }">
-      <DialogContent class="max-w-md max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle class="flex items-center gap-1.5">
-            Edit User
-            <HelpTip field-id="user.roles" />
-          </DialogTitle>
-          <DialogDescription>{{ editingUser?.email }}</DialogDescription>
-        </DialogHeader>
-
-        <!-- Roles -->
-        <div class="space-y-3">
-          <Label>Roles</Label>
-          <label
-            v-for="role in roles"
-            :key="role.id"
-            class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50"
-          >
-            <Checkbox
-              :model-value="selectedRoles.includes(role.id)"
-              @update:model-value="(checked) => toggleRole(role.id, checked === true)"
-            />
-            <div>
-              <p class="text-sm font-medium text-foreground">{{ role.name }}</p>
-              <p v-if="role.description" class="text-xs text-muted-foreground">
-                {{ role.description }}
-              </p>
-              <p v-if="role.name === 'applicant'" class="text-xs text-muted-foreground mt-1">
-                Applicants must complete their own Ghana Card profile before they can file a
-                declaration.
-              </p>
-            </div>
-          </label>
-          <div class="flex justify-end">
-            <Button size="sm" :disabled="savingRoles" @click="saveUserRoles">
-              {{ savingRoles ? 'Saving...' : 'Save Roles' }}
-            </Button>
-          </div>
-        </div>
-
-        <Separator />
-
-        <!-- Offices -->
-        <div class="space-y-3">
-          <Label>Collection Offices</Label>
-          <p class="text-xs text-muted-foreground">
-            <template v-if="editHasOfficerRole">
-              Schedule officers can only act on declarations from their assigned offices.
-            </template>
-            <template v-else>
-              Office assignments apply to schedule officers.
-            </template>
-          </p>
-          <div class="max-h-48 overflow-y-auto space-y-2 pr-1">
-            <label
-              v-for="office in offices"
-              :key="office.id"
-              class="flex items-center gap-3 p-2.5 border rounded-lg cursor-pointer hover:bg-muted/50"
-            >
-              <Checkbox
-                :model-value="selectedOffices.includes(office.id)"
-                @update:model-value="(checked) => toggleEditOffice(office.id, checked === true)"
-              />
-              <div>
-                <p class="text-sm font-medium text-foreground">{{ office.name }}</p>
-                <p class="text-xs text-muted-foreground">{{ office.type }} · {{ office.region }}</p>
-              </div>
-            </label>
-          </div>
-          <div class="flex justify-end">
-            <Button size="sm" :disabled="savingOffices" @click="saveUserOffices">
-              {{ savingOffices ? 'Saving...' : 'Save Offices' }}
-            </Button>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" @click="closeEditModal">Close</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
