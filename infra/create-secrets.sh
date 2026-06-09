@@ -66,6 +66,18 @@ REDIS_URL="${REDIS_URL:-redis://adla-redis:6379}"
 SMTP_USER="${SMTP_USER:-}"
 SMTP_PASS="${SMTP_PASS:-}"
 
+# Optional SMS provider credentials (not boot-gated; leave blank to defer SMS —
+# the verify/notification flows then fail at send time in production until set).
+# Read via process.env directly (notification-config.ts), so PLAIN names only —
+# no NUXT_ twin. Non-secret SMS values (SMS_PROVIDER, *_SENDER_ID,
+# SMS_TWILIO_FROM_NUMBER) live in ConfigMap adla-config, not here.
+# Arkesel = primary for Ghana (+233); Hubtel = fallback; Twilio = international.
+ARKESEL_API_KEY="${ARKESEL_API_KEY:-}"
+HUBTEL_CLIENT_ID="${HUBTEL_CLIENT_ID:-}"
+HUBTEL_CLIENT_SECRET="${HUBTEL_CLIENT_SECRET:-}"
+SMS_TWILIO_ACCOUNT_SID="${SMS_TWILIO_ACCOUNT_SID:-}"
+SMS_TWILIO_AUTH_TOKEN="${SMS_TWILIO_AUTH_TOKEN:-}"
+
 # Optional bootstrap admin (consumed by prisma/bootstrap-admin.ts via the
 # bootstrap-admin Job). Leave blank here and patch them in just before running
 # `infra/seed.sh production bootstrap-admin`, or export them before this script.
@@ -97,6 +109,11 @@ kubectl create secret generic adla-secrets \
   --from-literal="PII_HMAC_KEY=${PII_HMAC_KEY}" \
   --from-literal="SMTP_USER=${SMTP_USER}" \
   --from-literal="SMTP_PASS=${SMTP_PASS}" \
+  --from-literal="ARKESEL_API_KEY=${ARKESEL_API_KEY}" \
+  --from-literal="HUBTEL_CLIENT_ID=${HUBTEL_CLIENT_ID}" \
+  --from-literal="HUBTEL_CLIENT_SECRET=${HUBTEL_CLIENT_SECRET}" \
+  --from-literal="SMS_TWILIO_ACCOUNT_SID=${SMS_TWILIO_ACCOUNT_SID}" \
+  --from-literal="SMS_TWILIO_AUTH_TOKEN=${SMS_TWILIO_AUTH_TOKEN}" \
   --from-literal="BOOTSTRAP_ADMIN_EMAIL=${BOOTSTRAP_ADMIN_EMAIL}" \
   --from-literal="BOOTSTRAP_ADMIN_PASSWORD=${BOOTSTRAP_ADMIN_PASSWORD}" \
   --from-literal="NUXT_JWT_SECRET=${JWT_SECRET}" \
@@ -116,6 +133,14 @@ echo ""
 echo "SMTP_USER/SMTP_PASS are blank — add them later WITHOUT rotating other keys:"
 echo "  kubectl patch secret adla-secrets -n $NAMESPACE --type merge \\"
 echo "    -p '{\"stringData\":{\"SMTP_USER\":\"...\",\"SMTP_PASS\":\"...\"}}'"
+echo ""
+echo "SMS provider creds are blank — phone verification/SMS stays deferred until set."
+echo "Arkesel is primary (Ghana), Hubtel fallback, Twilio international. Add them with:"
+echo "  kubectl patch secret adla-secrets -n $NAMESPACE --type merge \\"
+echo "    -p '{\"stringData\":{\"ARKESEL_API_KEY\":\"...\"}}'"
+echo "  # optional: HUBTEL_CLIENT_ID/HUBTEL_CLIENT_SECRET (fallback),"
+echo "  #           SMS_TWILIO_ACCOUNT_SID/SMS_TWILIO_AUTH_TOKEN (international)"
+echo "  # non-secret SMS_PROVIDER/*_SENDER_ID/SMS_TWILIO_FROM_NUMBER are in adla-config"
 echo ""
 echo "BOOTSTRAP_ADMIN_EMAIL/PASSWORD are blank — set them before bootstrapping the"
 echo "first admin (infra/seed.sh production bootstrap-admin):"

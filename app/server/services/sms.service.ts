@@ -22,6 +22,20 @@ interface SmsResult {
 }
 
 /**
+ * When a provider has no credentials we mock a success in non-production so the
+ * verify flow is testable without a real account (the code is logged to the
+ * server console). In production an unconfigured provider is a real failure —
+ * faking success there would silently drop every message.
+ */
+function unconfigured(providerName: string, to: string, message: string): SmsResult {
+  if (process.env.NODE_ENV === "production") {
+    return { success: false, error: `SMS provider (${providerName}) is not configured` };
+  }
+  console.log(`[SMS-DEV] ${providerName} not configured, message:`, message, "to:", to);
+  return { success: true, messageId: "dev-" + Date.now() };
+}
+
+/**
  * Format Ghana phone number to international format
  */
 export function formatGhanaPhone(phone: string): string {
@@ -59,8 +73,7 @@ async function sendViaHubtel(
   config: SmsConfig["hubtel"]
 ): Promise<SmsResult> {
   if (!config?.clientId || !config?.clientSecret) {
-    console.log("[SMS-DEV] Hubtel not configured, message:", message, "to:", to);
-    return { success: true, messageId: "dev-" + Date.now() };
+    return unconfigured("Hubtel", to, message);
   }
 
   try {
@@ -101,8 +114,7 @@ async function sendViaArkesel(
   config: SmsConfig["arkesel"]
 ): Promise<SmsResult> {
   if (!config?.apiKey) {
-    console.log("[SMS-DEV] Arkesel not configured, message:", message, "to:", to);
-    return { success: true, messageId: "dev-" + Date.now() };
+    return unconfigured("Arkesel", to, message);
   }
 
   try {
@@ -144,8 +156,7 @@ async function sendViaTwilio(
   config: SmsConfig["twilio"],
 ): Promise<SmsResult> {
   if (!config?.accountSid || !config?.authToken || !config?.fromNumber) {
-    console.log("[SMS-DEV] Twilio not configured, message:", message, "to:", toE164);
-    return { success: true, messageId: "dev-twilio-" + Date.now() };
+    return unconfigured("Twilio", toE164, message);
   }
 
   try {

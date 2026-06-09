@@ -201,3 +201,52 @@ describe("sendSms — provider failover", () => {
   });
 });
 
+describe("sendSms — unconfigured providers by environment", () => {
+  const ORIGINAL_ENV = { ...process.env };
+  const ORIGINAL_FETCH = globalThis.fetch;
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+    // No provider credentials configured at all.
+    process.env.SMS_PROVIDER = "arkesel";
+    delete process.env.HUBTEL_CLIENT_ID;
+    delete process.env.HUBTEL_CLIENT_SECRET;
+    delete process.env.ARKESEL_API_KEY;
+    delete process.env.SMS_TWILIO_ACCOUNT_SID;
+    delete process.env.SMS_TWILIO_AUTH_TOKEN;
+    delete process.env.SMS_TWILIO_FROM_NUMBER;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = ORIGINAL_FETCH;
+    for (const k of Object.keys(process.env)) {
+      if (!(k in ORIGINAL_ENV)) {
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+        delete process.env[k];
+      }
+    }
+    Object.assign(process.env, ORIGINAL_ENV);
+  });
+
+  it("in production, reports failure (never a fake success) for unconfigured Ghana providers", async () => {
+    process.env.NODE_ENV = "production";
+
+    const result = await sendSms("0241234567", "hi");
+
+    expect(result.success).toBe(false);
+    // Must not silently pretend to have sent, and must not hit the network.
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("in development, mocks a success for unconfigured Ghana providers (dev convenience)", async () => {
+    process.env.NODE_ENV = "development";
+
+    const result = await sendSms("0241234567", "hi");
+
+    expect(result.success).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+

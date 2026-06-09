@@ -96,7 +96,14 @@ data:
   ANALYTICS_AI_ROBOTS_ENFORCEMENT: "true"
   ANALYTICS_AI_IP_RANGE_REFRESH_HOURS: "24"
 
-  # SMS provider — read via process.env directly (sms.service.ts) — keep plain.
-  SMS_PROVIDER: "hubtel"
+  # SMS providers — read via process.env directly (sms.service.ts /
+  # notification-config.ts) — keep plain (no NUXT_ twin). Arkesel is the primary
+  # for Ghana (+233) traffic, Hubtel the automatic fallback, Twilio handles any
+  # non-+233 destination. Only NON-secret values live here; the API keys/secrets
+  # (HUBTEL_CLIENT_ID/SECRET, ARKESEL_API_KEY, SMS_TWILIO_ACCOUNT_SID/AUTH_TOKEN)
+  # are delivered via Secret adla-secrets (infra/create-secrets.sh).
+  SMS_PROVIDER: "arkesel"
   HUBTEL_SENDER_ID: "ADLA"
   ARKESEL_SENDER_ID: "ADLA"
+  # Twilio "from" number is not a secret (it's a public sender ID).
+  SMS_TWILIO_FROM_NUMBER: ""
