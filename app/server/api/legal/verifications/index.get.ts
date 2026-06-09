@@ -1,14 +1,14 @@
 import prisma from "~/server/utils/prisma";
+import { requireRoles } from "~/server/utils/authz";
 import type { VerificationStatus } from "@prisma/client";
 import { presignStored } from "~/server/services/storage.service";
 import { decryptProfileIds, hashPii } from "~/server/utils/pii-encryption";
 import { ID_NUMBER_PATTERNS } from "~/server/utils/validators";
 
 export default defineEventHandler(async (event) => {
-  const auth = event.context.auth;
-  if (!auth) {
-    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
-  }
+  // /api/legal is role-gated in server/middleware/auth.ts; re-assert here as
+  // defense-in-depth so a middleware regression cannot expose the handler.
+  requireRoles(event, ["legal_unit"]);
 
   const query = getQuery(event);
   const page = Math.max(1, Number(query.page) || 1);

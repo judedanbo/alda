@@ -14,6 +14,7 @@ import {
   findLogByMessageId,
   verifyWebhookSecret,
 } from "~/server/utils/sms-webhook";
+import { createAuditLog, AuditActions } from "~/server/utils/audit";
 
 interface ArkeselCallback {
   id?: string;
@@ -47,5 +48,15 @@ export default defineEventHandler(async (event) => {
   }
 
   await applyDeliveryUpdate(log.id, status, body);
+
+  // Audit the provider-driven delivery-status change. No userId — this is an
+  // unauthenticated (secret-gated) inbound webhook.
+  await createAuditLog(event, {
+    action: AuditActions.SMS_DELIVERY_UPDATED,
+    entityType: "notification_delivery_log",
+    entityId: log.id,
+    newValues: { provider: "arkesel", messageId: body.id, status },
+  });
+
   return { ok: true, found: true, status };
 });

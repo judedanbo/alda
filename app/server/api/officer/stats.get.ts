@@ -1,4 +1,5 @@
 import prisma from "~/server/utils/prisma";
+import { requireRoles } from "~/server/utils/authz";
 
 interface DailyBucket {
   date: string;
@@ -33,10 +34,9 @@ interface ThroughputRow {
 }
 
 export default defineEventHandler(async (event) => {
-  const auth = event.context.auth;
-  if (!auth) {
-    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
-  }
+  // /api/officer is role-gated in server/middleware/auth.ts; re-assert here as
+  // defense-in-depth so a middleware regression cannot expose the handler.
+  requireRoles(event, ["schedule_officer"]);
 
   const [queueRows, codeWindowRows, funnelRows, throughputRows] = await Promise.all([
     prisma.$queryRaw<QueueRow[]>`

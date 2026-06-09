@@ -1,6 +1,7 @@
 import prisma from "~/server/utils/prisma";
 import { generateVerificationToken } from "~/server/utils/code-generator";
 import { sendVerificationEmail } from "~/server/services/email.service";
+import { createAuditLog, AuditActions } from "~/server/utils/audit";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -54,6 +55,13 @@ export default defineEventHandler(async (event) => {
   } catch (e) {
     console.error("Failed to send verification email:", e);
   }
+
+  await createAuditLog(event, {
+    userId: user.id,
+    action: AuditActions.VERIFICATION_RESENT,
+    entityType: "user",
+    entityId: user.id,
+  });
 
   return {
     success: true,

@@ -103,6 +103,8 @@ export const AuditActions = {
   PASSWORD_RESET_REQUESTED: "password_reset_requested",
   PASSWORD_RESET_COMPLETED: "password_reset_completed",
   EMAIL_VERIFIED: "email_verified",
+  VERIFICATION_RESENT: "verification_resent",
+  INVITE_ACCEPTED: "invite_accepted",
   PHONE_CODE_REQUESTED: "phone_code_requested",
   PHONE_VERIFIED: "phone_verified",
   PHONE_VERIFICATION_FAILED: "phone_verification_failed",
@@ -110,6 +112,11 @@ export const AuditActions = {
   // Profile
   PROFILE_CREATED: "profile_created",
   PROFILE_UPDATED: "profile_updated",
+
+  // ID document uploads
+  GHANA_CARD_UPLOADED: "ghana_card_uploaded",
+  ALTERNATE_ID_UPLOADED: "alternate_id_uploaded",
+  REISSUE_LETTER_UPLOADED: "reissue_letter_uploaded",
 
   // Offices
   OFFICE_ADDED: "office_added",
@@ -172,6 +179,7 @@ export const AuditActions = {
   // Notifications
   NOTIFICATION_TEST_SENT: "notification_test_sent",
   NOTIFICATION_DELIVERY_RETRIED: "notification_delivery_retried",
+  SMS_DELIVERY_UPDATED: "sms_delivery_updated",
   NOTIFICATION_CREDENTIAL_UPDATED: "notification_credential_updated",
   NOTIFICATION_CREDENTIAL_CLEARED: "notification_credential_cleared",
 

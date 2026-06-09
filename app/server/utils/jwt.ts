@@ -20,9 +20,16 @@ export interface TokenPair {
 const JWT_ISSUER = "adla-auth";
 const JWT_AUDIENCE = "adla";
 
+// Pin the signing algorithm on both sides. jsonwebtoken otherwise defaults to
+// HS256 on sign and accepts a broad default set on verify; locking
+// `algorithms: ["HS256"]` rejects `alg: "none"` and algorithm-confusion tokens
+// (e.g. an RS256 token whose "public key" is our HMAC secret) outright.
+const JWT_ALGORITHM = "HS256" as const;
+
 const VERIFY_OPTIONS: VerifyOptions = {
   audience: JWT_AUDIENCE,
   issuer: JWT_ISSUER,
+  algorithms: [JWT_ALGORITHM],
 };
 
 /**
@@ -34,6 +41,7 @@ export function generateAccessToken(payload: JwtPayload): string {
     expiresIn: (config.jwtExpiresIn || "15m") as SignOptions["expiresIn"],
     audience: JWT_AUDIENCE,
     issuer: JWT_ISSUER,
+    algorithm: JWT_ALGORITHM,
   };
   return jwt.sign(payload, config.jwtSecret, options);
 }
@@ -47,6 +55,7 @@ export function generateRefreshToken(payload: JwtPayload): string {
     expiresIn: (config.jwtRefreshExpiresIn || "7d") as SignOptions["expiresIn"],
     audience: JWT_AUDIENCE,
     issuer: JWT_ISSUER,
+    algorithm: JWT_ALGORITHM,
   };
   return jwt.sign(payload, config.jwtRefreshSecret, options);
 }
