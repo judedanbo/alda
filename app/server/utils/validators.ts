@@ -387,6 +387,18 @@ export const notificationCredentialsSchema = z.object({
 });
 
 /**
+ * System setting overrides (Admin → Settings). `set` maps a registry key → raw
+ * string value to store ("true"/"false" for booleans, the integer for
+ * numbers); `clear` lists keys whose DB override should be removed (revert to
+ * env). Key membership and per-field kind/range rules are enforced in the
+ * handler against the SETTING_FIELDS registry.
+ */
+export const systemSettingsSchema = z.object({
+  set: z.record(z.string(), z.string()).optional(),
+  clear: z.array(z.string()).optional(),
+});
+
+/**
  * Validate request body against a schema
  */
 export async function validateBody<T extends z.ZodSchema>(

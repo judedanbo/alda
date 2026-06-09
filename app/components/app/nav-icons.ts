@@ -13,6 +13,7 @@ import {
   PlusCircleIcon,
   ReceiptIcon,
   SearchIcon,
+  SettingsIcon,
   ShieldIcon,
   TagIcon,
   UserCheckIcon,
@@ -41,6 +42,7 @@ const iconMap: Record<string, Component> = {
   "shield": ShieldIcon,
   "activity": ActivityIcon,
   "bell": BellIcon,
+  "settings": SettingsIcon,
 };
 
 export function navIcon(name: string): Component {

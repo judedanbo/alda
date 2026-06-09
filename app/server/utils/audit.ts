@@ -175,6 +175,10 @@ export const AuditActions = {
   NOTIFICATION_CREDENTIAL_UPDATED: "notification_credential_updated",
   NOTIFICATION_CREDENTIAL_CLEARED: "notification_credential_cleared",
 
+  // Global system settings (Admin → Settings)
+  SYSTEM_SETTING_UPDATED: "system_setting_updated",
+  SYSTEM_SETTING_CLEARED: "system_setting_cleared",
+
   // Web analytics, abuse detection & rate limiting
   ABUSE_DETECTED: "abuse_detected",
   ABUSE_THROTTLE_APPLIED: "abuse_throttle_applied",

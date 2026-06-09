@@ -1,14 +1,22 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 
+// The CSP-enforce flag now resolves through the system-settings registry,
+// which reads DB overrides via the prisma singleton (falling back to the env
+// var). With no overrides the env var wins — exactly what these tests toggle.
+vi.mock("~/server/utils/prisma", () => ({
+  default: { systemSetting: { findMany: vi.fn().mockResolvedValue([]) } },
+}));
+
 /**
- * The middleware module reads `process.env.NODE_ENV` and
- * `process.env.SECURITY_CSP_ENFORCE` at request time. Each test toggles
- * those, then dynamically imports the handler so the inline globals
- * resolved against the test setup's stubs.
+ * The middleware module reads `process.env.NODE_ENV` at request time and the
+ * CSP-enforce flag via the system-settings registry (env
+ * `SECURITY_CSP_ENFORCE` is the fallback). Each test toggles those, then
+ * dynamically imports the handler so the globals resolve against the stubs.
+ * The handler is async (it awaits the registry lookup), so callers await it.
  */
 async function loadHandler() {
   const mod = await import("~/server/middleware/01.security-headers");
-  return mod.default as (event: unknown) => void;
+  return mod.default as (event: unknown) => Promise<void>;
 }
 
 /**
@@ -56,7 +64,7 @@ describe("security headers middleware", () => {
     process.env.NODE_ENV = "development";
     const handler = await loadHandler();
     const event = makeEvent();
-    handler(event);
+    await handler(event);
     expect(event.captured.get("x-frame-options")).toBe("DENY");
     expect(event.captured.get("x-content-type-options")).toBe("nosniff");
     expect(event.captured.get("referrer-policy")).toBe("strict-origin-when-cross-origin");
@@ -69,7 +77,7 @@ describe("security headers middleware", () => {
     process.env.NODE_ENV = "development";
     const handler = await loadHandler();
     const event = makeEvent();
-    handler(event);
+    await handler(event);
     expect(event.captured.has("strict-transport-security")).toBe(false);
   });
 
@@ -77,7 +85,7 @@ describe("security headers middleware", () => {
     process.env.NODE_ENV = "production";
     const handler = await loadHandler();
     const event = makeEvent();
-    handler(event);
+    await handler(event);
     expect(event.captured.get("strict-transport-security")).toBe(
       "max-age=31536000; includeSubDomains",
     );
@@ -87,7 +95,7 @@ describe("security headers middleware", () => {
     delete process.env.SECURITY_CSP_ENFORCE;
     const handler = await loadHandler();
     const event = makeEvent();
-    handler(event);
+    await handler(event);
     expect(event.captured.has("content-security-policy-report-only")).toBe(true);
     expect(event.captured.has("content-security-policy")).toBe(false);
     const csp = event.captured.get("content-security-policy-report-only")!;
@@ -100,7 +108,7 @@ describe("security headers middleware", () => {
     process.env.SECURITY_CSP_ENFORCE = "true";
     const handler = await loadHandler();
     const event = makeEvent();
-    handler(event);
+    await handler(event);
     expect(event.captured.has("content-security-policy")).toBe(true);
     expect(event.captured.has("content-security-policy-report-only")).toBe(false);
   });
@@ -110,7 +118,7 @@ describe("security headers middleware", () => {
     const event = makeEvent();
     // Pretend a previous handler already chose a stricter X-Frame-Options.
     event.node.res.setHeader("X-Frame-Options", "SAMEORIGIN");
-    handler(event);
+    await handler(event);
     expect(event.captured.get("x-frame-options")).toBe("SAMEORIGIN");
   });
 });

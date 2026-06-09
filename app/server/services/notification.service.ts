@@ -15,6 +15,7 @@ import {
 } from "~/server/utils/notification-queue";
 import { payloads } from "~/server/notifications/payloads";
 import { checkRateLimit } from "~/server/utils/rate-limit";
+import { getSetting } from "~/server/utils/system-settings";
 import { getAnalyticsStorage } from "~/server/utils/analytics-storage";
 import { publishToUser } from "~/server/utils/notification-stream";
 import type { NotificationType, NotificationChannel } from "@prisma/client";
@@ -53,9 +54,10 @@ const DEDUPE_WINDOW_MS = 5 * 60 * 1000;
  * are exempt: see ALWAYS_SEND.
  */
 const NOTIFICATION_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
-function getNotificationRateLimitPerHour(): number {
-  const v = Number(process.env.NOTIFICATIONS_RATE_LIMIT_PER_HOUR);
-  return Number.isFinite(v) && v > 0 ? Math.floor(v) : 10;
+// Resolved via the system-settings registry: env NOTIFICATIONS_RATE_LIMIT_PER_HOUR
+// is the fallback, overridable at runtime from Admin → Settings.
+function getNotificationRateLimitPerHour(): Promise<number> {
+  return getSetting<number>("notifications.rateLimitPerHour");
 }
 
 /**
@@ -113,7 +115,7 @@ async function sendNotificationInternal(payload: NotificationPayload): Promise<v
   if (!bypass) {
     const rl = await checkRateLimit(getAnalyticsStorage(), {
       key: `notif:${payload.userId}:${payload.type}`,
-      limit: getNotificationRateLimitPerHour(),
+      limit: await getNotificationRateLimitPerHour(),
       windowMs: NOTIFICATION_RATE_LIMIT_WINDOW_MS,
     });
     if (!rl.allowed) {

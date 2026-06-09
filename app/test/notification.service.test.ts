@@ -20,6 +20,11 @@ const prismaMock = vi.hoisted(() => ({
     update: vi.fn(),
     findUnique: vi.fn(),
   },
+  // Consulted by the system-settings registry (notification rate limit).
+  // No overrides → the resolver falls back to the env value the tests set.
+  systemSetting: {
+    findMany: vi.fn().mockResolvedValue([]),
+  },
 }));
 
 const emailMock = vi.hoisted(() => ({ sendEmail: vi.fn() }));
