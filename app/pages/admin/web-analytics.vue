@@ -518,33 +518,33 @@ const fuzzingTimelineChart = computed(() => {
       <!-- ============ OVERVIEW ============ -->
       <TabsContent value="overview" class="space-y-4 mt-4">
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <StatCard
+          <AppStatCard
             label="Requests"
             :value="fmt(overview?.summary.totalRequests)"
             :loading="loading.overview"
           />
-          <StatCard
+          <AppStatCard
             label="Unique visitors"
             :value="fmt(overview?.summary.uniqueVisitors)"
             :loading="loading.overview"
             footnote="per-bucket distinct"
           />
-          <StatCard
+          <AppStatCard
             label="Sessions"
             :value="fmt(overview?.summary.uniqueSessions)"
             :loading="loading.overview"
           />
-          <StatCard
+          <AppStatCard
             label="Avg response"
             :value="`${overview?.summary.avgResponseMs ?? 0}ms`"
             :loading="loading.overview"
           />
-          <StatCard
+          <AppStatCard
             label="p95 response"
             :value="`${overview?.summary.p95ResponseMs ?? 0}ms`"
             :loading="loading.overview"
           />
-          <StatCard
+          <AppStatCard
             label="Error rate"
             :value="fmtPct(overview?.summary.errorRate ?? 0)"
             :loading="loading.overview"
@@ -556,7 +556,7 @@ const fuzzingTimelineChart = computed(() => {
           />
         </div>
 
-        <ChartCard
+        <AppChartCard
           title="Requests over time"
           description="By visitor class"
           type="area"
@@ -567,7 +567,7 @@ const fuzzingTimelineChart = computed(() => {
         />
 
         <div class="grid lg:grid-cols-3 gap-4">
-          <ChartCard
+          <AppChartCard
             title="Traffic by class"
             type="donut"
             :series="
@@ -579,7 +579,7 @@ const fuzzingTimelineChart = computed(() => {
             :loading="loading.overview"
             :height="280"
           />
-          <ChartCard
+          <AppChartCard
             title="Device split"
             type="donut"
             :series="donut(overview?.byDevice ?? []).series"
@@ -587,7 +587,7 @@ const fuzzingTimelineChart = computed(() => {
             :loading="loading.overview"
             :height="280"
           />
-          <ChartCard
+          <AppChartCard
             title="Browser split"
             type="donut"
             :series="donut(overview?.byBrowser ?? []).series"
@@ -598,7 +598,7 @@ const fuzzingTimelineChart = computed(() => {
         </div>
 
         <div class="grid lg:grid-cols-2 gap-4">
-          <ChartCard
+          <AppChartCard
             title="Top pages"
             type="bar"
             :series="hbar(overview?.topPages ?? []).series"
@@ -606,7 +606,7 @@ const fuzzingTimelineChart = computed(() => {
             :loading="loading.overview"
             :height="320"
           />
-          <ChartCard
+          <AppChartCard
             title="Traffic by country"
             type="bar"
             :series="hbar(overview?.byCountry ?? []).series"
@@ -646,22 +646,22 @@ const fuzzingTimelineChart = computed(() => {
       <!-- ============ REALTIME ============ -->
       <TabsContent value="realtime" class="space-y-4 mt-4">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard
+          <AppStatCard
             label="Requests (30m)"
             :value="fmt(realtime?.totalRequests)"
             :loading="loading.realtime"
           />
-          <StatCard
+          <AppStatCard
             label="Active sessions"
             :value="fmt(realtime?.activeSessions)"
             :loading="loading.realtime"
           />
-          <StatCard
+          <AppStatCard
             label="Active visitors"
             :value="fmt(realtime?.activeVisitors)"
             :loading="loading.realtime"
           />
-          <StatCard
+          <AppStatCard
             label="Capture buffer"
             :value="fmt(realtime?.bufferDepth)"
             :loading="loading.realtime"
@@ -669,7 +669,7 @@ const fuzzingTimelineChart = computed(() => {
           />
         </div>
 
-        <ChartCard
+        <AppChartCard
           title="Requests per minute"
           description="Last 30 minutes — auto-refreshes every 15s"
           type="area"
@@ -745,29 +745,29 @@ const fuzzingTimelineChart = computed(() => {
       <!-- ============ ABUSE ============ -->
       <TabsContent value="abuse" class="space-y-4 mt-4">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard
+          <AppStatCard
             label="Abuse events"
             :value="fmt(abuse?.summary.totalEvents)"
             :loading="loading.abuse"
           />
-          <StatCard
+          <AppStatCard
             label="Active enforcement"
             :value="fmt(abuse?.summary.activeEnforcement)"
             :loading="loading.abuse"
           />
-          <StatCard
+          <AppStatCard
             label="Categories"
             :value="fmt(abuse?.byCategory.length)"
             :loading="loading.abuse"
           />
-          <StatCard
+          <AppStatCard
             label="Offending IPs"
             :value="fmt(abuse?.topOffenders.length)"
             :loading="loading.abuse"
           />
         </div>
 
-        <ChartCard
+        <AppChartCard
           title="Abuse events over time"
           type="bar"
           :series="abuseTimelineChart.series"
@@ -957,22 +957,22 @@ const fuzzingTimelineChart = computed(() => {
       <!-- ============ AI & BOTS ============ -->
       <TabsContent value="ai" class="space-y-4 mt-4">
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <StatCard
+          <AppStatCard
             label="AI requests"
             :value="fmt(ai?.summary.aiRequests)"
             :loading="loading.ai"
           />
-          <StatCard
+          <AppStatCard
             label="AI share"
             :value="fmtPct(ai?.summary.aiShare ?? 0)"
             :loading="loading.ai"
           />
-          <StatCard
+          <AppStatCard
             label="Total requests"
             :value="fmt(ai?.summary.totalRequests)"
             :loading="loading.ai"
           />
-          <StatCard
+          <AppStatCard
             label="Spoofed"
             :value="fmt(ai?.summary.spoofedCount)"
             :loading="loading.ai"
@@ -982,7 +982,7 @@ const fuzzingTimelineChart = computed(() => {
                 : 'text-foreground'
             "
           />
-          <StatCard
+          <AppStatCard
             label="Cloaked"
             :value="fmt(ai?.summary.cloakedCount)"
             :loading="loading.ai"
@@ -992,14 +992,14 @@ const fuzzingTimelineChart = computed(() => {
                 : 'text-foreground'
             "
           />
-          <StatCard
+          <AppStatCard
             label="robots.txt hits"
             :value="fmt(ai?.summary.robotsViolations)"
             :loading="loading.ai"
           />
         </div>
 
-        <ChartCard
+        <AppChartCard
           title="AI vs total traffic"
           type="area"
           :series="aiTrendChart.series"
@@ -1009,7 +1009,7 @@ const fuzzingTimelineChart = computed(() => {
         />
 
         <div class="grid lg:grid-cols-3 gap-4">
-          <ChartCard
+          <AppChartCard
             title="Visitor class share"
             type="donut"
             :series="donut(ai?.visitorClassSplit ?? [], classLabel).series"
@@ -1017,7 +1017,7 @@ const fuzzingTimelineChart = computed(() => {
             :loading="loading.ai"
             :height="260"
           />
-          <ChartCard
+          <AppChartCard
             title="AI by provider"
             type="donut"
             :series="donut(ai?.byProvider ?? []).series"
@@ -1025,7 +1025,7 @@ const fuzzingTimelineChart = computed(() => {
             :loading="loading.ai"
             :height="260"
           />
-          <ChartCard
+          <AppChartCard
             title="AI by category"
             type="donut"
             :series="donut(ai?.byCategory ?? []).series"
@@ -1036,7 +1036,7 @@ const fuzzingTimelineChart = computed(() => {
         </div>
 
         <div class="grid lg:grid-cols-2 gap-4">
-          <ChartCard
+          <AppChartCard
             title="Top pages scraped by AI"
             type="bar"
             :series="hbar(ai?.topPages ?? []).series"
@@ -1087,24 +1087,24 @@ const fuzzingTimelineChart = computed(() => {
       <!-- ============ RATE LIMITING ============ -->
       <TabsContent value="ratelimit" class="space-y-4 mt-4">
         <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <StatCard
+          <AppStatCard
             label="429 responses"
             :value="fmt(ratelimit?.summary.total429)"
             :loading="loading.ratelimit"
           />
-          <StatCard
+          <AppStatCard
             label="Active throttles"
             :value="fmt(ratelimit?.summary.activeThrottles)"
             :loading="loading.ratelimit"
           />
-          <StatCard
+          <AppStatCard
             label="Active blocks"
             :value="fmt(ratelimit?.summary.activeBlocks)"
             :loading="loading.ratelimit"
           />
         </div>
 
-        <ChartCard
+        <AppChartCard
           title="429 responses over time"
           type="bar"
           :series="rlTimelineChart.series"
@@ -1162,7 +1162,7 @@ const fuzzingTimelineChart = computed(() => {
         </Card>
 
         <div class="grid lg:grid-cols-2 gap-4">
-          <ChartCard
+          <AppChartCard
             title="Top throttled routes"
             type="bar"
             :series="hbar(ratelimit?.topThrottledRoutes ?? []).series"
@@ -1170,7 +1170,7 @@ const fuzzingTimelineChart = computed(() => {
             :loading="loading.ratelimit"
             :height="300"
           />
-          <ChartCard
+          <AppChartCard
             title="Top throttled IPs"
             type="bar"
             :series="hbar(ratelimit?.topThrottledActors ?? []).series"
@@ -1184,19 +1184,19 @@ const fuzzingTimelineChart = computed(() => {
       <!-- ============ FUZZING ============ -->
       <TabsContent value="fuzzing" class="space-y-4 mt-4">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard
+          <AppStatCard
             label="Fuzzing attempts"
             :value="fmt(fuzzing?.summary.totalAttempts)"
             :loading="loading.fuzzing"
             footnote="malformed payloads, probed URLs, suspicious paths"
           />
-          <StatCard
+          <AppStatCard
             label="Unique actors"
             :value="fmt(fuzzing?.summary.uniqueActors)"
             :loading="loading.fuzzing"
             footnote="distinct hashed IPs"
           />
-          <StatCard
+          <AppStatCard
             label="High / critical"
             :value="fmt(fuzzing?.summary.highSeverity)"
             :loading="loading.fuzzing"
@@ -1206,14 +1206,14 @@ const fuzzingTimelineChart = computed(() => {
                 : 'text-foreground'
             "
           />
-          <StatCard
+          <AppStatCard
             label="Categories"
             :value="fmt(fuzzing?.byCategory.length)"
             :loading="loading.fuzzing"
           />
         </div>
 
-        <ChartCard
+        <AppChartCard
           title="Fuzzing attempts over time"
           type="bar"
           :series="fuzzingTimelineChart.series"
@@ -1223,7 +1223,7 @@ const fuzzingTimelineChart = computed(() => {
         />
 
         <div class="grid lg:grid-cols-2 gap-4">
-          <ChartCard
+          <AppChartCard
             title="By category"
             type="donut"
             :series="donut(fuzzing?.byCategory ?? [], fuzzCategoryLabel).series"
@@ -1231,7 +1231,7 @@ const fuzzingTimelineChart = computed(() => {
             :loading="loading.fuzzing"
             :height="280"
           />
-          <ChartCard
+          <AppChartCard
             title="By severity"
             type="donut"
             :series="donut(fuzzing?.summary.bySeverity ?? []).series"
@@ -1242,7 +1242,7 @@ const fuzzingTimelineChart = computed(() => {
         </div>
 
         <div class="grid lg:grid-cols-2 gap-4">
-          <ChartCard
+          <AppChartCard
             title="Most targeted endpoints"
             type="bar"
             :series="hbar(fuzzing?.topTargets ?? []).series"

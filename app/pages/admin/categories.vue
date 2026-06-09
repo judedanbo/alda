@@ -230,6 +230,9 @@ const toggleStatus = async (category: Category) => {
       <DialogContent class="max-w-md">
         <DialogHeader>
           <DialogTitle>{{ isEditing ? "Edit Category" : "Add Category" }}</DialogTitle>
+          <DialogDescription>
+            {{ isEditing ? "Update this category's details." : "Add a new declaration category." }}
+          </DialogDescription>
         </DialogHeader>
 
         <div class="space-y-4">

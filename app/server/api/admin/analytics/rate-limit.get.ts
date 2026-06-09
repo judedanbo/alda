@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import prisma from "~/server/utils/prisma";
 import { resolveRange, num, requireAdmin } from "~/server/utils/analytics-query";
 import { getAnalyticsConfig } from "~/server/utils/analytics-config";
@@ -22,7 +21,6 @@ interface BucketRow {
 export default defineEventHandler(async (event) => {
   requireAdmin(event);
   const { range, since, grain } = resolveRange(getQuery(event).range);
-  const truncExpr = Prisma.raw(grain === "hour" ? "hour" : "day");
   const config = getAnalyticsConfig();
 
   const [total429, byRoute, byActor, timeline, throttleActions, activeThrottles, activeBlocks]
@@ -40,7 +38,7 @@ export default defineEventHandler(async (event) => {
         GROUP BY 1 ORDER BY 2 DESC LIMIT 10`,
 
       prisma.$queryRaw<BucketRow[]>`
-        SELECT date_trunc(${truncExpr}, occurred_at) AS bucket, COUNT(*)::bigint AS count
+        SELECT date_trunc(${grain}, occurred_at) AS bucket, COUNT(*)::bigint AS count
         FROM traffic_events WHERE occurred_at >= ${since} AND status_code = 429
         GROUP BY 1 ORDER BY 1 ASC`,
 
