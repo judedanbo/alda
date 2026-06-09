@@ -23,7 +23,7 @@ data:
   PORT: "3000"
 
   # App base URL → runtimeConfig.public.appUrl (overridden per-env in overlays).
-  NUXT_PUBLIC_APP_URL: ""
+  NUXT_PUBLIC_APP_URL: "https://alda.audit.gov.gh"
 
   # SMTP → runtimeConfig.smtp* (host/port/from are not secrets; user/pass in adla-secrets)
   NUXT_SMTP_HOST: "smtp.office365.com"
@@ -103,7 +103,7 @@ data:
   # (HUBTEL_CLIENT_ID/SECRET, ARKESEL_API_KEY, SMS_TWILIO_ACCOUNT_SID/AUTH_TOKEN)
   # are delivered via Secret adla-secrets (infra/create-secrets.sh).
   SMS_PROVIDER: "arkesel"
-  HUBTEL_SENDER_ID: "ADLA"
-  ARKESEL_SENDER_ID: "ADLA"
+  HUBTEL_SENDER_ID: "GAS-ADLA"
+  ARKESEL_SENDER_ID: "GAS-ADLA"
   # Twilio "from" number is not a secret (it's a public sender ID).
   SMS_TWILIO_FROM_NUMBER: ""
