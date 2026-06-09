@@ -41,6 +41,7 @@ const NOTIFICATION_TYPES: [NotificationType, ...NotificationType[]] = [
   "VERIFICATION_ON_HOLD",
   "VERIFICATION_MORE_INFO_REQUIRED",
   "PHONE_VERIFICATION_CODE",
+  "STAFF_INVITE",
 ];
 
 const testNotificationSchema = z.object({
@@ -152,6 +153,16 @@ function buildSamplePayload(type: NotificationType, name: string): {
         title: "Phone verification code",
         message: `Your phone verification code is ${SAMPLE_CODE} (preview).`,
         metadata: { name },
+      };
+    case "STAFF_INVITE":
+      return {
+        title: "Activate your ADLA staff account",
+        message: "Click the link in your email to activate your staff account (preview).",
+        metadata: {
+          name,
+          roleLabels: "Administrator",
+          inviteUrl: "https://example.invalid/accept-invite",
+        },
       };
   }
 }

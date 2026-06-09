@@ -75,26 +75,44 @@ export function generateEmailHtml(template: EmailTemplate, data: Record<string, 
 }
 
 /**
- * Send an email
+ * Outcome of a send attempt. `error` carries the underlying failure (SMTP
+ * code/message or a template-render error) so callers that record a delivery
+ * log can surface *why* a send failed instead of a bare boolean.
  */
-export async function sendEmail(emailData: EmailData): Promise<boolean> {
-  const cfg = await getResolvedEmailConfig();
-  const transport = await getTransporter();
+export interface SendResult {
+  success: boolean;
+  error?: string;
+}
 
-  const html = renderEmail(emailData.template, emailData.data);
-
+/**
+ * Send an email, returning the detailed outcome. Never throws — config
+ * resolution, transporter creation, template rendering, and the SMTP send
+ * are all inside the catch, so a failure anywhere surfaces as
+ * `{ success: false, error }` rather than a thrown exception.
+ */
+export async function sendEmailWithResult(emailData: EmailData): Promise<SendResult> {
   try {
+    const cfg = await getResolvedEmailConfig();
+    const transport = await getTransporter();
+    const html = renderEmail(emailData.template, emailData.data);
     await transport.sendMail({
       from: `"${BRAND.fullName}" <${cfg.from}>`,
       to: emailData.to,
       subject: emailData.subject,
       html,
     });
-    return true;
+    return { success: true };
   } catch (error) {
     console.error("Failed to send email:", error);
-    return false;
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
+}
+
+/**
+ * Send an email
+ */
+export async function sendEmail(emailData: EmailData): Promise<boolean> {
+  return (await sendEmailWithResult(emailData)).success;
 }
 
 /**
@@ -182,9 +200,9 @@ export async function sendStaffInviteEmail(
   to: string,
   roleLabels: string,
   token: string
-): Promise<boolean> {
+): Promise<SendResult> {
   const config = useRuntimeConfig();
-  return sendEmail({
+  return sendEmailWithResult({
     to,
     subject: "Activate your ADLA staff account",
     template: "staff-invite",

@@ -5,6 +5,7 @@ import { validateBody, adminCreateUserSchema } from "~/server/utils/validators";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
 import { generateResetToken } from "~/server/utils/code-generator";
 import { sendStaffInviteEmail } from "~/server/services/email.service";
+import { recordStaffInviteEmail } from "~/server/services/notification.service";
 import { ghanaPhoneAlternates, isGhanaPhone, normalizePhoneE164 } from "~/server/utils/phone";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -137,16 +138,20 @@ export default defineEventHandler(async (event) => {
     console.error("[admin/users] audit log failed:", e);
   }
 
+  // Send the invite directly (it carries a one-time token), then mirror the
+  // outcome into the notification log. Both calls are swallow-all and never
+  // throw, so a mail failure can't 500 a request whose user was already
+  // created — but it IS now recorded and surfaced to the admin.
   const roleLabels = roleNames.map((r) => ROLE_LABELS[r] ?? r).join(", ");
-  try {
-    await sendStaffInviteEmail(user.email, roleLabels, token);
-  } catch (e) {
-    console.error("Failed to send staff invite email:", e);
-  }
+  const inviteResult = await sendStaffInviteEmail(user.email, roleLabels, token);
+  await recordStaffInviteEmail(user.id, inviteResult);
 
   return {
     success: true,
-    message: "Staff user created and invitation sent",
+    inviteEmailSent: inviteResult.success,
+    message: inviteResult.success
+      ? "Staff user created and invitation sent"
+      : "Staff user created, but the invitation email could not be sent. Check email (SMTP) configuration, then use \"Resend invitation\".",
     data: {
       id: user.id,
       email: user.email,

@@ -170,7 +170,7 @@ const submitCreate = async () => {
 
   creating.value = true;
   try {
-    const response = await authFetch<{ success: boolean }>("/api/admin/users", {
+    const response = await authFetch<{ success: boolean; inviteEmailSent?: boolean; message?: string }>("/api/admin/users", {
       method: "POST",
       body: {
         email: createForm.value.email.trim(),
@@ -183,7 +183,11 @@ const submitCreate = async () => {
       },
     });
     if (response.success) {
-      flash(`Invitation sent to ${createForm.value.email.trim()}`);
+      if (response.inviteEmailSent === false) {
+        flash(response.message ?? `User created, but the invitation email to ${createForm.value.email.trim()} could not be sent.`, "error");
+      } else {
+        flash(`Invitation sent to ${createForm.value.email.trim()}`);
+      }
       closeCreateModal();
       table.refresh();
     }
@@ -333,12 +337,16 @@ const resendingId = ref<string | null>(null);
 const resendInvite = async (user: User) => {
   resendingId.value = user.id;
   try {
-    const response = await authFetch<{ success: boolean }>(
+    const response = await authFetch<{ success: boolean; inviteEmailSent?: boolean; message?: string }>(
       `/api/admin/users/${user.id}/resend-invite`,
       { method: "POST" },
     );
     if (response.success) {
-      flash("Invitation resent");
+      if (response.inviteEmailSent === false) {
+        flash(response.message ?? "Invitation could not be sent — check email configuration.", "error");
+      } else {
+        flash("Invitation resent");
+      }
     }
   } catch (error) {
     console.error("Failed to resend invite:", error);

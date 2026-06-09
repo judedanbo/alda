@@ -8,7 +8,12 @@ let currentRouteId = "";
 vi.stubGlobal("getRouterParam", () => currentRouteId);
 // email sending must not actually fire; stub the helper the handler imports.
 vi.mock("~/server/services/email.service", () => ({
-  sendStaffInviteEmail: vi.fn(async () => true),
+  sendStaffInviteEmail: vi.fn(async () => ({ success: true })),
+}));
+// the invite-log recorder talks to the DB via the notification service; stub
+// it so this test stays focused on user creation / invite-token behaviour.
+vi.mock("~/server/services/notification.service", () => ({
+  recordStaffInviteEmail: vi.fn(async () => {}),
 }));
 
 const createUser = (await import("~/server/api/admin/users/index.post")).default;

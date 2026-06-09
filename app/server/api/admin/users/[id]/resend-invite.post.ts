@@ -2,6 +2,7 @@ import prisma from "~/server/utils/prisma";
 import { logAction } from "~/server/utils/audit";
 import { generateResetToken } from "~/server/utils/code-generator";
 import { sendStaffInviteEmail } from "~/server/services/email.service";
+import { recordStaffInviteEmail } from "~/server/services/notification.service";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrator",
@@ -65,11 +66,14 @@ export default defineEventHandler(async (event) => {
   });
 
   const roleLabels = user.roles.map((r) => ROLE_LABELS[r.role.name] ?? r.role.name).join(", ");
-  try {
-    await sendStaffInviteEmail(user.email, roleLabels, token);
-  } catch (e) {
-    console.error("Failed to resend staff invite email:", e);
-  }
+  const inviteResult = await sendStaffInviteEmail(user.email, roleLabels, token);
+  await recordStaffInviteEmail(user.id, inviteResult);
 
-  return { success: true, message: "Invitation resent" };
+  return {
+    success: true,
+    inviteEmailSent: inviteResult.success,
+    message: inviteResult.success
+      ? "Invitation resent"
+      : "Invitation could not be sent — check email (SMTP) configuration and try again.",
+  };
 });
