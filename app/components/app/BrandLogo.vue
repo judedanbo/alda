@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { NuxtLink } from "#components";
 
 const props = withDefaults(
   defineProps<{
@@ -37,7 +38,7 @@ const titleClass = computed(
 
 <template>
   <component
-    :is="to ? resolveComponent('NuxtLink') : 'div'"
+    :is="to ? NuxtLink : 'div'"
     :to="to"
     class="flex items-center gap-3"
   >

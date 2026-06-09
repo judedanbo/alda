@@ -44,14 +44,11 @@ const isActive = (href: string) =>
             >
               <MenuIcon class="w-5 h-5" />
             </button>
-            <NuxtLink :to="authStore.dashboardPath" class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                <span class="text-primary-foreground font-bold">GH</span>
-              </div>
-              <span class="font-semibold text-foreground hidden sm:block">
-                Asset Declaration Portal
-              </span>
-            </NuxtLink>
+            <AppBrandLogo
+              :to="authStore.isAuthenticated ? authStore.dashboardPath : '/'"
+              size="sm"
+              show-wordmark
+            />
           </div>
 
           <!-- Applicant desktop nav (sidebar roles use the left sidebar instead) -->
