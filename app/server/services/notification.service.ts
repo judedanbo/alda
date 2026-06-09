@@ -385,6 +385,58 @@ export async function recordPhoneVerificationSms(
 }
 
 /**
+ * Record an already-sent staff-invite email in the notification log.
+ *
+ * The invite itself is sent DIRECTLY (sendStaffInviteEmail) from the admin
+ * create-user / resend-invite endpoints — NOT through sendNotification() —
+ * because it carries a one-time activation token that must never be
+ * persisted (the same reason password-reset / email-verification mails
+ * bypass the pipeline). This helper mirrors the send outcome into a redacted
+ * Notification + NotificationDeliveryLog so the invite shows up in the admin
+ * Notification log with a real DELIVERED/FAILED status — a failed SMTP send
+ * is no longer silent.
+ *
+ * It deliberately does NOT receive the token or invite URL, so neither is
+ * ever stored. Best-effort: it never throws — bookkeeping must not break the
+ * create-user response.
+ */
+export async function recordStaffInviteEmail(
+  userId: string,
+  result: { success: boolean; error?: string },
+): Promise<void> {
+  try {
+    const notification = await prisma.notification.create({
+      data: {
+        userId,
+        type: "STAFF_INVITE",
+        channel: "EMAIL",
+        title: "Staff account invitation",
+        // Redacted on purpose — the activation token/link is never stored.
+        message: "An account activation invitation was sent by email.",
+      },
+    });
+
+    await prisma.notificationDeliveryLog.create({
+      data: {
+        notificationId: notification.id,
+        channel: "EMAIL",
+        status: result.success ? "DELIVERED" : "FAILED",
+        sentAt: new Date(),
+        deliveredAt: result.success ? new Date() : null,
+        providerResponse: result.success
+          ? undefined
+          : { error: result.error ?? "send returned false" },
+      },
+    });
+  } catch (error) {
+    console.error("[notification.service] recordStaffInviteEmail failed", {
+      userId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+/**
  * Map notification type to email template
  */
 function mapNotificationTypeToEmailTemplate(type: NotificationType): EmailTemplate {
@@ -409,6 +461,7 @@ function mapNotificationTypeToEmailTemplate(type: NotificationType): EmailTempla
     // SMS-only type — never emailed (recorded via recordPhoneVerificationSms);
     // present solely to satisfy the exhaustive Record.
     PHONE_VERIFICATION_CODE: "welcome",
+    STAFF_INVITE: "staff-invite",
   };
   return mapping[type] || "welcome";
 }
@@ -460,6 +513,16 @@ export async function retryDelivery(deliveryLogId: string): Promise<RetryResult>
     throw createError({
       statusCode: 400,
       statusMessage: "Phone verification codes cannot be retried — ask the applicant to request a new code",
+    });
+  }
+
+  // Staff invites carry a one-time activation token that is deliberately not
+  // stored on the notification, so a retry here would email a broken link.
+  // Use "Resend invitation" on the user, which mints a fresh 72h token.
+  if (notification.type === "STAFF_INVITE") {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Staff invitations cannot be retried here — use \"Resend invitation\", which issues a fresh activation link",
     });
   }
 

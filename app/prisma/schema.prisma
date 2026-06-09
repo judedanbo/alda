@@ -562,6 +562,7 @@ enum NotificationType {
   VERIFICATION_ON_HOLD
   VERIFICATION_MORE_INFO_REQUIRED
   PHONE_VERIFICATION_CODE
+  STAFF_INVITE
 
   @@map("notification_type")
 }
