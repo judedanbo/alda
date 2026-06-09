@@ -2,6 +2,7 @@ import { randomInt } from "node:crypto";
 import prisma from "~/server/utils/prisma";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
 import { sendSms } from "~/server/services/sms.service";
+import { recordPhoneVerificationSms } from "~/server/services/notification.service";
 import { BRAND } from "~/server/utils/branding";
 
 const CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
@@ -79,6 +80,11 @@ export default defineEventHandler(async (event) => {
 
   const message = `${BRAND.shortName} verification code: ${code}. Expires in 10 minutes. Do not share this code.`;
   const result = await sendSms(user.phone, message);
+
+  // Mirror the (already-sent) result into the notification log so this SMS is
+  // visible in the admin Notification log like every other SMS. Best-effort and
+  // OTP-free — never throws, never stores the code.
+  await recordPhoneVerificationSms(user.id, result);
 
   await createAuditLog(event, {
     userId: user.id,
