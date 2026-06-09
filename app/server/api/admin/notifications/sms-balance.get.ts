@@ -75,8 +75,12 @@ export default defineEventHandler(async (event) => {
   } catch (error) {
     // Transport failure or non-JSON body — distinct from a reachable-but-
     // rejected key (handled above). Log server-side, surface a 502 the UI
-    // shows as a generic failure.
-    console.error("Arkesel balance check failed:", error);
+    // shows as a generic failure. Log only the message (never the raw error or
+    // the request URL) — the balance URL carries the API key as a query param.
+    console.error(
+      "Arkesel balance check failed:",
+      error instanceof Error ? error.message : String(error),
+    );
     throw createError({
       statusCode: 502,
       statusMessage: "Could not reach the Arkesel balance API.",

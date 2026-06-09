@@ -66,6 +66,26 @@ describe("GET /api/admin/notifications/sms-balance", () => {
     });
   });
 
+  it("treats a balance of 0 as valid (ok:true, low:true) — not a missing balance", async () => {
+    getCredentialMock.mockResolvedValue("key");
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ balance: 0, user: "Richard Mensah", country: "Ghana" }),
+    })));
+    const res = await handler(adminEvent());
+    expect(res).toMatchObject({ ok: true, configured: true, balance: 0, low: true, threshold: 50 });
+  });
+
+  it("coerces a string-serialized balance (Arkesel v1 quirk) to a number", async () => {
+    getCredentialMock.mockResolvedValue("key");
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ balance: "30", user: "Richard Mensah", country: "Ghana" }),
+    })));
+    const res = await handler(adminEvent());
+    expect(res).toMatchObject({ ok: true, balance: 30, low: true, threshold: 50 });
+  });
+
   it("flags low:true when the balance is below the threshold", async () => {
     getCredentialMock.mockResolvedValue("key");
     vi.stubGlobal("fetch", vi.fn(async () => ({
