@@ -1,4 +1,5 @@
 import prisma from "~/server/utils/prisma";
+import { requireRoles } from "~/server/utils/authz";
 
 interface WindowRow {
   verifications_today: bigint;
@@ -13,10 +14,9 @@ interface DailyRow {
 }
 
 export default defineEventHandler(async (event) => {
-  const auth = event.context.auth;
-  if (!auth) {
-    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
-  }
+  // /api/legal is role-gated in server/middleware/auth.ts; re-assert here as
+  // defense-in-depth so a middleware regression cannot expose the handler.
+  requireRoles(event, ["legal_unit"]);
 
   const [windowRows, dailyRows, recent] = await Promise.all([
     prisma.$queryRaw<WindowRow[]>`

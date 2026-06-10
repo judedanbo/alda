@@ -1,5 +1,6 @@
 import prisma from "~/server/utils/prisma";
 import { validateBody, acceptInviteSchema } from "~/server/utils/validators";
+import { createAuditLog, AuditActions } from "~/server/utils/audit";
 
 /**
  * Step 1 of the staff-invite flow. Validates the invite token (a
@@ -30,6 +31,14 @@ export default defineEventHandler(async (event) => {
     await prisma.user.update({
       where: { id: inviteToken.userId },
       data: { emailVerified: true },
+    });
+
+    await createAuditLog(event, {
+      userId: inviteToken.userId,
+      action: AuditActions.INVITE_ACCEPTED,
+      entityType: "user",
+      entityId: inviteToken.userId,
+      newValues: { emailVerified: true },
     });
   }
 

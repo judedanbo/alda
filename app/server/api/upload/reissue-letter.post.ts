@@ -1,5 +1,6 @@
 import prisma from "~/server/utils/prisma";
 import { uploadFile, validateDocumentFile } from "~/server/services/storage.service";
+import { createAuditLog, AuditActions } from "~/server/utils/audit";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -66,6 +67,15 @@ export default defineEventHandler(async (event) => {
     validation.contentType,
     "reissue-letters"
   );
+
+  // Record which legal/admin user uploaded the scanned approval letter.
+  await createAuditLog(event, {
+    userId: auth.userId,
+    action: AuditActions.REISSUE_LETTER_UPLOADED,
+    entityType: "form_reissue_request",
+    entityId: result.key,
+    newValues: { key: result.key, contentType: validation.contentType },
+  });
 
   return {
     success: true,

@@ -1,12 +1,12 @@
 import prisma from "~/server/utils/prisma";
+import { requireRoles } from "~/server/utils/authz";
 import { presignStored } from "~/server/services/storage.service";
 import { decryptProfileIds } from "~/server/utils/pii-encryption";
 
 export default defineEventHandler(async (event) => {
-  const auth = event.context.auth;
-  if (!auth) {
-    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
-  }
+  // /api/legal is role-gated in server/middleware/auth.ts; re-assert here as
+  // defense-in-depth so a middleware regression cannot expose the handler.
+  requireRoles(event, ["legal_unit"]);
 
   const id = getRouterParam(event, "id");
 
