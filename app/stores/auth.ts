@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
+import { ROLE_ORDER, ROLE_DASHBOARDS } from "~/utils/roles";
 
 export interface User {
   id: string;
@@ -25,25 +26,49 @@ export const useAuthStore = defineStore("auth", () => {
   const tokens = ref<Tokens | null>(null);
   const loading = ref(false);
   const initialized = ref(false);
+  // The user's explicit, persisted role selection (see plugins/auth.ts). May be
+  // null (never chosen) or stale/invalid (roles changed since); `effectiveRole`
+  // validates it, so always read scoping decisions through that, not this.
+  const activeRole = ref<string | null>(null);
 
   // Getters
   const isAuthenticated = computed(() => !!tokens.value?.accessToken);
-  const isApplicant = computed(() => user.value?.roles.includes("applicant") ?? false);
-  const isOfficer = computed(() => user.value?.roles.includes("schedule_officer") ?? false);
-  const isLegalUnit = computed(() => user.value?.roles.includes("legal_unit") ?? false);
-  const isAdmin = computed(() => user.value?.roles.includes("admin") ?? false);
+
+  // Roles the user actually holds, ordered by precedence. The first entry is the
+  // default "act as" role when none has been explicitly chosen.
+  const availableRoles = computed(() => ROLE_ORDER.filter((r) => user.value?.roles.includes(r)));
+
+  // The role currently in effect. Falls back to the highest-precedence available
+  // role so behaviour matches the old fixed-precedence redirects before the user
+  // ever touches the switcher.
+  const effectiveRole = computed(() => {
+    if (activeRole.value && availableRoles.value.includes(activeRole.value as (typeof ROLE_ORDER)[number])) {
+      return activeRole.value;
+    }
+    return availableRoles.value[0] ?? null;
+  });
+
+  // Role flags reflect the ACTIVE role, not merely which roles are held. This is
+  // what makes scoping strict: a multi-role user "acting as" one role sees the
+  // nav, dashboard, and route access of only that role (the route middleware and
+  // useDashboardNav both key off these flags).
+  const isApplicant = computed(() => effectiveRole.value === "applicant");
+  const isOfficer = computed(() => effectiveRole.value === "schedule_officer");
+  const isLegalUnit = computed(() => effectiveRole.value === "legal_unit");
+  const isAdmin = computed(() => effectiveRole.value === "admin");
   const isEmailVerified = computed(() => user.value?.emailVerified ?? false);
   const isPhoneVerified = computed(() => user.value?.phoneVerified ?? false);
   const isVerified = computed(() => user.value?.verificationStatus === "VERIFIED");
 
   // Single source of truth for "where does this user's dashboard live?".
-  // Precedence matches the role-based redirects in middleware/auth.ts.
-  const dashboardPath = computed(() => {
-    if (isAdmin.value) return "/admin/dashboard";
-    if (isOfficer.value) return "/officer/dashboard";
-    if (isLegalUnit.value) return "/legal/dashboard";
-    return "/applicant/dashboard";
-  });
+  // Follows the active role so switching lands the user in the right shell.
+  const dashboardPath = computed(() => ROLE_DASHBOARDS[(effectiveRole.value as (typeof ROLE_ORDER)[number]) ?? "applicant"]);
+
+  function setActiveRole(role: string) {
+    if (availableRoles.value.includes(role as (typeof ROLE_ORDER)[number])) {
+      activeRole.value = role;
+    }
+  }
 
   // Actions
   function setTokens(newTokens: Tokens) {
@@ -127,6 +152,7 @@ export const useAuthStore = defineStore("auth", () => {
       // Ignore errors on logout
     } finally {
       user.value = null;
+      activeRole.value = null;
       clearTokens();
     }
   }
@@ -285,8 +311,11 @@ export const useAuthStore = defineStore("auth", () => {
     tokens,
     loading,
     initialized,
+    activeRole,
     // Getters
     isAuthenticated,
+    availableRoles,
+    effectiveRole,
     isApplicant,
     isOfficer,
     isLegalUnit,
@@ -296,6 +325,7 @@ export const useAuthStore = defineStore("auth", () => {
     isVerified,
     dashboardPath,
     // Actions
+    setActiveRole,
     setTokens,
     clearTokens,
     initialize,

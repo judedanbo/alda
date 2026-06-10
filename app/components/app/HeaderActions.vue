@@ -2,11 +2,14 @@
 import { CircleHelpIcon } from "lucide-vue-next";
 import { useAuthStore } from "~/stores/auth";
 import { useHelpStore } from "~/stores/help";
+import { ROLE_LABELS, type RoleName } from "~/utils/roles";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
@@ -17,6 +20,12 @@ const helpStore = useHelpStore();
 const handleLogout = async () => {
   await authStore.logout();
   navigateTo("/auth/login");
+};
+
+const handleRoleSwitch = (role: string) => {
+  if (role === authStore.effectiveRole) return;
+  authStore.setActiveRole(role);
+  navigateTo(authStore.dashboardPath);
 };
 </script>
 
@@ -50,6 +59,15 @@ const handleLogout = async () => {
         <DropdownMenuContent align="end" class="w-56">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <template v-if="authStore.availableRoles.length > 1">
+            <DropdownMenuLabel class="text-xs font-normal text-muted-foreground">Acting as</DropdownMenuLabel>
+            <DropdownMenuRadioGroup :model-value="authStore.effectiveRole ?? undefined" @update:model-value="handleRoleSwitch">
+              <DropdownMenuRadioItem v-for="role in authStore.availableRoles" :key="role" :value="role">
+                {{ ROLE_LABELS[role as RoleName] }}
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+            <DropdownMenuSeparator />
+          </template>
           <DropdownMenuItem as-child>
             <NuxtLink to="/help">Help Centre</NuxtLink>
           </DropdownMenuItem>
