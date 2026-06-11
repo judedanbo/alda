@@ -1,7 +1,7 @@
 import type { H3Event } from "h3";
 import type { Prisma } from "@prisma/client";
 import prisma from "./prisma";
-import { createAuditLog, AuditActions } from "./audit";
+import { logAudit, AuditActions } from "./audit";
 import { isSuspiciousPath } from "./abuse";
 import { safeGet, safeSet, type KvStorage } from "./analytics-storage";
 import type { FuzzingRequestContext } from "./analytics-context";
@@ -253,7 +253,7 @@ export async function recordFuzzingAttempt(event: H3Event, ctx: FuzzingRecordCon
       const dedupeKey = `audit:fuzz:${ctx.ipHash}:${ctx.category}`;
       if (!(await safeGet<boolean>(storage, dedupeKey))) {
         await safeSet(storage, dedupeKey, true, 600);
-        await createAuditLog(event, {
+        logAudit(event, {
           userId: ctx.userId ?? undefined,
           action: AuditActions.FUZZING_DETECTED,
           entityType: "fuzzing_attempt",

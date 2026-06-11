@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import prisma from "~/server/utils/prisma";
 import { validateBody, registerSchema } from "~/server/utils/validators";
 import { generateTokenPair, getTokenExpiry, getAuthUser } from "~/server/utils/jwt";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 import { sendWelcomeEmail, sendVerificationEmail } from "~/server/services/email.service";
 import { generateVerificationToken } from "~/server/utils/code-generator";
 import { ghanaPhoneAlternates, isGhanaPhone, normalizePhoneE164 } from "~/server/utils/phone";
@@ -129,7 +129,7 @@ export default defineEventHandler(async (event) => {
   });
 
   // Create audit log
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: user.id,
     action: AuditActions.USER_REGISTERED,
     entityType: "user",

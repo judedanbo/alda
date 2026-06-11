@@ -1,5 +1,5 @@
 import prisma from "~/server/utils/prisma";
-import { logAction } from "~/server/utils/audit";
+import { logAction, AuditActions } from "~/server/utils/audit";
 import { validateBody, adminUserStatusSchema } from "~/server/utils/validators";
 
 export default defineEventHandler(async (event) => {
@@ -62,7 +62,7 @@ export default defineEventHandler(async (event) => {
 
   await logAction({
     userId: auth.userId,
-    action: isActive ? "USER_ACTIVATE" : "USER_DEACTIVATE",
+    action: isActive ? AuditActions.USER_REACTIVATED : AuditActions.USER_DEACTIVATED,
     entityType: "User",
     entityId: userId,
     oldValues: { isActive: targetUser.isActive },

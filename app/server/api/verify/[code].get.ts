@@ -1,5 +1,5 @@
 import prisma from "~/server/utils/prisma";
-import { logAction } from "~/server/utils/audit";
+import { logAction, AuditActions } from "~/server/utils/audit";
 import { presignStored } from "~/server/services/storage.service";
 import { decryptProfileIds } from "~/server/utils/pii-encryption";
 
@@ -98,7 +98,7 @@ export default defineEventHandler(async (event) => {
     // Log failed verification attempt
     await logAction({
       userId: auth.userId,
-      action: "CODE_VERIFICATION_FAILED",
+      action: AuditActions.CODE_VERIFICATION_FAILED,
       entityType: "declaration",
       entityId: null,
       newValues: { code, reason: "Code not found" },
@@ -114,7 +114,7 @@ export default defineEventHandler(async (event) => {
   // Log successful verification
   await logAction({
     userId: auth.userId,
-    action: "CODE_VERIFIED",
+    action: AuditActions.CODE_VERIFIED,
     entityType: "declaration",
     entityId: declaration.id,
     newValues: { code },

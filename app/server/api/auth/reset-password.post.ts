@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import prisma from "~/server/utils/prisma";
 import { validateBody, resetPasswordSchema } from "~/server/utils/validators";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 
 export default defineEventHandler(async (event) => {
   const { token, password } = await validateBody(event, resetPasswordSchema);
@@ -63,7 +63,7 @@ export default defineEventHandler(async (event) => {
   ]);
 
   // Create audit log
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: resetToken.userId,
     action: AuditActions.PASSWORD_RESET_COMPLETED,
     entityType: "user",

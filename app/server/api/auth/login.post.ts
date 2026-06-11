@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import prisma from "~/server/utils/prisma";
 import { validateBody, loginSchema } from "~/server/utils/validators";
 import { generateTokenPair, getTokenExpiry, getAuthUser } from "~/server/utils/jwt";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 import {
   isAccountLocked,
   recordLoginFailure,
@@ -54,7 +54,7 @@ export default defineEventHandler(async (event) => {
     // L-9: the audit row has no userId because the user doesn't exist.
     // `newValues.email` is the only correlator for these attempts —
     // pivot suspicious bursts via `WHERE newValues->>'email' = $1`.
-    await createAuditLog(event, {
+    logAudit(event, {
       action: AuditActions.USER_LOGIN_FAILED,
       newValues: { email: email.toLowerCase(), reason: "user_not_found" },
     });
@@ -68,7 +68,7 @@ export default defineEventHandler(async (event) => {
 
   // Check if user is active
   if (!user.isActive) {
-    await createAuditLog(event, {
+    logAudit(event, {
       userId: user.id,
       action: AuditActions.USER_LOGIN_FAILED,
       newValues: { reason: "account_inactive" },
@@ -86,7 +86,7 @@ export default defineEventHandler(async (event) => {
   // already lives in middleware; this is the per-identity complement.
   const lockState = await isAccountLocked(user.id);
   if (lockState.locked) {
-    await createAuditLog(event, {
+    logAudit(event, {
       userId: user.id,
       action: AuditActions.USER_LOGIN_FAILED,
       newValues: { reason: "account_locked", unlockAt: lockState.unlockAt },
@@ -104,7 +104,7 @@ export default defineEventHandler(async (event) => {
   // Verify password
   const passwordValid = await bcrypt.compare(password, user.passwordHash);
   if (!passwordValid) {
-    await createAuditLog(event, {
+    logAudit(event, {
       userId: user.id,
       action: AuditActions.USER_LOGIN_FAILED,
       newValues: { reason: "invalid_password" },
@@ -130,7 +130,7 @@ export default defineEventHandler(async (event) => {
   // at runtime from Admin → Settings). Note this runs AFTER the bcrypt
   // compare so it doesn't double as an email-existence oracle.
   if ((await getSetting<boolean>("auth.requireEmailVerificationForLogin")) && !user.emailVerified) {
-    await createAuditLog(event, {
+    logAudit(event, {
       userId: user.id,
       action: AuditActions.USER_LOGIN_FAILED,
       newValues: { reason: "email_not_verified" },
@@ -148,7 +148,7 @@ export default defineEventHandler(async (event) => {
   // as the fallback, overridable at runtime from Admin → Settings). Runs AFTER
   // the bcrypt compare so it doesn't double as an account-existence oracle.
   if ((await getSetting<boolean>("auth.requirePhoneVerificationForLogin")) && !user.phoneVerified) {
-    await createAuditLog(event, {
+    logAudit(event, {
       userId: user.id,
       action: AuditActions.USER_LOGIN_FAILED,
       newValues: { reason: "phone_not_verified" },
@@ -191,7 +191,7 @@ export default defineEventHandler(async (event) => {
   });
 
   // Create audit log
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: user.id,
     action: AuditActions.USER_LOGIN,
     entityType: "user",

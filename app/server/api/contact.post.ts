@@ -2,6 +2,7 @@ import { z } from "zod";
 import prisma from "~/server/utils/prisma";
 import { extractClientIp } from "~/server/utils/request-meta";
 import { sendContactAcknowledgment } from "~/server/services/email.service";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(255),
@@ -51,6 +52,16 @@ export default defineEventHandler(async (event) => {
         ipAddress,
         userAgent,
       },
+    });
+
+    // Public form, but a persisted record worth an audit trail. Keep the
+    // payload to the non-PII category + reference — name/email/message live on
+    // the ContactSubmission row, not in the audit log.
+    logAudit(event, {
+      action: AuditActions.CONTACT_SUBMITTED,
+      entityType: "contact_submission",
+      entityId: submission.id,
+      newValues: { category },
     });
 
     try {

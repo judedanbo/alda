@@ -1,5 +1,7 @@
 import { getObjectStream, statObjectMeta } from "~/server/services/storage.service";
 import { verifyFileSig } from "~/server/utils/file-url";
+import { extractClientIp } from "~/server/utils/request-meta";
+import { logAuditOnce, AuditActions } from "~/server/utils/audit";
 
 // Content-types safe to render inline on this first-party origin. Mirrors what
 // the upload sniffer (`detectMagicType`) can ever produce — keep in sync with
@@ -33,6 +35,24 @@ export default defineEventHandler(async (event) => {
   // statObjectMeta / getObjectStream map a missing object to 404 and any other
   // MinIO failure to a logged 502 (via storageOp).
   const { contentType, size } = await statObjectMeta(key);
+
+  // Compliance: this stateless, signature-gated stream serves applicant
+  // documents (Ghana Card scans, reissue letters, receipts). There is no
+  // auth context to attribute, but record that the object was fetched —
+  // keyed by a coarse document type derived from the bucket-key prefix, not
+  // the full key (which is PII-scrubbed anyway). Deduped per (type, IP) so a
+  // browser re-fetch or a download flood collapses to one row per minute.
+  const documentType = key.split("/")[0] || "unknown";
+  logAuditOnce(
+    event,
+    {
+      action: AuditActions.FILE_DOWNLOADED,
+      entityType: "file",
+      entityId: documentType,
+      newValues: { documentType, contentType, sizeBytes: size },
+    },
+    { key: `${documentType}:${extractClientIp(event)}` },
+  );
 
   // Never trust the stored content-type for inline rendering: re-derive safety
   // at the serving boundary. Allow-listed types render inline; everything else

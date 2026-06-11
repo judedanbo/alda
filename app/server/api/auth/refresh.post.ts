@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import prisma from "~/server/utils/prisma";
 import { verifyRefreshToken, generateTokenPair, getTokenExpiry } from "~/server/utils/jwt";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -66,7 +66,7 @@ export default defineEventHandler(async (event) => {
         where: { userId: storedToken.userId },
       });
     }
-    await createAuditLog(event, {
+    logAudit(event, {
       userId: storedToken.userId,
       action: AuditActions.REFRESH_TOKEN_REPLAY_DETECTED,
       entityType: "refresh_token",

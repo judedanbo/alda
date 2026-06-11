@@ -1,5 +1,5 @@
 import prisma from "~/server/utils/prisma";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
@@ -49,7 +49,7 @@ export default defineEventHandler(async (event) => {
     }),
   ]);
 
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: verificationToken.userId,
     action: AuditActions.EMAIL_VERIFIED,
     entityType: "user",

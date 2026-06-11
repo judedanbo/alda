@@ -5,7 +5,7 @@ import {
   getSettingsStatus,
   invalidateSettingsCache,
 } from "~/server/utils/system-settings";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 
 /**
  * Admin: set / clear global-setting overrides (Admin → Settings).
@@ -82,7 +82,7 @@ export default defineEventHandler(async (event) => {
 
   // Audit per changed key — these are non-secret flags, so the value is logged.
   for (const [key, value] of normalised) {
-    await createAuditLog(event, {
+    logAudit(event, {
       userId: auth.userId,
       action: AuditActions.SYSTEM_SETTING_UPDATED,
       entityType: "system_setting",
@@ -91,7 +91,7 @@ export default defineEventHandler(async (event) => {
     });
   }
   if (clearKeys.length) {
-    await createAuditLog(event, {
+    logAudit(event, {
       userId: auth.userId,
       action: AuditActions.SYSTEM_SETTING_CLEARED,
       entityType: "system_setting",

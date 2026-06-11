@@ -1,5 +1,5 @@
 import { uploadGhanaCard, validateImageFile } from "~/server/services/storage.service";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -68,7 +68,7 @@ export default defineEventHandler(async (event) => {
 
   // Record the upload. Only the storage key + content-type are logged — never
   // the file bytes. The key is scrubbed by scrubAuditValues before persisting.
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: auth.userId,
     action: AuditActions.GHANA_CARD_UPLOADED,
     entityType: "applicant_profile",

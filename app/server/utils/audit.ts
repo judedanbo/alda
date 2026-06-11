@@ -2,6 +2,13 @@ import type { H3Event } from "h3";
 import { extractClientIp } from "./request-meta";
 import { scrubAuditValues } from "./pii";
 import {
+  getAnalyticsStorage,
+  safeGet,
+  safeSet,
+  type KvStorage,
+} from "./analytics-storage";
+import { runAfterResponse } from "./after-response";
+import {
   enqueueAuditJob,
   isAuditQueueEnabled,
   processAuditJob,
@@ -91,6 +98,73 @@ export async function createAuditLog(
 }
 
 /**
+ * Write an audit log at most once per `windowSeconds` for a given
+ * (action, dedupeKey) pair.
+ *
+ * Used for high-volume security-enforcement events (rate-limit breaches,
+ * AI-agent blocks) fired from middleware: an attacker hammering a blocked
+ * route would otherwise flood `audit_logs` with thousands of identical
+ * rows per second. The dedup marker lives in the analytics KV (Redis when
+ * configured, in-memory otherwise) with a short TTL, so a flood collapses
+ * to ~one row per window instead.
+ *
+ * Returns `true` if a row was written, `false` if suppressed by an
+ * existing marker. Fails open to logging: if the KV is unreachable the
+ * event is still written (better a duplicate row than a lost security
+ * event).
+ */
+export async function createAuditLogOnce(
+  event: H3Event,
+  data: AuditLogData,
+  dedupe: { key: string; windowSeconds?: number },
+): Promise<boolean> {
+  let storage: KvStorage | null = null;
+  try {
+    storage = getAnalyticsStorage();
+  } catch {
+    storage = null;
+  }
+
+  if (storage) {
+    const dedupKey = `audit:dedup:${data.action}:${dedupe.key}`;
+    if (await safeGet(storage, dedupKey)) return false;
+    await safeSet(storage, dedupKey, 1, dedupe.windowSeconds ?? 60);
+  }
+
+  await createAuditLog(event, data);
+  return true;
+}
+
+/**
+ * Fire-and-forget audit logging — the response-path default.
+ *
+ * `createAuditLog` enqueues the job (prod) or writes inline (no Redis) and is
+ * `await`ed by callers that need that; but for the common case the HTTP
+ * response should not wait on that I/O. `logAudit` invokes `createAuditLog`
+ * synchronously — so request metadata (IP / UA / `occurredAt`) is captured at
+ * call time — then detaches the returned enqueue/write promise via
+ * `runAfterResponse` so the handler returns immediately. The background work is
+ * tracked and drained on graceful shutdown (server/plugins/after-response-drain.ts).
+ */
+export function logAudit(event: H3Event, data: AuditLogData): void {
+  runAfterResponse(createAuditLog(event, data), `audit:${data.action}`);
+}
+
+/**
+ * Detached, deduped variant for high-volume middleware security events
+ * (rate-limit breaches, AI-agent blocks). Mirrors `logAudit` but wraps
+ * `createAuditLogOnce` so the dedup KV round-trip is also off the response
+ * path — the 429/403 is sent without waiting on it.
+ */
+export function logAuditOnce(
+  event: H3Event,
+  data: AuditLogData,
+  dedupe: { key: string; windowSeconds?: number },
+): void {
+  runAfterResponse(createAuditLogOnce(event, data, dedupe), `audit:${data.action}`);
+}
+
+/**
  * Common audit actions
  */
 export const AuditActions = {
@@ -147,6 +221,12 @@ export const AuditActions = {
   RECEIPT_GENERATED: "receipt_generated",
   RECEIPT_DOWNLOADED: "receipt_downloaded",
 
+  // Sensitive read access (compliance: who viewed/exported applicant PII)
+  APPLICANT_PII_VIEWED: "applicant_pii_viewed",
+  DECLARATION_EXPORTED: "declaration_exported",
+  AUDIT_LOG_VIEWED: "audit_log_viewed",
+  FILE_DOWNLOADED: "file_downloaded",
+
   // Section Review
   SECTION_REVIEW_SUBMITTED: "section_review_submitted",
   SECTION_REVIEW_RESOLVED: "section_review_resolved",
@@ -163,9 +243,11 @@ export const AuditActions = {
   CATEGORY_UPDATED: "category_updated",
   CATEGORY_DEACTIVATED: "category_deactivated",
 
-  // Code Verification (Legal Unit lookups)
-  CODE_VERIFIED: "CODE_VERIFIED",
-  CODE_VERIFICATION_FAILED: "CODE_VERIFICATION_FAILED",
+  // Code Verification (Legal Unit lookups). Values normalized to snake_case
+  // to match the rest of the registry; historic rows hold the old uppercase
+  // strings but still match the admin viewer's case-insensitive filter.
+  CODE_VERIFIED: "code_verified",
+  CODE_VERIFICATION_FAILED: "code_verification_failed",
 
   // Applicant Verification
   APPLICANT_VERIFICATION_REQUESTED: "applicant_verification_requested",
@@ -182,11 +264,15 @@ export const AuditActions = {
   FORM_REISSUE_DECLINED: "form_reissue_declined",
 
   // Notifications
+  NOTIFICATION_PREFERENCES_UPDATED: "notification_preferences_updated",
   NOTIFICATION_TEST_SENT: "notification_test_sent",
   NOTIFICATION_DELIVERY_RETRIED: "notification_delivery_retried",
   SMS_DELIVERY_UPDATED: "sms_delivery_updated",
   NOTIFICATION_CREDENTIAL_UPDATED: "notification_credential_updated",
   NOTIFICATION_CREDENTIAL_CLEARED: "notification_credential_cleared",
+
+  // Public forms
+  CONTACT_SUBMITTED: "contact_submitted",
 
   // Global system settings (Admin → Settings)
   SYSTEM_SETTING_UPDATED: "system_setting_updated",
@@ -209,9 +295,15 @@ export const AuditActions = {
 export type AuditAction = typeof AuditActions[keyof typeof AuditActions];
 
 /**
- * Log an action (simplified interface)
+ * Log an action (simplified interface).
+ *
+ * Detaches from the response path via `logAudit`. Returns a resolved promise so
+ * the ~50 existing `await logAction(...)` call sites keep working unchanged and
+ * return immediately (the enqueue/write happens in the background). Not declared
+ * `async` — it does no awaiting — so it sidesteps the `require-await` lint while
+ * staying a thenable for those callers.
  */
-export async function logAction(params: {
+export function logAction(params: {
   userId: string | null | undefined;
   action: string;
   entityType: string | null | undefined;
@@ -220,7 +312,7 @@ export async function logAction(params: {
   newValues?: Record<string, unknown>;
   event: H3Event;
 }): Promise<void> {
-  await createAuditLog(params.event, {
+  logAudit(params.event, {
     userId: params.userId || undefined,
     action: params.action,
     entityType: params.entityType || undefined,
@@ -228,4 +320,5 @@ export async function logAction(params: {
     oldValues: params.oldValues,
     newValues: params.newValues,
   });
+  return Promise.resolve();
 }

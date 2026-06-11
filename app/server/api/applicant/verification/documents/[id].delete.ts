@@ -1,6 +1,6 @@
 import prisma from "~/server/utils/prisma";
 import { deleteFile } from "~/server/services/storage.service";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 import { canManageVerificationDocuments } from "~/server/utils/verification";
 
 export default defineEventHandler(async (event) => {
@@ -65,7 +65,7 @@ export default defineEventHandler(async (event) => {
 
   await prisma.verificationDocument.delete({ where: { id: document.id } });
 
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: auth.userId,
     action: AuditActions.VERIFICATION_DOCUMENT_DELETED,
     entityType: "verification_document",

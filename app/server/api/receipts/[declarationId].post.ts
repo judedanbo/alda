@@ -1,5 +1,5 @@
 import prisma from "~/server/utils/prisma";
-import { logAction } from "~/server/utils/audit";
+import { logAction, AuditActions } from "~/server/utils/audit";
 import { generateReceiptPDF, generateReceiptNumber } from "~/server/services/pdf.service";
 import { sendNotification } from "~/server/services/notification.service";
 import { runAfterResponse } from "~/server/utils/after-response";
@@ -166,7 +166,7 @@ export default defineEventHandler(async (event) => {
   // Log the action
   await logAction({
     userId: auth.userId,
-    action: "RECEIPT_GENERATED",
+    action: AuditActions.RECEIPT_GENERATED,
     entityType: "receipt",
     entityId: receipt.id,
     newValues: { declarationId, receiptNumber, pdfKey },

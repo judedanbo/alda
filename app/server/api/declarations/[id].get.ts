@@ -1,6 +1,7 @@
 import prisma from "~/server/utils/prisma";
 import { presignStored } from "~/server/services/storage.service";
 import { decryptProfileIds } from "~/server/utils/pii-encryption";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -90,6 +91,25 @@ export default defineEventHandler(async (event) => {
       statusCode: 403,
       statusMessage: "Forbidden",
       message: "You can only view your own declarations",
+    });
+  }
+
+  // Compliance: record when a staff member decrypts an applicant's PII /
+  // mints signed document URLs. Applicants viewing their own declaration are
+  // not logged — self-access carries no privacy concern and would only add
+  // noise. Bulk-list endpoints are deliberately not logged (they fire on
+  // every page paint); detail views are the auditable access point.
+  if (isStaff) {
+    logAudit(event, {
+      userId: auth.userId,
+      action: AuditActions.APPLICANT_PII_VIEWED,
+      entityType: "applicant_profile",
+      entityId: declaration.applicantId,
+      newValues: {
+        context: "declaration_detail",
+        declarationCode: declaration.uniqueCode,
+        viewerRoles: auth.roles,
+      },
     });
   }
 

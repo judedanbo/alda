@@ -25,7 +25,7 @@ const queueMock = vi.hoisted(() => ({
   isQueueEnabled: vi.fn(() => true),
 }));
 const retryDeliveryMock = vi.hoisted(() => vi.fn());
-const createAuditLogMock = vi.hoisted(() => vi.fn());
+const logAuditMock = vi.hoisted(() => vi.fn());
 
 vi.mock("~/server/utils/prisma", () => ({ default: prismaMock }));
 vi.mock("~/server/utils/notification-queue", () => queueMock);
@@ -229,13 +229,13 @@ describe("POST /api/admin/notifications/[id]/retry", () => {
     vi.doMock("~/server/services/notification.service", () => ({ retryDelivery: retryDeliveryMock }));
     vi.doMock("~/server/utils/audit", async () => {
       const actual = await vi.importActual<typeof import("~/server/utils/audit")>("~/server/utils/audit");
-      return { ...actual, createAuditLog: createAuditLogMock };
+      return { ...actual, logAudit: logAuditMock };
     });
     vi.stubGlobal("getRouterParam", () => "log-1");
     retryHandler = (await import("~/server/api/admin/notifications/[id]/retry.post")).default;
     prismaMock.userRole.findMany.mockResolvedValue([{ role: { name: "admin" } }]);
     retryDeliveryMock.mockResolvedValue({ deliveryLogId: "log-1", channel: "EMAIL", status: "PENDING", queued: true });
-    createAuditLogMock.mockResolvedValue(undefined);
+    logAuditMock.mockResolvedValue(undefined);
   });
 
   afterEach(() => vi.doUnmock("~/server/services/notification.service"));
@@ -246,8 +246,8 @@ describe("POST /api/admin/notifications/[id]/retry", () => {
     const res = await retryHandler(eventWith({ userId: "admin", email: "a@b.c", roles: ["admin"] }));
 
     expect(retryDeliveryMock).toHaveBeenCalledWith("log-1");
-    expect(createAuditLogMock).toHaveBeenCalledTimes(1);
-    const auditArg = createAuditLogMock.mock.calls[0]![1];
+    expect(logAuditMock).toHaveBeenCalledTimes(1);
+    const auditArg = logAuditMock.mock.calls[0]![1];
     expect(auditArg.action).toBe("notification_delivery_retried");
     expect(auditArg.entityType).toBe("notification_delivery_log");
     expect(auditArg.entityId).toBe("log-1");

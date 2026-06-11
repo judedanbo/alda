@@ -2,7 +2,7 @@ import { IdDocumentType } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
 import prisma from "~/server/utils/prisma";
 import { validateBody, applicantProfileSchema } from "~/server/utils/validators";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 import { notifyVerificationSubmitted } from "~/server/services/notification.service";
 import { runAfterResponse } from "~/server/utils/after-response";
 import { presignStored } from "~/server/services/storage.service";
@@ -104,7 +104,7 @@ export default defineEventHandler(async (event) => {
     },
   });
 
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: auth.userId,
     action: AuditActions.PROFILE_CREATED,
     entityType: "applicant_profile",
@@ -121,7 +121,7 @@ export default defineEventHandler(async (event) => {
     },
   });
 
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: auth.userId,
     action: AuditActions.APPLICANT_VERIFICATION_REQUESTED,
     entityType: "applicant_profile",

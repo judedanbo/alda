@@ -7,6 +7,7 @@ import {
 } from "~/server/utils/analytics-filters";
 import { maskGhanaCard, maskAlternateId } from "~/server/utils/pii";
 import { decryptProfileIds } from "~/server/utils/pii-encryption";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -108,6 +109,16 @@ export default defineEventHandler(async (event) => {
       processedBy: row.changedBy?.email?.split("@")[0] ?? "System",
       receipt: decl.receipts[0]?.receiptNumber ?? "",
     };
+  });
+
+  // Compliance: a bulk export of (masked) applicant records left the system.
+  // Record the actor, format, row count and the filter window — no PII in the
+  // payload (filter keys never match the PII masker registry).
+  logAudit(event, {
+    userId: auth.userId,
+    action: AuditActions.DECLARATION_EXPORTED,
+    entityType: "declaration_export",
+    newValues: { format, rowCount: items.length, filters },
   });
 
   if (format === "csv") {

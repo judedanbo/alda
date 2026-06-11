@@ -1,6 +1,6 @@
 import { randomInt } from "node:crypto";
 import prisma from "~/server/utils/prisma";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 import { sendSms } from "~/server/services/sms.service";
 import { recordPhoneVerificationSms } from "~/server/services/notification.service";
 import { BRAND } from "~/server/utils/branding";
@@ -86,7 +86,7 @@ export default defineEventHandler(async (event) => {
   // OTP-free — never throws, never stores the code.
   await recordPhoneVerificationSms(user.id, result);
 
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: user.id,
     action: AuditActions.PHONE_CODE_REQUESTED,
     entityType: "user",

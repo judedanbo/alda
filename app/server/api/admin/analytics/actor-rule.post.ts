@@ -1,7 +1,7 @@
 import prisma from "~/server/utils/prisma";
 import { requireAdmin } from "~/server/utils/analytics-query";
 import { validateBody, analyticsActorRuleSchema } from "~/server/utils/validators";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 import { clearEnforcement } from "~/server/utils/abuse";
 import { getAnalyticsConfig } from "~/server/utils/analytics-config";
 import { hashIp } from "~/server/utils/request-meta";
@@ -50,7 +50,7 @@ export default defineEventHandler(async (event) => {
     await safeRemove(storage, StorageKeys.allow("ip", ip));
     await safeSet(storage, StorageKeys.block("ip", ip), { reason: reason ?? "manual" }, ttl);
 
-    await createAuditLog(event, {
+    logAudit(event, {
       userId: auth.userId,
       action: AuditActions.ACTOR_MANUALLY_BLOCKED,
       entityType: "actor_access_rule",
@@ -82,7 +82,7 @@ export default defineEventHandler(async (event) => {
     await clearEnforcement(storage, ip);
     await safeSet(storage, StorageKeys.allow("ip", ip), { reason: reason ?? "manual" }, ttl);
 
-    await createAuditLog(event, {
+    logAudit(event, {
       userId: auth.userId,
       action: AuditActions.ACTOR_MANUALLY_ALLOWED,
       entityType: "actor_access_rule",
@@ -109,7 +109,7 @@ export default defineEventHandler(async (event) => {
     data: { active: false },
   });
 
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: auth.userId,
     action: AuditActions.ACTOR_MANUALLY_UNBLOCKED,
     entityType: "actor_access_rule",
