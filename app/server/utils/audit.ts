@@ -127,6 +127,9 @@ export const AuditActions = {
   // User Management
   USER_CREATED: "user_created",
   USER_INVITED: "user_invited",
+  USER_UPDATED: "user_updated",
+  USER_DELETED: "user_deleted",
+  USER_PASSWORD_RESET_SENT: "user_password_reset_sent",
 
   // Declarations
   DECLARATION_CREATED: "declaration_created",
