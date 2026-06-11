@@ -197,6 +197,20 @@ export async function uploadAlternateIdScan(
   return { url, key, bucket, size: file.length, contentType };
 }
 
+/**
+ * Upload a supporting document an applicant submits in response to a legal
+ * officer's request for more information. Each upload gets a unique key under
+ * the applicant's folder so multiple documents never clobber one another.
+ */
+export async function uploadVerificationDocument(
+  file: Buffer,
+  originalName: string,
+  contentType: string,
+  userId: string,
+): Promise<UploadResult> {
+  return uploadFile(file, originalName, contentType, `verification-documents/${userId}`);
+}
+
 /** Upload a buffer directly to a specific key. Returns the key (persistable); re-sign with `presignStored` on read. */
 export async function uploadBuffer(
   buffer: Buffer,

@@ -35,6 +35,9 @@ export default defineEventHandler(async (event) => {
           reviewer: { select: { email: true } },
         },
       },
+      verificationDocuments: {
+        orderBy: { createdAt: "desc" },
+      },
     },
   });
 
@@ -86,6 +89,19 @@ export default defineEventHandler(async (event) => {
     presignStored(profile.alternateIdScanUrl),
   ]);
 
+  // Documents the applicant submitted in reply to a request for information.
+  const verificationDocuments = await Promise.all(
+    profile.verificationDocuments.map(async (doc) => ({
+      id: doc.id,
+      fileName: doc.fileName,
+      contentType: doc.contentType,
+      size: doc.size,
+      note: doc.note,
+      createdAt: doc.createdAt,
+      url: await presignStored(doc.documentKey),
+    })),
+  );
+
   return {
     success: true,
     data: {
@@ -93,6 +109,7 @@ export default defineEventHandler(async (event) => {
       ghanaCardFrontUrl,
       ghanaCardBackUrl,
       alternateIdScanUrl,
+      verificationDocuments,
       idCheck: {
         idType: profile.idType,
         number: normalizedNumber,

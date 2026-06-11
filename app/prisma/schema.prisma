@@ -48,6 +48,7 @@ model User {
   formReissuesRequested    FormReissueRequest[]          @relation("ReissueRequestedBy")
   formReissuesReviewed     FormReissueRequest[]          @relation("ReissueReviewedBy")
   assignedOffices          UserCollectionOffice[]
+  verificationDocuments    VerificationDocument[]        @relation("VerificationDocUploadedBy")
 
   @@map("users")
 }
@@ -166,10 +167,11 @@ model ApplicantProfile {
   verificationStatus      VerificationStatus @default(PENDING_VERIFICATION) @map("verification_status")
 
   // Relations
-  user                User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  offices             ApplicantOffice[]
-  declarations        Declaration[]
-  verificationReviews ApplicantVerificationReview[]
+  user                  User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  offices               ApplicantOffice[]
+  declarations          Declaration[]
+  verificationReviews   ApplicantVerificationReview[]
+  verificationDocuments VerificationDocument[]
 
   @@unique([idType, alternateIdNumberHash], name: "applicant_profiles_alt_id_hash_key")
   @@index([verificationStatus, createdAt])
@@ -187,12 +189,40 @@ model ApplicantVerificationReview {
   createdAt          DateTime           @default(now()) @map("created_at")
 
   // Relations
-  applicant ApplicantProfile @relation(fields: [applicantId], references: [id], onDelete: Cascade)
-  reviewer  User             @relation("VerificationReviewedBy", fields: [reviewerId], references: [id])
+  applicant ApplicantProfile       @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  reviewer  User                   @relation("VerificationReviewedBy", fields: [reviewerId], references: [id])
+  documents VerificationDocument[]
 
   @@index([applicantId])
   @@index([createdAt])
   @@map("applicant_verification_reviews")
+}
+
+/// Supporting documents an applicant uploads in response to a legal officer's
+/// request for more information during profile verification. Linked to the
+/// `MORE_INFO_REQUIRED` review that prompted the upload (when one exists) so
+/// the reviewer can see exactly what the applicant supplied in reply.
+model VerificationDocument {
+  id           String   @id @default(uuid()) @db.Uuid
+  applicantId  String   @map("applicant_id") @db.Uuid
+  reviewId     String?  @map("review_id") @db.Uuid
+  uploadedById String   @map("uploaded_by_id") @db.Uuid
+  // MinIO bucket key (not a URL); re-sign with presignStored on read.
+  documentKey  String   @map("document_key") @db.Text
+  fileName     String   @map("file_name") @db.VarChar(255)
+  contentType  String   @map("content_type") @db.VarChar(100)
+  size         Int
+  note         String?  @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  applicant  ApplicantProfile             @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  review     ApplicantVerificationReview? @relation(fields: [reviewId], references: [id], onDelete: SetNull)
+  uploadedBy User                         @relation("VerificationDocUploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([applicantId, createdAt])
+  @@index([reviewId])
+  @@map("verification_documents")
 }
 
 model ApplicantOffice {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { displayId, altReasonLabel, ID_TYPE_LABEL, type IdType, type AltReason } from "~/utils/displayId";
+import type { VerificationDocument } from "~/shared/verification";
 
 interface VerificationUser {
   id: string;
@@ -70,6 +71,7 @@ interface VerificationProfile {
   user: VerificationUser;
   offices: ApplicantOfficeInfo[];
   verificationReviews: VerificationReview[];
+  verificationDocuments: VerificationDocument[];
   idCheck: IdCheck;
 }
 
@@ -344,6 +346,45 @@ const formatDate = (date: string) =>
                 </a>
               </div>
               <p v-else class="text-sm text-muted-foreground">No scan uploaded.</p>
+            </CardContent>
+          </Card>
+
+          <!-- Documents submitted in response to a request for information -->
+          <Card v-if="profile.verificationDocuments?.length">
+            <CardHeader>
+              <CardTitle>Documents Submitted by Applicant</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul class="space-y-2">
+                <li
+                  v-for="doc in profile.verificationDocuments"
+                  :key="doc.id"
+                  class="flex items-start gap-3 rounded-lg border p-3"
+                >
+                  <svg
+                    class="w-5 h-5 flex-shrink-0 text-muted-foreground mt-0.5"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <div class="flex-1 min-w-0">
+                    <a
+                      :href="doc.url"
+                      target="_blank"
+                      rel="noopener"
+                      class="text-sm font-medium text-primary underline hover:no-underline truncate block"
+                    >
+                      {{ doc.fileName }}
+                    </a>
+                    <p class="text-xs text-muted-foreground">
+                      {{ formatBytes(doc.size) }} · {{ formatDate(doc.createdAt) }}
+                    </p>
+                    <p v-if="doc.note" class="text-xs text-muted-foreground mt-1 italic">
+                      {{ doc.note }}
+                    </p>
+                  </div>
+                </li>
+              </ul>
             </CardContent>
           </Card>
 

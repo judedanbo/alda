@@ -2,6 +2,7 @@ import prisma from "~/server/utils/prisma";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
 import { notifyVerificationSubmitted } from "~/server/services/notification.service";
 import { runAfterResponse } from "~/server/utils/after-response";
+import { canResubmitVerification } from "~/server/utils/verification";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -21,7 +22,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  if (profile.verificationStatus !== "REJECTED" && profile.verificationStatus !== "MORE_INFO_REQUIRED") {
+  if (!canResubmitVerification(profile.verificationStatus)) {
     throw createError({
       statusCode: 400,
       statusMessage: "Bad Request",
