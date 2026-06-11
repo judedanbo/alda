@@ -86,6 +86,15 @@ export default defineEventHandler(async (event) => {
     },
   });
 
+  // Once every flagged section has been resolved, surface that on the
+  // declaration's review sub-status so it's ready for final approval.
+  if (remainingIssues === 0) {
+    await prisma.declaration.update({
+      where: { id: sectionReview.declarationId },
+      data: { reviewStatus: "ISSUES_RESOLVED" },
+    });
+  }
+
   return {
     success: true,
     message: remainingIssues === 0

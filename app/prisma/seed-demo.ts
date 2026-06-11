@@ -584,6 +584,8 @@ async function main() {
       applicantId: plan.profileId,
       uniqueCode,
       status: target,
+      // UNDER_REVIEW demo declarations always carry unresolved section issues.
+      reviewStatus: target === "UNDER_REVIEW" ? "ISSUES_IDENTIFIED" : "NEW",
       submittedAt: submitDate,
       returnOfficeId: reachedSubmit ? retOffice.id : null,
       previousDeclarationId: plan.previousDeclId,
