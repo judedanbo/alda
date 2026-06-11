@@ -113,16 +113,17 @@ interface OfficeEntry {
   endDate: string;
 }
 
-const officeForm = reactive<OfficeEntry>({
-  designation: "",
-  institutionId: null,
-  officeCategoryId: null,
-  startDate: new Date().toISOString().split("T")[0]!,
-  endDate: "",
-});
-
 const offices = ref<(OfficeEntry & { id: string; categoryName?: string; institutionName?: string })[]>([]);
 const addingOffice = ref(false);
+const showOfficeDialog = ref(false);
+
+interface OfficePayload {
+  designation: string;
+  officeCategoryId: number;
+  institutionId: string | null;
+  startDate: string;
+  endDate: string;
+}
 
 const formatDate = (dateStr: string) => {
   const d = new Date(dateStr);
@@ -405,39 +406,19 @@ const createProfile = async () => {
   }
 };
 
-// Validate office form fields
-const validateOfficeForm = (): boolean => {
-  clearAll();
-  if (!officeForm.designation || officeForm.designation.length < 2) {
-    fieldErrors.designation = "Designation is required (at least 2 characters)";
-  }
-  if (!officeForm.officeCategoryId) {
-    fieldErrors.officeCategoryId = "Please select a category";
-  }
-  if (!officeForm.startDate) {
-    fieldErrors.startDate = "Start date is required";
-  }
-  if (officeForm.endDate && officeForm.startDate && officeForm.endDate <= officeForm.startDate) {
-    fieldErrors.endDate = "End date must be after start date";
-  }
-  return Object.keys(fieldErrors).length === 0;
-};
-
-// Add an office
-const addOffice = async () => {
-  if (!validateOfficeForm()) return;
-
+// Add an office (payload comes validated from the OfficeFormDialog)
+const addOffice = async (payload: OfficePayload) => {
   addingOffice.value = true;
 
   try {
     const response = await authFetch<{ success: boolean; data: OfficeApiResponse }>("/api/profile/offices", {
       method: "POST",
       body: {
-        designation: officeForm.designation,
-        officeCategoryId: officeForm.officeCategoryId,
-        institutionId: officeForm.institutionId || undefined,
-        startDate: officeForm.startDate,
-        endDate: officeForm.endDate || undefined,
+        designation: payload.designation,
+        officeCategoryId: payload.officeCategoryId,
+        institutionId: payload.institutionId || undefined,
+        startDate: payload.startDate,
+        endDate: payload.endDate || undefined,
       },
     });
 
@@ -453,12 +434,7 @@ const addOffice = async () => {
         institutionName: response.data.institution?.name,
       });
 
-      officeForm.designation = "";
-      officeForm.institutionId = null;
-      officeForm.officeCategoryId = null;
-      officeForm.startDate = new Date().toISOString().split("T")[0]!;
-      officeForm.endDate = "";
-      clearAll();
+      showOfficeDialog.value = false;
       toast.success("Office added.");
     }
   } catch (err: unknown) {
@@ -729,7 +705,11 @@ const handleSubmit = async () => {
           <!-- Step 3: Office Details -->
           <div v-show="currentStep === 3" class="space-y-6">
             <h3 class="text-lg font-semibold text-foreground">Office Details</h3>
-            <p class="text-sm text-muted-foreground">Add at least one public office you currently hold or have held.</p>
+            <p class="text-sm text-muted-foreground">
+              List every public office you currently hold or have held. Most applicants
+              add just one — use <span class="font-medium text-foreground">Add another office</span>
+              only if you hold more than one.
+            </p>
 
             <!-- Added offices list -->
             <div v-if="offices.length > 0" class="space-y-3">
@@ -761,120 +741,34 @@ const handleSubmit = async () => {
               </div>
             </div>
 
-            <!-- Add office form -->
-            <div class="border rounded-lg p-4 space-y-4">
-              <h4 class="text-sm font-medium text-foreground">Add Office</h4>
-
-              <FormField :error="fieldErrors.officeCategoryId" required>
-                <template #label>
-                  Public Office Category
-                  <HelpTip field-id="profile.category" />
-                </template>
-                <template #default="{ id, ariaDescribedby }">
-                  <Select
-                    v-model="officeForm.officeCategoryId"
-                    @update:model-value="clearFieldError('officeCategoryId')"
-                  >
-                    <SelectTrigger :id="id" :aria-describedby="ariaDescribedby" class="w-full">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem
-                        v-for="cat in categories?.data || []"
-                        :key="cat.id"
-                        :value="cat.id"
-                      >
-                        {{ cat.name }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </template>
-              </FormField>
-
-              <FormField>
-                <template #label>
-                  Institution
-                  <HelpTip field-id="profile.institution" />
-                </template>
-                <template #default="{ id }">
-                  <Select v-model="officeForm.institutionId">
-                    <SelectTrigger :id="id" class="w-full">
-                      <SelectValue placeholder="Select institution (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem :value="null">
-                        None
-                      </SelectItem>
-                      <SelectItem
-                        v-for="inst in institutions?.data || []"
-                        :key="inst.id"
-                        :value="inst.id"
-                      >
-                        {{ inst.name }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </template>
-              </FormField>
-
-              <FormField :error="fieldErrors.designation" required>
-                <template #label>
-                  Designation / Position
-                  <HelpTip field-id="profile.designation" />
-                </template>
-                <template #default="{ id, ariaInvalid, ariaDescribedby }">
-                  <Input
-                    :id="id"
-                    v-model="officeForm.designation"
-                    type="text"
-                    placeholder="e.g., Deputy Minister, Director, etc."
-                    :aria-invalid="ariaInvalid"
-                    :aria-describedby="ariaDescribedby"
-                    @input="clearFieldError('designation')"
-                  />
-                </template>
-              </FormField>
-
-              <div class="grid grid-cols-2 gap-4">
-                <FormField
-                  v-slot="{ id, ariaDescribedby }"
-                  label="Start Date"
-                  required
-                  :error="fieldErrors.startDate"
-                >
-                  <DatePicker
-                    :id="id"
-                    v-model="officeForm.startDate"
-                    block
-                    :aria-describedby="ariaDescribedby"
-                    @update:model-value="clearFieldError('startDate')"
-                  />
-                </FormField>
-                <FormField
-                  v-slot="{ id, ariaDescribedby }"
-                  label="End Date"
-                  hint="Leave blank if current"
-                  :error="fieldErrors.endDate"
-                >
-                  <DatePicker
-                    :id="id"
-                    v-model="officeForm.endDate"
-                    block
-                    placeholder="Current"
-                    :aria-describedby="ariaDescribedby"
-                  />
-                </FormField>
-              </div>
-
-              <Button
-                type="button"
-                variant="outline"
-                :disabled="addingOffice"
-                @click="addOffice"
-              >
-                {{ addingOffice ? "Adding..." : "Add Office" }}
+            <!-- Empty state: prominent first-office call to action -->
+            <div
+              v-if="offices.length === 0"
+              class="flex flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center"
+            >
+              <p class="text-sm text-muted-foreground">You haven't added an office yet.</p>
+              <Button type="button" @click="showOfficeDialog = true">
+                + Add your first office
               </Button>
             </div>
+
+            <!-- Add another office -->
+            <Button
+              v-else
+              type="button"
+              variant="outline"
+              @click="showOfficeDialog = true"
+            >
+              + Add another office
+            </Button>
+
+            <ApplicantOfficeFormDialog
+              v-model:open="showOfficeDialog"
+              :categories="categories?.data || []"
+              :institutions="institutions?.data || []"
+              :saving="addingOffice"
+              @submit="addOffice"
+            />
           </div>
 
           <!-- Navigation Buttons -->
@@ -889,14 +783,24 @@ const handleSubmit = async () => {
             </Button>
             <div v-else />
 
-            <Button
+            <div
               v-if="currentStep === totalSteps"
-              type="submit"
-              :disabled="isLoading || offices.length === 0"
+              class="flex flex-col items-end gap-1"
             >
-              <span v-if="isLoading">Completing...</span>
-              <span v-else>Complete Setup</span>
-            </Button>
+              <Button
+                type="submit"
+                :disabled="isLoading || offices.length === 0"
+              >
+                <span v-if="isLoading">Completing...</span>
+                <span v-else>Complete Setup</span>
+              </Button>
+              <p
+                v-if="offices.length === 0"
+                class="text-xs text-muted-foreground"
+              >
+                Add at least one office to continue.
+              </p>
+            </div>
             <Button
               v-else
               type="submit"

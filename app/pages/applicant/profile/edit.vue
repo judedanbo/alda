@@ -25,8 +25,12 @@ interface ProfileResponse {
   };
 }
 
-interface ReferenceDataResponse {
-  data: Array<{ id: string | number; name: string }>;
+interface CategoryDataResponse {
+  data: Array<{ id: number; name: string }>;
+}
+
+interface InstitutionDataResponse {
+  data: Array<{ id: string; name: string }>;
 }
 
 const readOnly = reactive({
@@ -37,20 +41,34 @@ const readOnly = reactive({
 
 const isLoading = ref(true);
 const { toast } = useToast();
-const { fieldErrors, clearFieldError, clearAll, handleServerError } = useFieldErrors();
+const { handleServerError } = useFieldErrors();
 
 const offices = ref<Office[]>([]);
 const editingOfficeId = ref<string | null>(null);
-const showAddForm = ref(false);
-
-const officeForm = reactive({
-  designation: "",
-  institutionId: null as string | null,
-  officeCategoryId: null as number | null,
-  startDate: new Date().toISOString().split("T")[0],
-  endDate: "" as string,
-});
+const showOfficeDialog = ref(false);
 const savingOffice = ref(false);
+
+interface OfficePayload {
+  designation: string;
+  officeCategoryId: number;
+  institutionId: string | null;
+  startDate: string;
+  endDate: string;
+}
+
+// The office currently being edited, used to seed the dialog form. Null in add mode.
+const editingOffice = computed(() => {
+  if (!editingOfficeId.value) return null;
+  const o = offices.value.find((x) => x.id === editingOfficeId.value);
+  if (!o) return null;
+  return {
+    designation: o.designation,
+    officeCategoryId: o.officeCategoryId,
+    institutionId: o.institutionId,
+    startDate: o.startDate,
+    endDate: o.endDate,
+  };
+});
 
 const [profileRes, institutionsRes, categoriesRes] = await Promise.all([
   authFetch("/api/profile"),
@@ -59,8 +77,8 @@ const [profileRes, institutionsRes, categoriesRes] = await Promise.all([
 ]);
 
 const profile = (profileRes as ProfileResponse).data;
-const institutions = (institutionsRes as ReferenceDataResponse).data || [];
-const categories = (categoriesRes as ReferenceDataResponse).data || [];
+const institutions = (institutionsRes as InstitutionDataResponse).data || [];
+const categories = (categoriesRes as CategoryDataResponse).data || [];
 
 readOnly.fullName = profile.fullName ?? "";
 {
@@ -77,61 +95,30 @@ offices.value = (profile.offices || []).map((o: Office) => ({
 
 isLoading.value = false;
 
-function resetOfficeForm() {
-  officeForm.designation = "";
-  officeForm.institutionId = null;
-  officeForm.officeCategoryId = null;
-  officeForm.startDate = new Date().toISOString().split("T")[0];
-  officeForm.endDate = "";
+function closeDialog() {
+  showOfficeDialog.value = false;
   editingOfficeId.value = null;
-  showAddForm.value = false;
-  clearAll();
 }
 
 function startEdit(office: Office) {
   editingOfficeId.value = office.id;
-  officeForm.designation = office.designation;
-  officeForm.officeCategoryId = office.officeCategoryId;
-  officeForm.institutionId = office.institutionId;
-  officeForm.startDate = office.startDate;
-  officeForm.endDate = office.endDate || "";
-  showAddForm.value = true;
-  clearAll();
+  showOfficeDialog.value = true;
 }
 
 function startAdd() {
-  resetOfficeForm();
-  showAddForm.value = true;
+  editingOfficeId.value = null;
+  showOfficeDialog.value = true;
 }
 
-function validateOfficeForm(): boolean {
-  clearAll();
-  if (!officeForm.designation || officeForm.designation.length < 2) {
-    fieldErrors.designation = "Designation is required (at least 2 characters)";
-  }
-  if (!officeForm.officeCategoryId) {
-    fieldErrors.officeCategoryId = "Please select a category";
-  }
-  if (!officeForm.startDate) {
-    fieldErrors.startDate = "Start date is required";
-  }
-  if (officeForm.endDate && officeForm.startDate && officeForm.endDate <= officeForm.startDate) {
-    fieldErrors.endDate = "End date must be after start date";
-  }
-  return Object.keys(fieldErrors).length === 0;
-}
-
-async function saveOffice() {
-  if (!validateOfficeForm()) return;
-
+async function saveOffice(payload: OfficePayload) {
   savingOffice.value = true;
 
   const body = {
-    designation: officeForm.designation,
-    officeCategoryId: officeForm.officeCategoryId,
-    institutionId: officeForm.institutionId || undefined,
-    startDate: officeForm.startDate,
-    endDate: officeForm.endDate || undefined,
+    designation: payload.designation,
+    officeCategoryId: payload.officeCategoryId,
+    institutionId: payload.institutionId || undefined,
+    startDate: payload.startDate,
+    endDate: payload.endDate || undefined,
   };
 
   try {
@@ -168,7 +155,7 @@ async function saveOffice() {
       }
     }
 
-    resetOfficeForm();
+    closeDialog();
   } catch (err: unknown) {
     const message = handleServerError(err);
     if (message) toast.error(message);
@@ -183,7 +170,7 @@ async function removeOffice(officeId: string) {
     offices.value = offices.value.filter((o) => o.id !== officeId);
     toast.success("Office removed successfully.");
     if (editingOfficeId.value === officeId) {
-      resetOfficeForm();
+      closeDialog();
     }
   } catch (err: unknown) {
     const message = handleServerError(err);
@@ -243,8 +230,8 @@ function formatDate(dateStr: string | null): string {
             <CardTitle>Office Details</CardTitle>
             <CardDescription>Manage your public offices</CardDescription>
           </div>
-          <Button v-if="!showAddForm" type="button" size="sm" @click="startAdd">
-            Add Office
+          <Button v-if="offices.length > 0" type="button" size="sm" @click="startAdd">
+            + Add another office
           </Button>
         </div>
       </CardHeader>
@@ -283,118 +270,26 @@ function formatDate(dateStr: string | null): string {
           </div>
         </div>
 
-        <p v-if="offices.length === 0" class="text-center text-muted-foreground py-4">
-          No offices added yet.
-        </p>
-
-        <!-- Add / Edit office form -->
-        <div v-if="showAddForm" class="border rounded-lg p-4 space-y-4 mt-4">
-          <h4 class="text-sm font-medium text-foreground">
-            {{ editingOfficeId ? "Edit Office" : "Add Office" }}
-          </h4>
-
-          <FormField
-            v-slot="{ id, ariaInvalid, ariaDescribedby }"
-            label="Public Office Category"
-            required
-            :error="fieldErrors.officeCategoryId"
-          >
-            <Select v-model="officeForm.officeCategoryId" @update:model-value="clearFieldError('officeCategoryId')">
-              <SelectTrigger
-                :id="id"
-                :aria-invalid="ariaInvalid"
-                :aria-describedby="ariaDescribedby"
-                class="w-full"
-              >
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem
-                  v-for="cat in categories"
-                  :key="cat.id"
-                  :value="cat.id"
-                >
-                  {{ cat.name }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </FormField>
-
-          <FormField v-slot="{ id }" label="Institution">
-            <Select v-model="officeForm.institutionId">
-              <SelectTrigger :id="id" class="w-full">
-                <SelectValue placeholder="Select institution (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem :value="null">
-                  None
-                </SelectItem>
-                <SelectItem
-                  v-for="inst in institutions"
-                  :key="inst.id"
-                  :value="inst.id"
-                >
-                  {{ inst.name }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </FormField>
-
-          <FormField
-            v-slot="{ id, ariaInvalid, ariaDescribedby }"
-            label="Designation / Position"
-            required
-            :error="fieldErrors.designation"
-          >
-            <Input
-              :id="id"
-              v-model="officeForm.designation"
-              type="text"
-              placeholder="e.g., Deputy Minister, Director, etc."
-              :aria-invalid="ariaInvalid"
-              :aria-describedby="ariaDescribedby"
-              @input="clearFieldError('designation')"
-            />
-          </FormField>
-
-          <div class="grid grid-cols-2 gap-4">
-            <FormField
-              v-slot="{ id, ariaDescribedby }"
-              label="Start Date"
-              required
-              :error="fieldErrors.startDate"
-            >
-              <DatePicker
-                :id="id"
-                v-model="officeForm.startDate"
-                block
-                :aria-describedby="ariaDescribedby"
-                @update:model-value="clearFieldError('startDate')"
-              />
-            </FormField>
-            <FormField
-              v-slot="{ id, ariaDescribedby }"
-              label="End Date"
-              hint="Leave blank if current"
-              :error="fieldErrors.endDate"
-            >
-              <DatePicker
-                :id="id"
-                v-model="officeForm.endDate"
-                block
-                placeholder="Current"
-                :aria-describedby="ariaDescribedby"
-              />
-            </FormField>
-          </div>
-
-          <div class="flex gap-2">
-            <Button type="button" :disabled="savingOffice" @click="saveOffice">
-              {{ savingOffice ? "Saving..." : (editingOfficeId ? "Update Office" : "Add Office") }}
-            </Button>
-            <Button type="button" variant="outline" @click="resetOfficeForm">Cancel</Button>
-          </div>
+        <!-- Empty state: prominent first-office call to action -->
+        <div
+          v-if="offices.length === 0"
+          class="flex flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center"
+        >
+          <p class="text-sm text-muted-foreground">No offices added yet.</p>
+          <Button type="button" @click="startAdd">
+            + Add your first office
+          </Button>
         </div>
+
+        <ApplicantOfficeFormDialog
+          :open="showOfficeDialog"
+          :categories="categories"
+          :institutions="institutions"
+          :office="editingOffice"
+          :saving="savingOffice"
+          @update:open="(v) => { if (!v) closeDialog(); }"
+          @submit="saveOffice"
+        />
       </CardContent>
     </Card>
 
