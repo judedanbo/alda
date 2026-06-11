@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { displayId, altReasonLabel, ID_TYPE_LABEL, type IdType, type AltReason } from "~/utils/displayId";
+import type { VerificationDocument } from "~/shared/verification";
 
 interface VerificationUser {
   id: string;
@@ -52,16 +53,6 @@ interface IdCheck {
   unique: boolean;
   checkedAt: string;
   matches: IdMatch[];
-}
-
-interface VerificationDocument {
-  id: string;
-  fileName: string;
-  contentType: string;
-  size: number;
-  note: string | null;
-  createdAt: string;
-  url: string;
 }
 
 interface VerificationProfile {
@@ -153,12 +144,6 @@ const formatDate = (date: string) =>
   new Date(date).toLocaleDateString("en-GB", {
     day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
   });
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 </script>
 
 <template>

@@ -1,6 +1,7 @@
 import prisma from "~/server/utils/prisma";
 import { deleteFile } from "~/server/services/storage.service";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { canManageVerificationDocuments } from "~/server/utils/verification";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -40,7 +41,7 @@ export default defineEventHandler(async (event) => {
 
   // Only allow removal while a request for information is still outstanding, so
   // documents already shown to a reviewer can't be pulled out from under them.
-  if (profile.verificationStatus !== "MORE_INFO_REQUIRED") {
+  if (!canManageVerificationDocuments(profile.verificationStatus)) {
     throw createError({
       statusCode: 400,
       statusMessage: "Bad Request",
@@ -48,22 +49,29 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  await prisma.verificationDocument.delete({ where: { id: document.id } });
-
-  // Best-effort object cleanup; the DB row is the source of truth and is
-  // already gone, so a storage hiccup must not fail the request.
+  // Object-first so a storage failure can't leave an orphan: object deletion is
+  // idempotent (a missing object is a no-op), so on success — or if it was
+  // already gone — we then drop the row. A real storage error aborts before the
+  // row is removed, leaving the record intact for a retry.
   try {
     await deleteFile(document.documentKey);
   } catch {
-    // Orphaned objects are reclaimed out-of-band; swallow to keep delete idempotent.
+    throw createError({
+      statusCode: 502,
+      statusMessage: "Bad Gateway",
+      message: "Could not remove the stored file right now. Please try again.",
+    });
   }
+
+  await prisma.verificationDocument.delete({ where: { id: document.id } });
 
   await createAuditLog(event, {
     userId: auth.userId,
     action: AuditActions.VERIFICATION_DOCUMENT_DELETED,
     entityType: "verification_document",
     entityId: document.id,
-    oldValues: { applicantId: profile.id, key: document.documentKey },
+    // entityId already maps to the stored key via the DB row.
+    oldValues: { applicantId: profile.id },
   });
 
   return { success: true, message: "Document removed" };

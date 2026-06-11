@@ -1,11 +1,11 @@
 import prisma from "~/server/utils/prisma";
-import { uploadVerificationDocument, validateDocumentFile } from "~/server/services/storage.service";
+import { uploadVerificationDocument, validateDocumentFile, deleteFile } from "~/server/services/storage.service";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
-
-// Cap how many documents an applicant can attach to a single info request so a
-// runaway client can't fill the bucket. Re-checked on every upload.
-const MAX_DOCUMENTS = 10;
-const MAX_NOTE_LENGTH = 1000;
+import { canManageVerificationDocuments } from "~/server/utils/verification";
+import {
+  MAX_VERIFICATION_DOCUMENTS,
+  MAX_VERIFICATION_DOCUMENT_NOTE_LENGTH,
+} from "~/shared/verification";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
 
   // Documents are only meaningful as a reply to an outstanding request for
   // information. Reject otherwise so the feature can't be used to stash files.
-  if (profile.verificationStatus !== "MORE_INFO_REQUIRED") {
+  if (!canManageVerificationDocuments(profile.verificationStatus)) {
     throw createError({
       statusCode: 400,
       statusMessage: "Bad Request",
@@ -37,14 +37,16 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  // Fast-fail the common (sequential) over-limit case before reading the body
+  // and uploading. The hard guarantee is enforced under a row lock below.
   const existingCount = await prisma.verificationDocument.count({
     where: { applicantId: profile.id },
   });
-  if (existingCount >= MAX_DOCUMENTS) {
+  if (existingCount >= MAX_VERIFICATION_DOCUMENTS) {
     throw createError({
       statusCode: 400,
       statusMessage: "Bad Request",
-      message: `You can attach at most ${MAX_DOCUMENTS} documents. Remove one before uploading another.`,
+      message: `You can attach at most ${MAX_VERIFICATION_DOCUMENTS} documents. Remove one before uploading another.`,
     });
   }
 
@@ -69,11 +71,11 @@ export default defineEventHandler(async (event) => {
   }
 
   const note = noteField?.data?.toString().trim() || null;
-  if (note && note.length > MAX_NOTE_LENGTH) {
+  if (note && note.length > MAX_VERIFICATION_DOCUMENT_NOTE_LENGTH) {
     throw createError({
       statusCode: 400,
       statusMessage: "Bad Request",
-      message: `Note must be ${MAX_NOTE_LENGTH} characters or fewer.`,
+      message: `Note must be ${MAX_VERIFICATION_DOCUMENT_NOTE_LENGTH} characters or fewer.`,
     });
   }
 
@@ -90,6 +92,9 @@ export default defineEventHandler(async (event) => {
       message: validation.error,
     });
   }
+  // Capture the narrowed type — the narrowing from the guard above is not
+  // preserved inside the transaction closure below.
+  const contentType = validation.contentType;
 
   // Link the upload to the request that prompted it, when one exists, so the
   // reviewer sees exactly what was supplied in reply to their message.
@@ -102,32 +107,61 @@ export default defineEventHandler(async (event) => {
   const result = await uploadVerificationDocument(
     fileField.data,
     originalName,
-    validation.contentType,
+    contentType,
     auth.userId,
   );
 
-  const document = await prisma.verificationDocument.create({
-    data: {
-      applicantId: profile.id,
-      reviewId: latestRequest?.id ?? null,
-      uploadedById: auth.userId,
-      documentKey: result.key,
-      fileName: originalName.slice(0, 255),
-      contentType: validation.contentType,
-      size: result.size,
-      note,
-    },
-  });
+  // Enforce the cap atomically: a row lock on the applicant serialises
+  // concurrent uploads so the count→create can't be raced past the limit.
+  // Any failure (over-limit or otherwise) cleans up the just-uploaded object
+  // so a rejected request never leaves an orphan in storage.
+  let document;
+  try {
+    document = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM applicant_profiles WHERE id = ${profile.id}::uuid FOR UPDATE`;
+
+      const count = await tx.verificationDocument.count({
+        where: { applicantId: profile.id },
+      });
+      if (count >= MAX_VERIFICATION_DOCUMENTS) {
+        throw createError({
+          statusCode: 400,
+          statusMessage: "Bad Request",
+          message: `You can attach at most ${MAX_VERIFICATION_DOCUMENTS} documents. Remove one before uploading another.`,
+        });
+      }
+
+      return tx.verificationDocument.create({
+        data: {
+          applicantId: profile.id,
+          reviewId: latestRequest?.id ?? null,
+          uploadedById: auth.userId,
+          documentKey: result.key,
+          fileName: originalName.slice(0, 255),
+          contentType,
+          size: result.size,
+          note,
+        },
+      });
+    });
+  } catch (e) {
+    await deleteFile(result.key).catch(() => {
+      // Object cleanup is best-effort; the create already failed and is the
+      // source of truth, so a storage hiccup must not mask the real error.
+    });
+    throw e;
+  }
 
   await createAuditLog(event, {
     userId: auth.userId,
     action: AuditActions.VERIFICATION_DOCUMENT_UPLOADED,
     entityType: "verification_document",
     entityId: document.id,
+    // entityId already maps to the stored key via the DB row; don't duplicate
+    // the bucket path into the audit values.
     newValues: {
       applicantId: profile.id,
-      key: result.key,
-      contentType: validation.contentType,
+      contentType,
       size: result.size,
     },
   });

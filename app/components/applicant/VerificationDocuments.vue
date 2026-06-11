@@ -1,15 +1,6 @@
 <script setup lang="ts">
 import { FileText, Trash2, Download } from "lucide-vue-next";
-
-interface VerificationDocument {
-  id: string;
-  fileName: string;
-  contentType: string;
-  size: number;
-  note: string | null;
-  createdAt: string;
-  url: string;
-}
+import { MAX_VERIFICATION_DOCUMENTS, type VerificationDocument } from "~/shared/verification";
 
 const { toast } = useToast();
 
@@ -19,8 +10,7 @@ const uploading = ref(false);
 const note = ref("");
 const uploadError = ref("");
 
-const MAX_DOCUMENTS = 10;
-const atLimit = computed(() => documents.value.length >= MAX_DOCUMENTS);
+const atLimit = computed(() => documents.value.length >= MAX_VERIFICATION_DOCUMENTS);
 
 async function fetchDocuments() {
   loading.value = true;
@@ -39,7 +29,7 @@ async function fetchDocuments() {
 async function onFileSelected(file: File) {
   uploadError.value = "";
   if (atLimit.value) {
-    uploadError.value = `You can attach at most ${MAX_DOCUMENTS} documents.`;
+    uploadError.value = `You can attach at most ${MAX_VERIFICATION_DOCUMENTS} documents.`;
     return;
   }
 
@@ -57,8 +47,9 @@ async function onFileSelected(file: File) {
     note.value = "";
     toast.success("Document uploaded.");
   } catch (e: unknown) {
-    uploadError.value = "";
-    toast.fromError(e, "Failed to upload document");
+    // Surface the failure inline on the dropzone, consistent with the
+    // at-limit path.
+    uploadError.value = toastErrorMessage(e, "Failed to upload document. Please try again.");
   } finally {
     uploading.value = false;
   }
@@ -74,12 +65,6 @@ async function removeDocument(doc: VerificationDocument) {
   } catch (e: unknown) {
     toast.fromError(e, "Failed to remove document");
   }
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 const formatDate = (date: string) =>
@@ -165,7 +150,7 @@ onMounted(fetchDocuments);
       />
     </div>
     <p v-else class="text-xs text-muted-foreground">
-      You have reached the maximum of {{ MAX_DOCUMENTS }} documents.
+      You have reached the maximum of {{ MAX_VERIFICATION_DOCUMENTS }} documents.
     </p>
   </div>
 </template>
