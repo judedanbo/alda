@@ -11,7 +11,7 @@ const prismaMock = vi.hoisted(() => ({
 }));
 vi.mock("~/server/utils/prisma", () => ({ default: prismaMock }));
 
-const { formatGhanaPhone, isValidGhanaPhone, sendSms } = await import(
+const { formatGhanaPhone, formatGhanaPhoneLocal, isValidGhanaPhone, sendSms } = await import(
   "~/server/services/sms.service"
 );
 
@@ -38,6 +38,16 @@ describe("formatGhanaPhone", () => {
 
   it("handles spaced input", () => {
     expect(formatGhanaPhone("0 24 123 4567")).toBe("233241234567");
+  });
+});
+
+describe("formatGhanaPhoneLocal", () => {
+  it("returns the local 0-prefixed form regardless of input format", () => {
+    expect(formatGhanaPhoneLocal("0241234567")).toBe("0241234567");
+    expect(formatGhanaPhoneLocal("233241234567")).toBe("0241234567");
+    expect(formatGhanaPhoneLocal("+233241234567")).toBe("0241234567");
+    expect(formatGhanaPhoneLocal("(024) 123-4567")).toBe("0241234567");
+    expect(formatGhanaPhoneLocal("241234567")).toBe("0241234567");
   });
 });
 
@@ -118,6 +128,21 @@ describe("sendSms — provider failover", () => {
     expect(result.messageId).toBe("msg-1");
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0]![0]).toContain("hubtel");
+    // Ghana providers receive the local (no country code) form.
+    const sentBody = JSON.parse(fetchMock.mock.calls[0]![1].body as string);
+    expect(sentBody.To).toBe("0241234567");
+  });
+
+  it("sends Arkesel the local form without the country code", async () => {
+    fetchMock.mockReturnValueOnce(mockResponse(200, { status: "success", data: [{ id: "ark-3" }] }));
+    process.env.SMS_PROVIDER = "arkesel";
+
+    const result = await sendSms("0241234567", "hi");
+
+    expect(result.success).toBe(true);
+    expect(fetchMock.mock.calls[0]![0]).toContain("arkesel");
+    const sentBody = JSON.parse(fetchMock.mock.calls[0]![1].body as string);
+    expect(sentBody.recipients).toEqual(["0241234567"]);
   });
 
   it("falls back to Arkesel when Hubtel returns a non-200", async () => {

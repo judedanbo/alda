@@ -188,7 +188,7 @@ const handleSubmit = async () => {
           <FormField
             v-slot="{ id, ariaInvalid, ariaDescribedby }"
             label="Phone number"
-            :hint="phoneChecking ? 'Checking availability…' : 'Include your country code, e.g. +233241234567 or +14155551234'"
+            :hint="phoneChecking ? 'Checking availability…' : 'Enter a local number (e.g. 0241234567) or include the country code (e.g. +233241234567)'"
             :error="fieldErrors.phone"
           >
             <Input
@@ -196,7 +196,7 @@ const handleSubmit = async () => {
               v-model="form.phone"
               type="tel"
               autocomplete="tel"
-              placeholder="+233241234567"
+              placeholder="0241234567"
               :aria-invalid="ariaInvalid || phoneTaken"
               :aria-describedby="ariaDescribedby"
             />
