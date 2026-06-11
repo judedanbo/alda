@@ -18,6 +18,7 @@ import { useAuthStore } from "~/stores/auth";
  * force-redirecting those SSR passes to `/auth/login`.
  */
 const STORAGE_KEY = "adla_tokens";
+const ROLE_KEY = "adla_active_role";
 
 function readStoredTokens(): { accessToken: string; refreshToken: string } | null {
   try {
@@ -45,6 +46,15 @@ export default defineNuxtPlugin(() => {
   if (import.meta.client) {
     const stored = readStoredTokens();
     if (stored) authStore.setTokens(stored);
+
+    // Restore the chosen active role. Validity (still held by the user) is
+    // enforced by the store's `effectiveRole`, so we can set it eagerly.
+    try {
+      const storedRole = window.localStorage.getItem(ROLE_KEY);
+      if (storedRole) authStore.activeRole = storedRole;
+    } catch {
+      // Storage unavailable — fall back to precedence default.
+    }
   }
 
   authStore.initialized = true;
@@ -65,6 +75,21 @@ export default defineNuxtPlugin(() => {
           }
         } catch {
           // Storage unavailable — degrade to in-memory; user re-logs on reload.
+        }
+      },
+    );
+
+    watch(
+      () => authStore.activeRole,
+      (role) => {
+        try {
+          if (role) {
+            window.localStorage.setItem(ROLE_KEY, role);
+          } else {
+            window.localStorage.removeItem(ROLE_KEY);
+          }
+        } catch {
+          // Storage unavailable — degrade to in-memory.
         }
       },
     );

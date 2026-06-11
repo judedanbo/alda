@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ROLE_DASHBOARDS } from "~/utils/roles";
+
 const authStore = useAuthStore();
 const config = useRuntimeConfig();
 const router = useRouter();
@@ -25,13 +27,6 @@ const roleLabels: Record<string, string> = {
   schedule_officer: "Officer",
   legal_unit: "Legal",
   applicant: "Applicant",
-};
-
-const roleDashboards: Record<string, string> = {
-  admin: "/admin/dashboard",
-  schedule_officer: "/officer/dashboard",
-  legal_unit: "/legal/dashboard",
-  applicant: "/applicant/dashboard",
 };
 
 const currentRole = computed(() => {
@@ -81,7 +76,7 @@ async function switchToUser(user: DevUser) {
       authStore.user = res.data.user;
       authStore.setTokens(res.data.tokens);
       const primaryRole = res.data.user.roles[0] ?? "applicant";
-      const dashboard = roleDashboards[primaryRole] || "/";
+      const dashboard = ROLE_DASHBOARDS[primaryRole as keyof typeof ROLE_DASHBOARDS] || "/";
       await router.push(dashboard);
     }
   } catch (e) {
