@@ -3,6 +3,7 @@ import { CircleHelpIcon } from "lucide-vue-next";
 import { useAuthStore } from "~/stores/auth";
 import { useHelpStore } from "~/stores/help";
 import { ROLE_LABELS, type RoleName } from "~/utils/roles";
+import type { AcceptableValue } from "reka-ui";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,8 +23,8 @@ const handleLogout = async () => {
   navigateTo("/auth/login");
 };
 
-const handleRoleSwitch = (role: string) => {
-  if (role === authStore.effectiveRole) return;
+const handleRoleSwitch = (role: AcceptableValue) => {
+  if (typeof role !== "string" || role === authStore.effectiveRole) return;
   authStore.setActiveRole(role);
   navigateTo(authStore.dashboardPath);
 };
