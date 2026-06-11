@@ -2,6 +2,7 @@ import prisma from "~/server/utils/prisma";
 import { requireRoles } from "~/server/utils/authz";
 import { presignStored } from "~/server/services/storage.service";
 import { decryptProfileIds, hashPii } from "~/server/utils/pii-encryption";
+import { createAuditLog, AuditActions } from "~/server/utils/audit";
 
 export default defineEventHandler(async (event) => {
   // /api/legal is role-gated in server/middleware/auth.ts; re-assert here as
@@ -101,6 +102,21 @@ export default defineEventHandler(async (event) => {
       url: await presignStored(doc.documentKey),
     })),
   );
+
+  // Compliance: a Legal Unit officer decrypted this applicant's national ID
+  // and cross-checked it against every other profile — record who looked at
+  // whom, including how many other applicants the duplicate-ID scan surfaced.
+  await createAuditLog(event, {
+    userId: event.context.auth?.userId,
+    action: AuditActions.APPLICANT_PII_VIEWED,
+    entityType: "applicant_profile",
+    entityId: profile.id,
+    newValues: {
+      context: "verification_review",
+      idType: profile.idType,
+      duplicateMatches: matches.length,
+    },
+  });
 
   return {
     success: true,

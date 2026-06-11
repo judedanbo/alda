@@ -1,5 +1,5 @@
 import prisma from "~/server/utils/prisma";
-import { logAction } from "~/server/utils/audit";
+import { logAction, AuditActions } from "~/server/utils/audit";
 import { generateResetToken } from "~/server/utils/code-generator";
 import { sendStaffInviteEmail } from "~/server/services/email.service";
 import { recordStaffInviteEmail } from "~/server/services/notification.service";
@@ -59,7 +59,7 @@ export default defineEventHandler(async (event) => {
 
   await logAction({
     userId: auth.userId,
-    action: "user_invited",
+    action: AuditActions.USER_INVITED,
     entityType: "User",
     entityId: userId,
     event,

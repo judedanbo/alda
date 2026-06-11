@@ -6,6 +6,7 @@ import {
   applyRateLimitHeaders,
   throwRateLimited,
 } from "~/server/utils/rate-limit";
+import { createAuditLogOnce, AuditActions } from "~/server/utils/audit";
 
 /**
  * Per-authenticated-user rate limiter.
@@ -49,7 +50,22 @@ export default defineEventHandler(async (event) => {
       windowMs: 60_000,
     });
     applyRateLimitHeaders(event, result);
-    if (!result.allowed) throwRateLimited(event, result, "authenticated user");
+    if (!result.allowed) {
+      // Deduped per user so a single account hammering the API yields ~one
+      // row per minute. Unlike the IP limiter, here we know who it is.
+      await createAuditLogOnce(
+        event,
+        {
+          userId: auth.userId,
+          action: AuditActions.RATE_LIMIT_EXCEEDED,
+          entityType: "user",
+          entityId: auth.userId,
+          newValues: { scope: "authenticated_user", path, method },
+        },
+        { key: `user:${auth.userId}` },
+      );
+      throwRateLimited(event, result, "authenticated user");
+    }
 
     // M-7: layer a per-user-per-route-group cap on top of the overall
     // budget. `userWritePerMin` and `userUploadPer5Min` derive from the
@@ -65,7 +81,20 @@ export default defineEventHandler(async (event) => {
         limit: userGroupLimit,
         windowMs: group.windowMs,
       });
-      if (!groupResult.allowed) throwRateLimited(event, groupResult, `authenticated user ${group.name}`);
+      if (!groupResult.allowed) {
+        await createAuditLogOnce(
+          event,
+          {
+            userId: auth.userId,
+            action: AuditActions.RATE_LIMIT_EXCEEDED,
+            entityType: "user",
+            entityId: auth.userId,
+            newValues: { scope: `authenticated_user_${group.name}`, path, method },
+          },
+          { key: `user:${auth.userId}` },
+        );
+        throwRateLimited(event, groupResult, `authenticated user ${group.name}`);
+      }
     }
   } catch (error) {
     if (isHttpError(error)) throw error;

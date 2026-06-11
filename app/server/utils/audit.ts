@@ -2,6 +2,12 @@ import type { H3Event } from "h3";
 import { extractClientIp } from "./request-meta";
 import { scrubAuditValues } from "./pii";
 import {
+  getAnalyticsStorage,
+  safeGet,
+  safeSet,
+  type KvStorage,
+} from "./analytics-storage";
+import {
   enqueueAuditJob,
   isAuditQueueEnabled,
   processAuditJob,
@@ -91,6 +97,44 @@ export async function createAuditLog(
 }
 
 /**
+ * Write an audit log at most once per `windowSeconds` for a given
+ * (action, dedupeKey) pair.
+ *
+ * Used for high-volume security-enforcement events (rate-limit breaches,
+ * AI-agent blocks) fired from middleware: an attacker hammering a blocked
+ * route would otherwise flood `audit_logs` with thousands of identical
+ * rows per second. The dedup marker lives in the analytics KV (Redis when
+ * configured, in-memory otherwise) with a short TTL, so a flood collapses
+ * to ~one row per window instead.
+ *
+ * Returns `true` if a row was written, `false` if suppressed by an
+ * existing marker. Fails open to logging: if the KV is unreachable the
+ * event is still written (better a duplicate row than a lost security
+ * event).
+ */
+export async function createAuditLogOnce(
+  event: H3Event,
+  data: AuditLogData,
+  dedupe: { key: string; windowSeconds?: number },
+): Promise<boolean> {
+  let storage: KvStorage | null = null;
+  try {
+    storage = getAnalyticsStorage();
+  } catch {
+    storage = null;
+  }
+
+  if (storage) {
+    const dedupKey = `audit:dedup:${data.action}:${dedupe.key}`;
+    if (await safeGet(storage, dedupKey)) return false;
+    await safeSet(storage, dedupKey, 1, dedupe.windowSeconds ?? 60);
+  }
+
+  await createAuditLog(event, data);
+  return true;
+}
+
+/**
  * Common audit actions
  */
 export const AuditActions = {
@@ -147,6 +191,12 @@ export const AuditActions = {
   RECEIPT_GENERATED: "receipt_generated",
   RECEIPT_DOWNLOADED: "receipt_downloaded",
 
+  // Sensitive read access (compliance: who viewed/exported applicant PII)
+  APPLICANT_PII_VIEWED: "applicant_pii_viewed",
+  DECLARATION_EXPORTED: "declaration_exported",
+  AUDIT_LOG_VIEWED: "audit_log_viewed",
+  FILE_DOWNLOADED: "file_downloaded",
+
   // Section Review
   SECTION_REVIEW_SUBMITTED: "section_review_submitted",
   SECTION_REVIEW_RESOLVED: "section_review_resolved",
@@ -163,9 +213,11 @@ export const AuditActions = {
   CATEGORY_UPDATED: "category_updated",
   CATEGORY_DEACTIVATED: "category_deactivated",
 
-  // Code Verification (Legal Unit lookups)
-  CODE_VERIFIED: "CODE_VERIFIED",
-  CODE_VERIFICATION_FAILED: "CODE_VERIFICATION_FAILED",
+  // Code Verification (Legal Unit lookups). Values normalized to snake_case
+  // to match the rest of the registry; historic rows hold the old uppercase
+  // strings but still match the admin viewer's case-insensitive filter.
+  CODE_VERIFIED: "code_verified",
+  CODE_VERIFICATION_FAILED: "code_verification_failed",
 
   // Applicant Verification
   APPLICANT_VERIFICATION_REQUESTED: "applicant_verification_requested",
@@ -182,11 +234,15 @@ export const AuditActions = {
   FORM_REISSUE_DECLINED: "form_reissue_declined",
 
   // Notifications
+  NOTIFICATION_PREFERENCES_UPDATED: "notification_preferences_updated",
   NOTIFICATION_TEST_SENT: "notification_test_sent",
   NOTIFICATION_DELIVERY_RETRIED: "notification_delivery_retried",
   SMS_DELIVERY_UPDATED: "sms_delivery_updated",
   NOTIFICATION_CREDENTIAL_UPDATED: "notification_credential_updated",
   NOTIFICATION_CREDENTIAL_CLEARED: "notification_credential_cleared",
+
+  // Public forms
+  CONTACT_SUBMITTED: "contact_submitted",
 
   // Global system settings (Admin → Settings)
   SYSTEM_SETTING_UPDATED: "system_setting_updated",

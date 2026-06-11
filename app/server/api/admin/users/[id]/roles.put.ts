@@ -1,5 +1,5 @@
 import prisma from "~/server/utils/prisma";
-import { logAction } from "~/server/utils/audit";
+import { logAction, AuditActions } from "~/server/utils/audit";
 import { validateBody, adminUserRolesSchema } from "~/server/utils/validators";
 
 export default defineEventHandler(async (event) => {
@@ -80,7 +80,7 @@ export default defineEventHandler(async (event) => {
 
   await logAction({
     userId: auth.userId,
-    action: "ROLE_ASSIGN",
+    action: AuditActions.USER_ROLE_CHANGED,
     entityType: "User",
     entityId: userId,
     oldValues: { roles: oldRoles },

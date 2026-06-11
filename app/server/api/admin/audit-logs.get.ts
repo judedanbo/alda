@@ -1,4 +1,5 @@
 import prisma from "~/server/utils/prisma";
+import { createAuditLog, AuditActions } from "~/server/utils/audit";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -79,6 +80,16 @@ export default defineEventHandler(async (event) => {
     }),
     prisma.auditLog.count({ where }),
   ]);
+
+  // Compliance: the audit trail itself is sensitive — record each admin query
+  // against it (the "who watches the watchers" log), capturing only the filter
+  // params and result count, never row contents.
+  await createAuditLog(event, {
+    userId: auth.userId,
+    action: AuditActions.AUDIT_LOG_VIEWED,
+    entityType: "audit_log",
+    newValues: { search, action, entityType, dateFrom, dateTo, resultCount: total, limit, offset },
+  });
 
   return {
     success: true,

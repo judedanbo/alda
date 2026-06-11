@@ -1,5 +1,5 @@
 import prisma from "~/server/utils/prisma";
-import { logAction } from "~/server/utils/audit";
+import { logAction, AuditActions } from "~/server/utils/audit";
 import { validateBody, adminInstitutionCreateSchema } from "~/server/utils/validators";
 
 export default defineEventHandler(async (event) => {
@@ -48,7 +48,7 @@ export default defineEventHandler(async (event) => {
 
   await logAction({
     userId: auth.userId,
-    action: "INSTITUTION_CREATE",
+    action: AuditActions.INSTITUTION_CREATED,
     entityType: "Institution",
     entityId: institution.id,
     newValues: { name: institution.name, type: institution.type },

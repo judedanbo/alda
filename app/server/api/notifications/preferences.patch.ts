@@ -1,5 +1,6 @@
 import prisma from "~/server/utils/prisma";
 import { validateBody, notificationPreferencesSchema } from "~/server/utils/validators";
+import { createAuditLog, AuditActions } from "~/server/utils/audit";
 import {
   buildPreferencesPayload,
   getControllableTypesForRole,
@@ -57,6 +58,17 @@ export default defineEventHandler(async (event) => {
   });
   const typeRows = await prisma.notificationTypePreference.findMany({
     where: { userId: auth.userId },
+  });
+
+  // Security-relevant: silencing an alert channel can hide subsequent
+  // account/security notifications, so record the new channel + per-type
+  // configuration.
+  await createAuditLog(event, {
+    userId: auth.userId,
+    action: AuditActions.NOTIFICATION_PREFERENCES_UPDATED,
+    entityType: "notification_preference",
+    entityId: auth.userId,
+    newValues: { channels: body.channels, typePreferences: body.typePreferences },
   });
 
   return {

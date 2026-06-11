@@ -1,5 +1,5 @@
 import prisma from "~/server/utils/prisma";
-import { logAction } from "~/server/utils/audit";
+import { logAction, AuditActions } from "~/server/utils/audit";
 import { validateBody, adminInstitutionUpdateSchema } from "~/server/utils/validators";
 
 export default defineEventHandler(async (event) => {
@@ -73,7 +73,7 @@ export default defineEventHandler(async (event) => {
 
   await logAction({
     userId: auth.userId,
-    action: "INSTITUTION_UPDATE",
+    action: AuditActions.INSTITUTION_UPDATED,
     entityType: "Institution",
     entityId: institutionId,
     oldValues: { name: existing.name, type: existing.type, isActive: existing.isActive },

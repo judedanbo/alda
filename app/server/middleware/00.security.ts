@@ -17,6 +17,7 @@ import {
   isAiRobotsViolation,
   type AiVerificationVerdict,
 } from "~/server/utils/ai-agents";
+import { createAuditLogOnce, AuditActions } from "~/server/utils/audit";
 
 /**
  * IP-scoped security middleware.
@@ -90,6 +91,18 @@ export default defineEventHandler(async (event) => {
       event.context.analytics!.aiVerified = verdict;
 
       if (verdict === "spoofed") {
+        // Deduped per IP so a persistent spoofer yields one row per window,
+        // not one per request.
+        await createAuditLogOnce(
+          event,
+          {
+            action: AuditActions.AI_AGENT_SPOOFED,
+            entityType: "ip",
+            entityId: ip,
+            newValues: { path, category, agent: cls.agentDef.name },
+          },
+          { key: ip },
+        );
         throw createError({
           statusCode: 403,
           statusMessage: "Forbidden",
@@ -98,6 +111,16 @@ export default defineEventHandler(async (event) => {
       }
 
       if (policy === "block") {
+        await createAuditLogOnce(
+          event,
+          {
+            action: AuditActions.AI_AGENT_BLOCKED,
+            entityType: "ip",
+            entityId: ip,
+            newValues: { path, category, agent: cls.agentDef.name },
+          },
+          { key: ip },
+        );
         throw createError({
           statusCode: 403,
           statusMessage: "Forbidden",
@@ -105,6 +128,16 @@ export default defineEventHandler(async (event) => {
         });
       }
       if (config.ai.robotsEnforcement && isAiRobotsViolation(path)) {
+        await createAuditLogOnce(
+          event,
+          {
+            action: AuditActions.AI_ROBOTS_VIOLATION,
+            entityType: "ip",
+            entityId: ip,
+            newValues: { path, category, agent: cls.agentDef.name },
+          },
+          { key: ip },
+        );
         throw createError({
           statusCode: 403,
           statusMessage: "Forbidden",
@@ -126,7 +159,22 @@ export default defineEventHandler(async (event) => {
         windowMs: 60_000,
       });
       applyRateLimitHeaders(event, ipResult);
-      if (!ipResult.allowed) throwRateLimited(event, ipResult, "client IP");
+      if (!ipResult.allowed) {
+        // Deduped per IP: a sustained flood writes ~one row per minute, not
+        // one per rejected request. Logged before the throw so the security
+        // event survives even though the request is rejected here.
+        await createAuditLogOnce(
+          event,
+          {
+            action: AuditActions.RATE_LIMIT_EXCEEDED,
+            entityType: "ip",
+            entityId: ip,
+            newValues: { scope: "client_ip", path, method },
+          },
+          { key: ip },
+        );
+        throwRateLimited(event, ipResult, "client IP");
+      }
 
       const group = classifyRouteGroup(method, path);
       if (group) {
@@ -135,7 +183,19 @@ export default defineEventHandler(async (event) => {
           limit: Math.max(1, Math.floor(group.limit * multiplier)),
           windowMs: group.windowMs,
         });
-        if (!groupResult.allowed) throwRateLimited(event, groupResult, `${group.name} routes`);
+        if (!groupResult.allowed) {
+          await createAuditLogOnce(
+            event,
+            {
+              action: AuditActions.RATE_LIMIT_EXCEEDED,
+              entityType: "ip",
+              entityId: ip,
+              newValues: { scope: `${group.name}_routes`, path, method },
+            },
+            { key: ip },
+          );
+          throwRateLimited(event, groupResult, `${group.name} routes`);
+        }
       }
     }
   } catch (error) {

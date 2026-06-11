@@ -1,5 +1,6 @@
 import prisma from "~/server/utils/prisma";
 import { decryptProfileIds } from "~/server/utils/pii-encryption";
+import { createAuditLog, AuditActions } from "~/server/utils/audit";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -58,6 +59,19 @@ export default defineEventHandler(async (event) => {
 
   if (!user) {
     throw createError({ statusCode: 404, statusMessage: "User not found" });
+  }
+
+  // Compliance: this detail view decrypts the target's national ID when they
+  // have an applicant profile — record the PII access. Accounts without a
+  // profile (staff-only users) expose no national ID, so no log is written.
+  if (user.applicantProfile) {
+    await createAuditLog(event, {
+      userId: auth.userId,
+      action: AuditActions.APPLICANT_PII_VIEWED,
+      entityType: "applicant_profile",
+      entityId: userId,
+      newValues: { context: "admin_user_detail", idType: user.applicantProfile.idType },
+    });
   }
 
   // Recent activity: both actions performed BY this user and actions performed
