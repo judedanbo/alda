@@ -23,6 +23,8 @@
  * - The middleware never overwrites a header a handler set itself.
  */
 
+import { getSetting } from "~/server/utils/system-settings";
+
 const CSP_DIRECTIVES = [
   "default-src 'self'",
   // Inline scripts: Nuxt SSR hydration payload (__NUXT__ / __NUXT_DATA__)
@@ -62,7 +64,7 @@ function setIfAbsent(event: Parameters<typeof setResponseHeader>[0], name: strin
   }
 }
 
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
   // Modern browsers honor CSP frame-ancestors over X-Frame-Options, but the
   // legacy header still helps older WebViews and some embedded clients.
   setIfAbsent(event, "X-Frame-Options", "DENY");
@@ -76,7 +78,11 @@ export default defineEventHandler((event) => {
     setIfAbsent(event, "Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   }
 
-  const enforceCsp = process.env.SECURITY_CSP_ENFORCE === "true";
+  // Resolved via the system-settings registry: env SECURITY_CSP_ENFORCE is the
+  // fallback, overridable at runtime from Admin → Settings. The registry caches
+  // the DB lookup (30s TTL) so this stays cheap on the every-response path, and
+  // fails safe to the env value if the DB is briefly unavailable.
+  const enforceCsp = await getSetting<boolean>("security.cspEnforce");
   const cspHeader = enforceCsp ? "Content-Security-Policy" : "Content-Security-Policy-Report-Only";
   setIfAbsent(event, cspHeader, CSP_DIRECTIVES);
 });

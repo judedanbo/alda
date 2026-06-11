@@ -76,6 +76,7 @@ export function useDashboardNav() {
         { name: "Analytics", href: "/admin/analytics", icon: "bar-chart", tour: "nav-analytics" },
         { name: "Web Analytics", href: "/admin/web-analytics", icon: "activity", tour: "nav-web-analytics" },
         { name: "Reports", href: "/admin/reports", icon: "bar-chart", tour: "nav-reports" },
+        { name: "Settings", href: "/admin/settings", icon: "settings", tour: "nav-settings" },
         helpNavItem,
       ];
     }

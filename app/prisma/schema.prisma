@@ -695,6 +695,25 @@ model NotificationCredential {
   @@map("notification_credentials")
 }
 
+/**
+ * Admin-managed global behaviour toggles (Admin → Settings). One row per
+ * registry key (see server/utils/system-settings.ts). Unlike
+ * NotificationCredential these are NON-secret operational flags, so the value
+ * is stored in plaintext. A DB row takes precedence over the env/runtimeConfig
+ * fallback; absence of a row = use env. The stored `value` is the raw string
+ * representation ("true"/"false" for booleans, the integer for numbers) — the
+ * registry coerces it on read.
+ */
+model SystemSetting {
+  key         String   @id @db.VarChar(64)
+  value       String   @db.Text
+  updatedById String?  @map("updated_by_id") @db.Uuid
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("system_settings")
+}
+
 // ============================================
 // Data Retention & Compliance
 // ============================================

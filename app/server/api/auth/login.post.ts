@@ -9,6 +9,7 @@ import {
   recordLoginFailure,
   clearLoginFailures,
 } from "~/server/utils/auth-lockout";
+import { getSetting } from "~/server/utils/system-settings";
 
 // Computed once at module load so the user-not-found path can run a real
 // bcrypt.compare and stay timing-equivalent to the wrong-password path.
@@ -124,11 +125,11 @@ export default defineEventHandler(async (event) => {
   await clearLoginFailures(user.id);
 
   // L-4: optional opt-in email-verification gate. Off by default to
-  // preserve current behaviour; production deploys flip the env var on
-  // once they're ready to refuse sessions to unverified users. Note this
-  // runs AFTER the bcrypt compare so it doesn't double as an
-  // email-existence oracle.
-  if (process.env.REQUIRE_EMAIL_VERIFICATION_FOR_LOGIN === "true" && !user.emailVerified) {
+  // preserve current behaviour; resolved via the system-settings registry
+  // (env REQUIRE_EMAIL_VERIFICATION_FOR_LOGIN as the fallback, overridable
+  // at runtime from Admin → Settings). Note this runs AFTER the bcrypt
+  // compare so it doesn't double as an email-existence oracle.
+  if ((await getSetting<boolean>("auth.requireEmailVerificationForLogin")) && !user.emailVerified) {
     await createAuditLog(event, {
       userId: user.id,
       action: AuditActions.USER_LOGIN_FAILED,
