@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { ClipboardCheck } from "lucide-vue-next";
 import { displayId, type IdType } from "~/utils/displayId";
+import {
+  DECLARATION_REVIEW_STATUS_BADGE,
+  DECLARATION_REVIEW_STATUS_LABEL,
+} from "~/utils/statusStyles";
 
 definePageMeta({
   layout: "dashboard",
@@ -23,6 +27,7 @@ interface Declaration {
   id: string;
   uniqueCode: string;
   status: string;
+  reviewStatus: string;
   submittedAt: string | null;
   applicant: {
     fullName: string;
@@ -233,13 +238,14 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
                   {{ declaration.submittedAt ? formatDate(declaration.submittedAt) : 'N/A' }}
                 </TableCell>
                 <TableCell>
-                  <Badge
-                    v-if="declaration.sectionReviews.length > 0"
-                    class="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
-                  >
-                    {{ declaration.sectionReviews.length }} issue(s)
+                  <Badge :class="DECLARATION_REVIEW_STATUS_BADGE[declaration.reviewStatus] || ''">
+                    <template v-if="declaration.reviewStatus === 'ISSUES_IDENTIFIED'">
+                      {{ declaration.sectionReviews.length }} issue(s)
+                    </template>
+                    <template v-else>
+                      {{ DECLARATION_REVIEW_STATUS_LABEL[declaration.reviewStatus] || declaration.reviewStatus }}
+                    </template>
                   </Badge>
-                  <span v-else class="text-sm text-muted-foreground">New</span>
                 </TableCell>
                 <TableCell class="text-right">
                   <Button

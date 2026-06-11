@@ -80,7 +80,7 @@ export default defineEventHandler(async (event) => {
 
     await tx.declaration.update({
       where: { id: data.declarationId },
-      data: { status: "APPROVED" },
+      data: { status: "APPROVED", reviewStatus: "NEW" },
     });
 
     await tx.declarationStatusHistory.create({

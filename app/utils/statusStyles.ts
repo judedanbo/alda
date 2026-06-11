@@ -32,3 +32,17 @@ export const DECLARATION_STATUS_BADGE: Record<string, string> = {
   REJECTED: TONE_BADGE.red,
   SEALED: TONE_BADGE.emerald,
 };
+
+/** Declaration review sub-statuses → tinted-chip classes. */
+export const DECLARATION_REVIEW_STATUS_BADGE: Record<string, string> = {
+  NEW: TONE_BADGE.neutral,
+  ISSUES_IDENTIFIED: TONE_BADGE.amber,
+  ISSUES_RESOLVED: TONE_BADGE.green,
+};
+
+/** Declaration review sub-statuses → human-readable labels. */
+export const DECLARATION_REVIEW_STATUS_LABEL: Record<string, string> = {
+  NEW: "New",
+  ISSUES_IDENTIFIED: "Issues Identified",
+  ISSUES_RESOLVED: "Issues Resolved",
+};
