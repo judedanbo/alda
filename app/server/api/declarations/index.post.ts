@@ -1,6 +1,6 @@
 import prisma from "~/server/utils/prisma";
 import { generateUniqueCode } from "~/server/utils/code-generator";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 import { notifyUniqueCodeGenerated } from "~/server/services/notification.service";
 import { runAfterResponse } from "~/server/utils/after-response";
 import { getSetting } from "~/server/utils/system-settings";
@@ -123,7 +123,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Create audit log
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: auth.userId,
     action: AuditActions.DECLARATION_CREATED,
     entityType: "declaration",

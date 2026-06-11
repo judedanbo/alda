@@ -1,6 +1,6 @@
 import prisma from "~/server/utils/prisma";
 import { validateBody, officeSchema } from "~/server/utils/validators";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -77,7 +77,7 @@ export default defineEventHandler(async (event) => {
     },
   });
 
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: auth.userId,
     action: AuditActions.OFFICE_UPDATED,
     entityType: "applicant_office",

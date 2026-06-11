@@ -1,5 +1,5 @@
 import prisma from "~/server/utils/prisma";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 import { notifyVerificationSubmitted } from "~/server/services/notification.service";
 import { runAfterResponse } from "~/server/utils/after-response";
 import { canResubmitVerification } from "~/server/utils/verification";
@@ -37,7 +37,7 @@ export default defineEventHandler(async (event) => {
     data: { verificationStatus: "PENDING_VERIFICATION" },
   });
 
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: auth.userId,
     action: AuditActions.APPLICANT_VERIFICATION_RESUBMITTED,
     entityType: "applicant_profile",
@@ -46,7 +46,7 @@ export default defineEventHandler(async (event) => {
     newValues: { verificationStatus: "PENDING_VERIFICATION" },
   });
 
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: auth.userId,
     action: AuditActions.APPLICANT_VERIFICATION_REQUESTED,
     entityType: "applicant_profile",

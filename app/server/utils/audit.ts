@@ -7,6 +7,7 @@ import {
   safeSet,
   type KvStorage,
 } from "./analytics-storage";
+import { runAfterResponse } from "./after-response";
 import {
   enqueueAuditJob,
   isAuditQueueEnabled,
@@ -132,6 +133,35 @@ export async function createAuditLogOnce(
 
   await createAuditLog(event, data);
   return true;
+}
+
+/**
+ * Fire-and-forget audit logging — the response-path default.
+ *
+ * `createAuditLog` enqueues the job (prod) or writes inline (no Redis) and is
+ * `await`ed by callers that need that; but for the common case the HTTP
+ * response should not wait on that I/O. `logAudit` invokes `createAuditLog`
+ * synchronously — so request metadata (IP / UA / `occurredAt`) is captured at
+ * call time — then detaches the returned enqueue/write promise via
+ * `runAfterResponse` so the handler returns immediately. The background work is
+ * tracked and drained on graceful shutdown (server/plugins/after-response-drain.ts).
+ */
+export function logAudit(event: H3Event, data: AuditLogData): void {
+  runAfterResponse(createAuditLog(event, data), `audit:${data.action}`);
+}
+
+/**
+ * Detached, deduped variant for high-volume middleware security events
+ * (rate-limit breaches, AI-agent blocks). Mirrors `logAudit` but wraps
+ * `createAuditLogOnce` so the dedup KV round-trip is also off the response
+ * path — the 429/403 is sent without waiting on it.
+ */
+export function logAuditOnce(
+  event: H3Event,
+  data: AuditLogData,
+  dedupe: { key: string; windowSeconds?: number },
+): void {
+  runAfterResponse(createAuditLogOnce(event, data, dedupe), `audit:${data.action}`);
 }
 
 /**
@@ -265,9 +295,15 @@ export const AuditActions = {
 export type AuditAction = typeof AuditActions[keyof typeof AuditActions];
 
 /**
- * Log an action (simplified interface)
+ * Log an action (simplified interface).
+ *
+ * Detaches from the response path via `logAudit`. Returns a resolved promise so
+ * the ~50 existing `await logAction(...)` call sites keep working unchanged and
+ * return immediately (the enqueue/write happens in the background). Not declared
+ * `async` — it does no awaiting — so it sidesteps the `require-await` lint while
+ * staying a thenable for those callers.
  */
-export async function logAction(params: {
+export function logAction(params: {
   userId: string | null | undefined;
   action: string;
   entityType: string | null | undefined;
@@ -276,7 +312,7 @@ export async function logAction(params: {
   newValues?: Record<string, unknown>;
   event: H3Event;
 }): Promise<void> {
-  await createAuditLog(params.event, {
+  logAudit(params.event, {
     userId: params.userId || undefined,
     action: params.action,
     entityType: params.entityType || undefined,
@@ -284,4 +320,5 @@ export async function logAction(params: {
     oldValues: params.oldValues,
     newValues: params.newValues,
   });
+  return Promise.resolve();
 }

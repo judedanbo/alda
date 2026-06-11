@@ -37,7 +37,7 @@ import {
   recordAiAbuseEvent,
 } from "~/server/utils/abuse";
 import { classifyFuzzingAttempt, recordFuzzingAttempt } from "~/server/utils/fuzzing";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 import type { AnalyticsRequestContext } from "~/server/utils/analytics-context";
 
 /**
@@ -378,7 +378,7 @@ export default defineNitroPlugin((nitroApp) => {
 
       // Deduplicated audit entries for enforcement outcomes.
       if (status === 429 && await recordOnce(storage, `audit:rl:${actx.ip}`, 300)) {
-        await createAuditLog(event, {
+        logAudit(event, {
           userId: auth?.userId ?? undefined,
           action: AuditActions.RATE_LIMIT_EXCEEDED,
           entityType: "traffic",
@@ -391,7 +391,7 @@ export default defineNitroPlugin((nitroApp) => {
           (policy === "block" || aiVerified === "spoofed")
           && await recordOnce(storage, `audit:aiblock:${actx.ip}`, 600)
         ) {
-          await createAuditLog(event, {
+          logAudit(event, {
             userId: auth?.userId ?? undefined,
             action: AuditActions.AI_AGENT_BLOCKED,
             entityType: "traffic",

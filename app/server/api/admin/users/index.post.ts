@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import prisma from "~/server/utils/prisma";
 import { validateBody, adminCreateUserSchema } from "~/server/utils/validators";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 import { generateResetToken } from "~/server/utils/code-generator";
 import { sendStaffInviteEmail } from "~/server/services/email.service";
 import { recordStaffInviteEmail } from "~/server/services/notification.service";
@@ -127,7 +127,7 @@ export default defineEventHandler(async (event) => {
   });
 
   try {
-    await createAuditLog(event, {
+    logAudit(event, {
       userId: auth.userId,
       action: AuditActions.USER_CREATED,
       entityType: "user",

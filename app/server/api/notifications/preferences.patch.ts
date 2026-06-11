@@ -1,6 +1,6 @@
 import prisma from "~/server/utils/prisma";
 import { validateBody, notificationPreferencesSchema } from "~/server/utils/validators";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 import {
   buildPreferencesPayload,
   getControllableTypesForRole,
@@ -63,7 +63,7 @@ export default defineEventHandler(async (event) => {
   // Security-relevant: silencing an alert channel can hide subsequent
   // account/security notifications, so record the new channel + per-type
   // configuration.
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: auth.userId,
     action: AuditActions.NOTIFICATION_PREFERENCES_UPDATED,
     entityType: "notification_preference",

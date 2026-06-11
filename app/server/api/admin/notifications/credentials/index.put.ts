@@ -6,7 +6,7 @@ import {
   invalidateCredentialCache,
   getCredentialStatus,
 } from "~/server/utils/notification-config";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 
 /**
  * Admin: set / clear notification-credential overrides.
@@ -71,7 +71,7 @@ export default defineEventHandler(async (event) => {
 
   // Audit the keys changed — never the values.
   if (setKeys.length) {
-    await createAuditLog(event, {
+    logAudit(event, {
       userId: auth.userId,
       action: AuditActions.NOTIFICATION_CREDENTIAL_UPDATED,
       entityType: "notification_credential",
@@ -80,7 +80,7 @@ export default defineEventHandler(async (event) => {
     });
   }
   if (clearKeys.length) {
-    await createAuditLog(event, {
+    logAudit(event, {
       userId: auth.userId,
       action: AuditActions.NOTIFICATION_CREDENTIAL_CLEARED,
       entityType: "notification_credential",

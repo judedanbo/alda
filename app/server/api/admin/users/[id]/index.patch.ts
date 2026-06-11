@@ -1,6 +1,6 @@
 import prisma from "~/server/utils/prisma";
 import { validateBody, adminUpdateUserSchema } from "~/server/utils/validators";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 import { ghanaPhoneAlternates, isGhanaPhone, normalizePhoneE164 } from "~/server/utils/phone";
 
 export default defineEventHandler(async (event) => {
@@ -98,7 +98,7 @@ export default defineEventHandler(async (event) => {
     select: { id: true, email: true, phone: true },
   });
 
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: auth.userId,
     action: AuditActions.USER_UPDATED,
     entityType: "user",

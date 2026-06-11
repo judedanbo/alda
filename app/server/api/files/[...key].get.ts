@@ -1,7 +1,7 @@
 import { getObjectStream, statObjectMeta } from "~/server/services/storage.service";
 import { verifyFileSig } from "~/server/utils/file-url";
 import { extractClientIp } from "~/server/utils/request-meta";
-import { createAuditLogOnce, AuditActions } from "~/server/utils/audit";
+import { logAuditOnce, AuditActions } from "~/server/utils/audit";
 
 // Content-types safe to render inline on this first-party origin. Mirrors what
 // the upload sniffer (`detectMagicType`) can ever produce — keep in sync with
@@ -43,7 +43,7 @@ export default defineEventHandler(async (event) => {
   // the full key (which is PII-scrubbed anyway). Deduped per (type, IP) so a
   // browser re-fetch or a download flood collapses to one row per minute.
   const documentType = key.split("/")[0] || "unknown";
-  await createAuditLogOnce(
+  logAuditOnce(
     event,
     {
       action: AuditActions.FILE_DOWNLOADED,

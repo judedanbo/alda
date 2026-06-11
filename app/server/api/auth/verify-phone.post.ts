@@ -1,7 +1,7 @@
 import { z } from "zod";
 import prisma from "~/server/utils/prisma";
 import { validateBody } from "~/server/utils/validators";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 
 const MAX_ATTEMPTS = 5;
 
@@ -62,7 +62,7 @@ export default defineEventHandler(async (event) => {
       },
     });
 
-    await createAuditLog(event, {
+    logAudit(event, {
       userId: user.id,
       action: AuditActions.PHONE_VERIFICATION_FAILED,
       entityType: "user",
@@ -91,7 +91,7 @@ export default defineEventHandler(async (event) => {
     }),
   ]);
 
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: user.id,
     action: AuditActions.PHONE_VERIFIED,
     entityType: "user",

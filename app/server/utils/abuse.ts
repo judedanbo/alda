@@ -1,7 +1,7 @@
 import type { H3Event } from "h3";
 import type { Prisma } from "@prisma/client";
 import prisma from "./prisma";
-import { createAuditLog, AuditActions } from "./audit";
+import { logAudit, AuditActions } from "./audit";
 import { getAnalyticsConfig, type AnalyticsConfig } from "./analytics-config";
 import {
   StorageKeys,
@@ -364,7 +364,7 @@ export async function persistAbuseEscalation(
       },
     });
 
-    await createAuditLog(event, {
+    logAudit(event, {
       userId: context.userId ?? undefined,
       action: auditAction,
       entityType: "abuse_event",
@@ -422,7 +422,7 @@ export async function recordAiAbuseEvent(
         path: params.path,
       },
     });
-    await createAuditLog(event, {
+    logAudit(event, {
       userId: params.userId ?? undefined,
       action: auditAction,
       entityType: "abuse_event",

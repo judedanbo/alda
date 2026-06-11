@@ -34,7 +34,9 @@ vi.mock("~/server/utils/analytics-storage", () => ({
   },
 }));
 
-const { createAuditLogOnce, AuditActions } = await import("~/server/utils/audit");
+const { createAuditLogOnce, logAudit, logAuditOnce, AuditActions } = await import(
+  "~/server/utils/audit"
+);
 
 const fakeEvent = () => ({}) as never;
 
@@ -93,6 +95,32 @@ describe("createAuditLogOnce", () => {
     expect(first).toBe(true);
     expect(second).toBe(true);
     expect(mockCreate).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("logAudit / logAuditOnce (detached from the response path)", () => {
+  it("logAudit returns void (fire-and-forget) and the write still lands", async () => {
+    // Returning `undefined` rather than a Promise is the latency contract:
+    // the calling handler cannot (and does not) await the audit I/O.
+    const ret = logAudit(fakeEvent(), {
+      action: AuditActions.APPLICANT_PII_VIEWED,
+      entityType: "applicant_profile",
+      entityId: "p-1",
+    });
+
+    expect(ret).toBeUndefined();
+    await vi.waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1));
+  });
+
+  it("logAuditOnce returns void and the deduped write still lands", async () => {
+    const ret = logAuditOnce(
+      fakeEvent(),
+      { action: AuditActions.RATE_LIMIT_EXCEEDED, entityType: "ip", entityId: "1.2.3.4" },
+      { key: "1.2.3.4" },
+    );
+
+    expect(ret).toBeUndefined();
+    await vi.waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1));
   });
 });
 

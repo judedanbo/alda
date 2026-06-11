@@ -1,5 +1,5 @@
 import prisma from "~/server/utils/prisma";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -43,7 +43,7 @@ export default defineEventHandler(async (event) => {
 
   await prisma.applicantOffice.delete({ where: { id: officeId } });
 
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: auth.userId,
     action: AuditActions.OFFICE_REMOVED,
     entityType: "applicant_office",

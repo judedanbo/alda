@@ -1,7 +1,7 @@
 import prisma from "~/server/utils/prisma";
 import { validateBody, forgotPasswordSchema } from "~/server/utils/validators";
 import { generateResetToken } from "~/server/utils/code-generator";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 import { sendPasswordResetEmail } from "~/server/services/email.service";
 
 export default defineEventHandler(async (event) => {
@@ -40,7 +40,7 @@ export default defineEventHandler(async (event) => {
   });
 
   // Create audit log
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: user.id,
     action: AuditActions.PASSWORD_RESET_REQUESTED,
     entityType: "user",

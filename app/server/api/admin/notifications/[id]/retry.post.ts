@@ -1,6 +1,6 @@
 import prisma from "~/server/utils/prisma";
 import { retryDelivery } from "~/server/services/notification.service";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 
 /**
  * Admin action: retry a single FAILED delivery. `[id]` is the
@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
 
   const result = await retryDelivery(id);
 
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: auth.userId,
     action: AuditActions.NOTIFICATION_DELIVERY_RETRIED,
     entityType: "notification_delivery_log",

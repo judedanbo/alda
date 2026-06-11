@@ -1,5 +1,5 @@
 import prisma from "~/server/utils/prisma";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 import { presignStored } from "~/server/services/storage.service";
 import { z } from "zod";
 
@@ -61,7 +61,7 @@ export default defineEventHandler(async (event) => {
     },
   });
 
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: auth.userId,
     action: AuditActions.PROFILE_UPDATED,
     entityType: "applicant_profile",

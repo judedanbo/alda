@@ -19,14 +19,14 @@ const encMock = vi.hoisted(() => ({
   encryptPii: vi.fn((s: string) => `enc:${s}`),
   decryptPii: vi.fn((s: string) => s.replace(/^enc:/, "")),
 }));
-const createAuditLogMock = vi.hoisted(() => vi.fn());
+const logAuditMock = vi.hoisted(() => vi.fn());
 const readBodyMock = vi.hoisted(() => vi.fn());
 
 vi.mock("~/server/utils/prisma", () => ({ default: prismaMock }));
 vi.mock("~/server/utils/pii-encryption", () => encMock);
 vi.mock("~/server/utils/audit", async () => {
   const actual = await vi.importActual<typeof import("~/server/utils/audit")>("~/server/utils/audit");
-  return { ...actual, createAuditLog: createAuditLogMock };
+  return { ...actual, logAudit: logAuditMock };
 });
 vi.stubGlobal("readBody", readBodyMock);
 
@@ -102,7 +102,7 @@ describe("PUT /api/admin/notifications/credentials", () => {
     expect(prismaMock.notificationCredential.upsert).toHaveBeenCalledWith(
       expect.objectContaining({ where: { key: "smtp.user" } }),
     );
-    expect(createAuditLogMock).toHaveBeenCalledWith(
+    expect(logAuditMock).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ action: "notification_credential_updated", entityType: "notification_credential" }),
     );
@@ -113,7 +113,7 @@ describe("PUT /api/admin/notifications/credentials", () => {
     await putHandler(fakeEvent());
 
     expect(prismaMock.notificationCredential.deleteMany).toHaveBeenCalledWith({ where: { key: { in: ["smtp.user"] } } });
-    expect(createAuditLogMock).toHaveBeenCalledWith(
+    expect(logAuditMock).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ action: "notification_credential_cleared" }),
     );

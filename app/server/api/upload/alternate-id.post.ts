@@ -1,6 +1,6 @@
 import { IdDocumentType } from "@prisma/client";
 import { uploadAlternateIdScan, validateImageFile } from "~/server/services/storage.service";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 
 const VALID_TYPES = new Set<string>(Object.values(IdDocumentType));
 
@@ -66,7 +66,7 @@ export default defineEventHandler(async (event) => {
   );
 
   // Record the upload — storage key + type only, never the file bytes.
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: auth.userId,
     action: AuditActions.ALTERNATE_ID_UPLOADED,
     entityType: "applicant_profile",

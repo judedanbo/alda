@@ -1,6 +1,6 @@
 import prisma from "~/server/utils/prisma";
 import { uploadVerificationDocument, validateDocumentFile, deleteFile } from "~/server/services/storage.service";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 import { canManageVerificationDocuments } from "~/server/utils/verification";
 import {
   MAX_VERIFICATION_DOCUMENTS,
@@ -152,7 +152,7 @@ export default defineEventHandler(async (event) => {
     throw e;
   }
 
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: auth.userId,
     action: AuditActions.VERIFICATION_DOCUMENT_UPLOADED,
     entityType: "verification_document",

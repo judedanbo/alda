@@ -1,7 +1,7 @@
 import prisma from "~/server/utils/prisma";
 import { requireRoles } from "~/server/utils/authz";
 import { validateBody, verificationReviewSchema } from "~/server/utils/validators";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 import { notifyVerificationStatusChanged } from "~/server/services/notification.service";
 import { runAfterResponse } from "~/server/utils/after-response";
 
@@ -65,7 +65,7 @@ export default defineEventHandler(async (event) => {
     REJECTED: AuditActions.APPLICANT_VERIFICATION_REJECTED,
   };
 
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: auth.userId,
     action: AuditActions.APPLICANT_VERIFICATION_REVIEWED,
     entityType: "applicant_profile",
@@ -79,7 +79,7 @@ export default defineEventHandler(async (event) => {
     },
   });
 
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: auth.userId,
     action: statusAuditMap[body.status]!,
     entityType: "applicant_profile",

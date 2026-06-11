@@ -17,7 +17,7 @@ import {
   isAiRobotsViolation,
   type AiVerificationVerdict,
 } from "~/server/utils/ai-agents";
-import { createAuditLogOnce, AuditActions } from "~/server/utils/audit";
+import { logAuditOnce, AuditActions } from "~/server/utils/audit";
 
 /**
  * IP-scoped security middleware.
@@ -93,7 +93,7 @@ export default defineEventHandler(async (event) => {
       if (verdict === "spoofed") {
         // Deduped per IP so a persistent spoofer yields one row per window,
         // not one per request.
-        await createAuditLogOnce(
+        logAuditOnce(
           event,
           {
             action: AuditActions.AI_AGENT_SPOOFED,
@@ -111,7 +111,7 @@ export default defineEventHandler(async (event) => {
       }
 
       if (policy === "block") {
-        await createAuditLogOnce(
+        logAuditOnce(
           event,
           {
             action: AuditActions.AI_AGENT_BLOCKED,
@@ -128,7 +128,7 @@ export default defineEventHandler(async (event) => {
         });
       }
       if (config.ai.robotsEnforcement && isAiRobotsViolation(path)) {
-        await createAuditLogOnce(
+        logAuditOnce(
           event,
           {
             action: AuditActions.AI_ROBOTS_VIOLATION,
@@ -163,7 +163,7 @@ export default defineEventHandler(async (event) => {
         // Deduped per IP: a sustained flood writes ~one row per minute, not
         // one per rejected request. Logged before the throw so the security
         // event survives even though the request is rejected here.
-        await createAuditLogOnce(
+        logAuditOnce(
           event,
           {
             action: AuditActions.RATE_LIMIT_EXCEEDED,

@@ -1,5 +1,5 @@
 import prisma from "~/server/utils/prisma";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 import { generateResetToken } from "~/server/utils/code-generator";
 import { sendPasswordResetEmail } from "~/server/services/email.service";
 
@@ -43,7 +43,7 @@ export default defineEventHandler(async (event) => {
     prisma.passwordResetToken.create({ data: { userId, token, expiresAt } }),
   ]);
 
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: auth.userId,
     action: AuditActions.USER_PASSWORD_RESET_SENT,
     entityType: "user",

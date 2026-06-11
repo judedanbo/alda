@@ -38,7 +38,7 @@ vi.mock("~/server/utils/audit", async () => {
   const actual = await vi.importActual<typeof import("~/server/utils/audit")>(
     "~/server/utils/audit",
   );
-  return { ...actual, logAction: logActionMock, createAuditLog: createAuditLogMock };
+  return { ...actual, logAction: logActionMock, createAuditLog: createAuditLogMock, logAudit: createAuditLogMock };
 });
 vi.mock("~/server/utils/officer-scope", () => ({
   assertOfficerCanActOnDeclaration: assertOfficerScopeMock,

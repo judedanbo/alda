@@ -6,7 +6,7 @@ import {
   applyRateLimitHeaders,
   throwRateLimited,
 } from "~/server/utils/rate-limit";
-import { createAuditLogOnce, AuditActions } from "~/server/utils/audit";
+import { logAuditOnce, AuditActions } from "~/server/utils/audit";
 
 /**
  * Per-authenticated-user rate limiter.
@@ -53,7 +53,7 @@ export default defineEventHandler(async (event) => {
     if (!result.allowed) {
       // Deduped per user so a single account hammering the API yields ~one
       // row per minute. Unlike the IP limiter, here we know who it is.
-      await createAuditLogOnce(
+      logAuditOnce(
         event,
         {
           userId: auth.userId,

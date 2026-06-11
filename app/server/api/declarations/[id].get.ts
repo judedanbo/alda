@@ -1,7 +1,7 @@
 import prisma from "~/server/utils/prisma";
 import { presignStored } from "~/server/services/storage.service";
 import { decryptProfileIds } from "~/server/utils/pii-encryption";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -100,7 +100,7 @@ export default defineEventHandler(async (event) => {
   // noise. Bulk-list endpoints are deliberately not logged (they fire on
   // every page paint); detail views are the auditable access point.
   if (isStaff) {
-    await createAuditLog(event, {
+    logAudit(event, {
       userId: auth.userId,
       action: AuditActions.APPLICANT_PII_VIEWED,
       entityType: "applicant_profile",

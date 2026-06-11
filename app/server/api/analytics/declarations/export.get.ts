@@ -7,7 +7,7 @@ import {
 } from "~/server/utils/analytics-filters";
 import { maskGhanaCard, maskAlternateId } from "~/server/utils/pii";
 import { decryptProfileIds } from "~/server/utils/pii-encryption";
-import { createAuditLog, AuditActions } from "~/server/utils/audit";
+import { logAudit, AuditActions } from "~/server/utils/audit";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -114,7 +114,7 @@ export default defineEventHandler(async (event) => {
   // Compliance: a bulk export of (masked) applicant records left the system.
   // Record the actor, format, row count and the filter window — no PII in the
   // payload (filter keys never match the PII masker registry).
-  await createAuditLog(event, {
+  logAudit(event, {
     userId: auth.userId,
     action: AuditActions.DECLARATION_EXPORTED,
     entityType: "declaration_export",
