@@ -44,6 +44,14 @@ export const fieldTooltips: FieldTooltip[] = [
     id: "profile.institution",
     text: "The public body you work for. Choose the closest match from the list.",
   },
+  {
+    id: "profile.officeStartDate",
+    text: "The date you took up this office or role.",
+  },
+  {
+    id: "profile.officeEndDate",
+    text: "The date you left this office. Leave blank if you still hold it.",
+  },
   // New declaration
   {
     id: "declaration.confirm",
