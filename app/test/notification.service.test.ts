@@ -38,6 +38,9 @@ vi.mock("~/server/services/sms.service", () => ({ sendSms: smsMock.sendSms }));
 const { sendNotification, recordPhoneVerificationSms, retryDelivery } = await import(
   "~/server/services/notification.service"
 );
+// Real registry (binds to the mocked prisma above); used to clear its 30s
+// override cache between tests so per-test systemSetting rows take effect.
+const { invalidateSettingsCache } = await import("~/server/utils/system-settings");
 
 function makeUser(overrides: {
   email?: string;
@@ -72,6 +75,11 @@ beforeEach(() => {
   prismaMock.notificationDeliveryLog.create.mockResolvedValue({ id: "log-1" });
   prismaMock.notificationDeliveryLog.update.mockResolvedValue({});
   prismaMock.user.findUnique.mockResolvedValue(makeUser());
+  // No setting overrides by default → verification gate falls back to its
+  // "on" env default. Reset the registry's cache so a prior test's override
+  // (or its absence) doesn't leak across cases.
+  prismaMock.systemSetting.findMany.mockResolvedValue([]);
+  invalidateSettingsCache();
   emailMock.sendEmail.mockResolvedValue(true);
   smsMock.sendSms.mockResolvedValue({ success: true, messageId: "msg-1" });
 });
@@ -420,6 +428,8 @@ describe("retryDelivery — phone verification codes are not retriable", () => {
     });
 
     await expect(retryDelivery("log-1")).rejects.toMatchObject({ statusCode: 400 });
+    // Rejected before the FAILED→PENDING reset, so the log isn't stranded in PENDING.
+    expect(prismaMock.notificationDeliveryLog.update).not.toHaveBeenCalled();
   });
 
   it("rejects an SMS retry when the recipient's phone is not verified", async () => {
@@ -438,6 +448,8 @@ describe("retryDelivery — phone verification codes are not retriable", () => {
     });
 
     await expect(retryDelivery("log-1")).rejects.toMatchObject({ statusCode: 400 });
+    // Rejected before the FAILED→PENDING reset, so the log isn't stranded in PENDING.
+    expect(prismaMock.notificationDeliveryLog.update).not.toHaveBeenCalled();
   });
 });
 
@@ -487,5 +499,41 @@ describe("sendNotification — verified contacts only", () => {
     });
 
     expect(emailMock.sendEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it("emails an unverified address when the admin disabled the email gate", async () => {
+    prismaMock.user.findUnique.mockResolvedValue(makeUser({ emailVerified: false }));
+    prismaMock.systemSetting.findMany.mockResolvedValue([
+      { key: "notifications.requireVerifiedEmail", value: "false" },
+    ]);
+    invalidateSettingsCache();
+
+    await sendNotification({
+      userId: "user-1",
+      type: "REVIEW_APPROVED",
+      title: "t",
+      message: "m",
+      channels: ["EMAIL"],
+    });
+
+    expect(emailMock.sendEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it("SMSes an unverified phone when the admin disabled the phone gate", async () => {
+    prismaMock.user.findUnique.mockResolvedValue(makeUser({ phoneVerified: false }));
+    prismaMock.systemSetting.findMany.mockResolvedValue([
+      { key: "notifications.requireVerifiedPhone", value: "false" },
+    ]);
+    invalidateSettingsCache();
+
+    await sendNotification({
+      userId: "user-1",
+      type: "UNIQUE_CODE_GENERATED",
+      title: "t",
+      message: "m",
+      channels: ["SMS"],
+    });
+
+    expect(smsMock.sendSms).toHaveBeenCalledTimes(1);
   });
 });

@@ -11,6 +11,9 @@ import type { H3Event } from "h3";
 const prismaMock = vi.hoisted(() => ({
   notificationDeliveryLog: { findUnique: vi.fn(), update: vi.fn(), findMany: vi.fn(), count: vi.fn() },
   userRole: { findMany: vi.fn() },
+  // Consulted by the system-settings registry (the verification gate). No rows
+  // → the gate resolves to its "on" env default.
+  systemSetting: { findMany: vi.fn().mockResolvedValue([]) },
 }));
 const queueMock = vi.hoisted(() => ({
   reenqueueEmailJob: vi.fn(),
@@ -28,6 +31,7 @@ vi.mock("~/server/utils/prisma", () => ({ default: prismaMock }));
 vi.mock("~/server/utils/notification-queue", () => queueMock);
 
 const { retryDelivery } = await import("~/server/services/notification.service");
+const { invalidateSettingsCache } = await import("~/server/utils/system-settings");
 
 function failedEmailLog(overrides: Record<string, unknown> = {}) {
   return {
@@ -57,6 +61,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   queueMock.isQueueEnabled.mockReturnValue(true);
   prismaMock.notificationDeliveryLog.update.mockResolvedValue({});
+  prismaMock.systemSetting.findMany.mockResolvedValue([]);
+  invalidateSettingsCache();
 });
 
 afterEach(() => vi.clearAllMocks());
@@ -136,6 +142,35 @@ describe("retryDelivery", () => {
     log.notification.user.email = null as unknown as string;
     prismaMock.notificationDeliveryLog.findUnique.mockResolvedValue(log);
     await expect(retryDelivery("log-1")).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it("rejects an EMAIL retry to an unverified address WITHOUT resetting the log to PENDING", async () => {
+    const log = failedEmailLog();
+    log.notification.user.emailVerified = false;
+    prismaMock.notificationDeliveryLog.findUnique.mockResolvedValue(log);
+
+    await expect(retryDelivery("log-1")).rejects.toMatchObject({ statusCode: 400 });
+    // The guard runs before the FAILED→PENDING reset, so the log isn't stranded.
+    expect(prismaMock.notificationDeliveryLog.update).not.toHaveBeenCalled();
+    expect(queueMock.reenqueueEmailJob).not.toHaveBeenCalled();
+  });
+
+  it("proceeds with an unverified-address retry when the admin disabled the email gate", async () => {
+    const log = failedEmailLog();
+    log.notification.user.emailVerified = false;
+    prismaMock.notificationDeliveryLog.findUnique.mockResolvedValue(log);
+    prismaMock.systemSetting.findMany.mockResolvedValue([
+      { key: "notifications.requireVerifiedEmail", value: "false" },
+    ]);
+    invalidateSettingsCache();
+
+    const result = await retryDelivery("log-1");
+
+    expect(queueMock.reenqueueEmailJob).toHaveBeenCalledTimes(1);
+    expect(prismaMock.notificationDeliveryLog.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: "PENDING" }) }),
+    );
+    expect(result).toMatchObject({ channel: "EMAIL", status: "PENDING", queued: true });
   });
 });
 
