@@ -3,6 +3,7 @@ import { generateUniqueCode } from "~/server/utils/code-generator";
 import { createAuditLog, AuditActions } from "~/server/utils/audit";
 import { notifyUniqueCodeGenerated } from "~/server/services/notification.service";
 import { runAfterResponse } from "~/server/utils/after-response";
+import { getSetting } from "~/server/utils/system-settings";
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth;
@@ -30,7 +31,13 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  if (!profile.user.emailVerified) {
+  // Email/phone verification gates are admin-controllable (Admin → Settings).
+  // Both default on to preserve the original behaviour; an admin can turn
+  // either off to allow creating declarations without that verification.
+  if (
+    (await getSetting<boolean>("declarations.requireEmailVerification")) &&
+    !profile.user.emailVerified
+  ) {
     throw createError({
       statusCode: 403,
       statusMessage: "Forbidden",
@@ -38,7 +45,10 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  if (!profile.user.phoneVerified) {
+  if (
+    (await getSetting<boolean>("declarations.requirePhoneVerification")) &&
+    !profile.user.phoneVerified
+  ) {
     throw createError({
       statusCode: 403,
       statusMessage: "Forbidden",
