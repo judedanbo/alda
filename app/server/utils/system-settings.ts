@@ -134,6 +134,26 @@ export const SETTING_FIELDS: SettingField[] = [
     envFallback: () => intFromEnv(process.env.NOTIFICATIONS_RATE_LIMIT_PER_HOUR, 10),
     coerce: coerceInt,
   },
+  {
+    key: "notifications.requireVerifiedEmail",
+    envVar: "REQUIRE_VERIFIED_EMAIL_FOR_NOTIFICATIONS",
+    label: "Only email verified addresses",
+    description:
+      "When on (the default), notifications are only emailed to verified addresses; an unverified address receives the in-app notification only. Turn off to email unverified addresses too (e.g. when email verification is not required to use the system). Security/transactional mail (password reset, email verification) always goes out regardless.",
+    kind: "boolean",
+    envFallback: () => boolFromEnv(process.env.REQUIRE_VERIFIED_EMAIL_FOR_NOTIFICATIONS, true),
+    coerce: coerceBool,
+  },
+  {
+    key: "notifications.requireVerifiedPhone",
+    envVar: "REQUIRE_VERIFIED_PHONE_FOR_NOTIFICATIONS",
+    label: "Only SMS verified phone numbers",
+    description:
+      "When on (the default), notifications are only SMSed to verified phone numbers; an unverified number receives the in-app notification only. Turn off to SMS unverified numbers too (e.g. when phone verification is not required to use the system).",
+    kind: "boolean",
+    envFallback: () => boolFromEnv(process.env.REQUIRE_VERIFIED_PHONE_FOR_NOTIFICATIONS, true),
+    coerce: coerceBool,
+  },
 ];
 
 export const SETTING_BY_KEY = new Map(SETTING_FIELDS.map((f) => [f.key, f]));
