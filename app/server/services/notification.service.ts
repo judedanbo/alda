@@ -147,6 +147,12 @@ async function sendNotificationInternal(payload: NotificationPayload): Promise<v
   const typePref = user.notificationTypePrefs[0];
   const channels = payload.channels || ["EMAIL", "SMS", "IN_APP"] as NotificationChannel[];
 
+  // Only verified contacts receive email/SMS. Security/transactional types
+  // (ALWAYS_SEND — e.g. EMAIL_VERIFICATION) are exempt because they may need
+  // to reach a contact that is not yet verified. IN_APP is always allowed.
+  const canEmail = bypass || user.emailVerified;
+  const canSms = bypass || user.phoneVerified;
+
   // Create in-app notification if enabled, and publish to any open
   // SSE streams so the bell badge updates without a page reload.
   if (
@@ -176,11 +182,19 @@ async function sendNotificationInternal(payload: NotificationPayload): Promise<v
     });
   }
 
-  // Send email if enabled
+  if (channels.includes("EMAIL") && (prefs?.emailEnabled ?? true) && (typePref?.emailEnabled ?? true) && !canEmail) {
+    console.info("[notification.service] skipping email to unverified address", {
+      userId: payload.userId,
+      type: payload.type,
+    });
+  }
+
+  // Send email if enabled and the address is verified
   if (
     channels.includes("EMAIL") &&
     (prefs?.emailEnabled ?? true) &&
-    (typePref?.emailEnabled ?? true)
+    (typePref?.emailEnabled ?? true) &&
+    canEmail
   ) {
     const notification = await prisma.notification.create({
       data: {
@@ -229,12 +243,20 @@ async function sendNotificationInternal(payload: NotificationPayload): Promise<v
     }
   }
 
-  // Send SMS if enabled and user has phone
+  if (channels.includes("SMS") && (prefs?.smsEnabled ?? true) && (typePref?.smsEnabled ?? true) && user.phone && !canSms) {
+    console.info("[notification.service] skipping SMS to unverified phone", {
+      userId: payload.userId,
+      type: payload.type,
+    });
+  }
+
+  // Send SMS if enabled, the user has a phone, and the number is verified
   if (
     channels.includes("SMS") &&
     (prefs?.smsEnabled ?? true) &&
     (typePref?.smsEnabled ?? true) &&
-    user.phone
+    user.phone &&
+    canSms
   ) {
     const notification = await prisma.notification.create({
       data: {
@@ -539,9 +561,16 @@ export async function retryDelivery(deliveryLogId: string): Promise<RetryResult>
 
   const attemptsMade = log.retryCount + 1;
 
+  // Only verified contacts receive email/SMS, even on an admin-driven retry.
+  // Security/transactional types (ALWAYS_SEND) are exempt, mirroring the send path.
+  const retryBypass = ALWAYS_SEND.has(notification.type);
+
   if (log.channel === "EMAIL") {
     if (!user.email) {
       throw createError({ statusCode: 400, statusMessage: "Recipient has no email address" });
+    }
+    if (!retryBypass && !user.emailVerified) {
+      throw createError({ statusCode: 400, statusMessage: "Recipient's email address is not verified" });
     }
     const jobData: EmailJobData = {
       deliveryLogId: log.id,
@@ -560,6 +589,9 @@ export async function retryDelivery(deliveryLogId: string): Promise<RetryResult>
   } else {
     if (!user.phone) {
       throw createError({ statusCode: 400, statusMessage: "Recipient has no phone number" });
+    }
+    if (!retryBypass && !user.phoneVerified) {
+      throw createError({ statusCode: 400, statusMessage: "Recipient's phone number is not verified" });
     }
     const jobData: SmsJobData = { deliveryLogId: log.id, to: user.phone, message: notification.message };
     if (isQueueEnabled()) {

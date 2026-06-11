@@ -42,6 +42,8 @@ const { sendNotification, recordPhoneVerificationSms, retryDelivery } = await im
 function makeUser(overrides: {
   email?: string;
   phone?: string | null;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
   inAppEnabled?: boolean;
   emailEnabled?: boolean;
   smsEnabled?: boolean;
@@ -51,6 +53,8 @@ function makeUser(overrides: {
     id: "user-1",
     email: overrides.email ?? "user@example.com",
     phone: "phone" in overrides ? overrides.phone : "233241234567",
+    emailVerified: overrides.emailVerified ?? true,
+    phoneVerified: overrides.phoneVerified ?? true,
     notificationPrefs: {
       emailEnabled: overrides.emailEnabled ?? true,
       smsEnabled: overrides.smsEnabled ?? true,
@@ -391,12 +395,97 @@ describe("retryDelivery — phone verification codes are not retriable", () => {
         title: "Phone verification code",
         message: "A phone verification code was sent by SMS.",
         metadata: null,
-        user: { phone: "233241234567", applicantProfile: { fullName: "Test User" } },
+        user: { phone: "233241234567", phoneVerified: true, applicantProfile: { fullName: "Test User" } },
       },
     });
 
     await expect(retryDelivery("log-1")).rejects.toMatchObject({ statusCode: 400 });
     // Must not have attempted to resend (no status reset to PENDING).
     expect(prismaMock.notificationDeliveryLog.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects an email retry when the recipient's email is not verified", async () => {
+    prismaMock.notificationDeliveryLog.findUnique.mockResolvedValue({
+      id: "log-1",
+      status: "FAILED",
+      channel: "EMAIL",
+      retryCount: 0,
+      notification: {
+        type: "REVIEW_APPROVED",
+        title: "t",
+        message: "m",
+        metadata: null,
+        user: { email: "user@example.com", emailVerified: false, applicantProfile: { fullName: "Test User" } },
+      },
+    });
+
+    await expect(retryDelivery("log-1")).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it("rejects an SMS retry when the recipient's phone is not verified", async () => {
+    prismaMock.notificationDeliveryLog.findUnique.mockResolvedValue({
+      id: "log-1",
+      status: "FAILED",
+      channel: "SMS",
+      retryCount: 0,
+      notification: {
+        type: "REVIEW_APPROVED",
+        title: "t",
+        message: "m",
+        metadata: null,
+        user: { phone: "233241234567", phoneVerified: false, applicantProfile: { fullName: "Test User" } },
+      },
+    });
+
+    await expect(retryDelivery("log-1")).rejects.toMatchObject({ statusCode: 400 });
+  });
+});
+
+describe("sendNotification — verified contacts only", () => {
+  it("does not send email to an unverified address", async () => {
+    prismaMock.user.findUnique.mockResolvedValue(makeUser({ emailVerified: false }));
+
+    await sendNotification({
+      userId: "user-1",
+      type: "REVIEW_APPROVED",
+      title: "t",
+      message: "m",
+      channels: ["EMAIL", "IN_APP"],
+    });
+
+    expect(emailMock.sendEmail).not.toHaveBeenCalled();
+    // The in-app row is still created — verification only gates email/SMS.
+    const channels = prismaMock.notification.create.mock.calls.map((c) => c[0].data.channel);
+    expect(channels).toEqual(["IN_APP"]);
+  });
+
+  it("does not send SMS to an unverified phone", async () => {
+    prismaMock.user.findUnique.mockResolvedValue(makeUser({ phoneVerified: false }));
+
+    await sendNotification({
+      userId: "user-1",
+      type: "UNIQUE_CODE_GENERATED",
+      title: "t",
+      message: "m",
+      channels: ["SMS", "IN_APP"],
+    });
+
+    expect(smsMock.sendSms).not.toHaveBeenCalled();
+    const channels = prismaMock.notification.create.mock.calls.map((c) => c[0].data.channel);
+    expect(channels).toEqual(["IN_APP"]);
+  });
+
+  it("still emails security/transactional types to an unverified address", async () => {
+    prismaMock.user.findUnique.mockResolvedValue(makeUser({ emailVerified: false }));
+
+    await sendNotification({
+      userId: "user-1",
+      type: "EMAIL_VERIFICATION",
+      title: "Verify your email",
+      message: "m",
+      channels: ["EMAIL"],
+    });
+
+    expect(emailMock.sendEmail).toHaveBeenCalledTimes(1);
   });
 });

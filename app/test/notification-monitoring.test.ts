@@ -44,6 +44,8 @@ function failedEmailLog(overrides: Record<string, unknown> = {}) {
       user: {
         email: "jane@example.com",
         phone: "+233200000000",
+        emailVerified: true,
+        phoneVerified: true,
         applicantProfile: { fullName: "Jane Doe" },
       },
     },
