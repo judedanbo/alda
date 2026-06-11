@@ -142,6 +142,24 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  // Optional opt-in phone-verification gate, mirroring the email gate above.
+  // Off by default so accounts can log in without a verified phone; resolved
+  // via the system-settings registry (env REQUIRE_PHONE_VERIFICATION_FOR_LOGIN
+  // as the fallback, overridable at runtime from Admin → Settings). Runs AFTER
+  // the bcrypt compare so it doesn't double as an account-existence oracle.
+  if ((await getSetting<boolean>("auth.requirePhoneVerificationForLogin")) && !user.phoneVerified) {
+    await createAuditLog(event, {
+      userId: user.id,
+      action: AuditActions.USER_LOGIN_FAILED,
+      newValues: { reason: "phone_not_verified" },
+    });
+    throw createError({
+      statusCode: 403,
+      statusMessage: "Forbidden",
+      message: "Please verify your phone number before logging in.",
+    });
+  }
+
   // Generate tokens
   const roles = user.roles.map((r) => r.role.name);
   const config = useRuntimeConfig();

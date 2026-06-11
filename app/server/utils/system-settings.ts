@@ -83,6 +83,16 @@ export const SETTING_FIELDS: SettingField[] = [
     coerce: coerceBool,
   },
   {
+    key: "auth.requirePhoneVerificationForLogin",
+    envVar: "REQUIRE_PHONE_VERIFICATION_FOR_LOGIN",
+    label: "Require verified phone number to log in",
+    description:
+      "When on, accounts with an unverified phone number are refused at login (403) until they complete phone verification. Off by default allows logging in without phone verification.",
+    kind: "boolean",
+    envFallback: () => boolFromEnv(process.env.REQUIRE_PHONE_VERIFICATION_FOR_LOGIN, false),
+    coerce: coerceBool,
+  },
+  {
     key: "security.cspEnforce",
     envVar: "SECURITY_CSP_ENFORCE",
     label: "Enforce Content-Security-Policy",
