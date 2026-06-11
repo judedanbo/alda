@@ -117,6 +117,8 @@ export const AuditActions = {
   GHANA_CARD_UPLOADED: "ghana_card_uploaded",
   ALTERNATE_ID_UPLOADED: "alternate_id_uploaded",
   REISSUE_LETTER_UPLOADED: "reissue_letter_uploaded",
+  VERIFICATION_DOCUMENT_UPLOADED: "verification_document_uploaded",
+  VERIFICATION_DOCUMENT_DELETED: "verification_document_deleted",
 
   // Offices
   OFFICE_ADDED: "office_added",

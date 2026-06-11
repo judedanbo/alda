@@ -393,6 +393,9 @@ async function handleVerifyPhone() {
           >
             {{ verificationInfo.messageToApplicant }}
           </p>
+          <div class="mt-4 rounded-lg border bg-background/60 p-4">
+            <ApplicantVerificationDocuments />
+          </div>
           <Button as-child size="sm" class="mt-3">
             <NuxtLink to="/applicant/profile/edit"
               >Edit Profile &amp; Resubmit</NuxtLink
