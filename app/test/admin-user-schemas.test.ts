@@ -53,6 +53,15 @@ describe("adminCreateUserSchema", () => {
     expect(r.success).toBe(false);
   });
 
+  it("accepts a local Ghana phone (0-prefixed, no country code)", () => {
+    const r = adminCreateUserSchema.safeParse({
+      email: "legal@adla.gov.gh",
+      roleNames: ["legal_unit"],
+      phone: "0241234567",
+    });
+    expect(r.success).toBe(true);
+  });
+
   it("requires at least one role", () => {
     const r = adminCreateUserSchema.safeParse({ email: "x@adla.gov.gh", roleNames: [] });
     expect(r.success).toBe(false);
@@ -89,8 +98,12 @@ describe("adminUpdateUserSchema", () => {
     expect(adminUpdateUserSchema.safeParse({ email: "not-an-email" }).success).toBe(false);
   });
 
-  it("rejects a non-E.164 phone", () => {
-    expect(adminUpdateUserSchema.safeParse({ phone: "0200000000" }).success).toBe(false);
+  it("accepts a local Ghana phone (0-prefixed, no country code)", () => {
+    expect(adminUpdateUserSchema.safeParse({ phone: "0200000000" }).success).toBe(true);
+  });
+
+  it("rejects a malformed phone", () => {
+    expect(adminUpdateUserSchema.safeParse({ phone: "12345" }).success).toBe(false);
   });
 });
 

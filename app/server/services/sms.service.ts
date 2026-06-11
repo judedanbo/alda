@@ -56,6 +56,16 @@ export function formatGhanaPhone(phone: string): string {
 }
 
 /**
+ * Format a Ghana phone number to local form (0XXXXXXXXX), i.e. without the
+ * country code. Used for the local SMS providers (Hubtel / Arkesel) which
+ * deliver Ghana numbers in national format.
+ */
+export function formatGhanaPhoneLocal(phone: string): string {
+  // formatGhanaPhone() yields 233XXXXXXXXX; swap the 233 prefix for a 0.
+  return "0" + formatGhanaPhone(phone).slice(3);
+}
+
+/**
  * Validate Ghana phone number
  */
 export function isValidGhanaPhone(phone: string): boolean {
@@ -87,7 +97,7 @@ async function sendViaHubtel(
       },
       body: JSON.stringify({
         From: config.senderId,
-        To: formatGhanaPhone(to),
+        To: formatGhanaPhoneLocal(to),
         Content: message,
       }),
     });
@@ -126,7 +136,7 @@ async function sendViaArkesel(
       },
       body: JSON.stringify({
         sender: config.senderId,
-        recipients: [formatGhanaPhone(to)],
+        recipients: [formatGhanaPhoneLocal(to)],
         message,
       }),
     });

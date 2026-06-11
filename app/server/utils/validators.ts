@@ -1,10 +1,17 @@
 import type { H3Event } from "h3";
 import { z } from "zod";
 import { NotificationType, IdDocumentType, AlternateIdReason } from "@prisma/client";
+import { isE164Phone } from "~/server/utils/phone";
 
 // Common validation patterns
-const e164PhoneRegex = /^\+[1-9]\d{6,14}$/;
 const ghanaCardRegex = /^GHA-\d{9}-\d$/;
+
+// Accept either a local Ghana number (0XXXXXXXXX) or a full E.164 number with
+// country code (+233…, +1…). `isE164Phone` promotes the local form internally,
+// so it returns true for both; route handlers normalize to E.164 for storage.
+const PHONE_ERROR =
+  "Invalid phone number — enter a local number (e.g. 0241234567) or include the country code (e.g. +233241234567)";
+const isValidPhoneInput = (v: string) => isE164Phone(v);
 
 // Per-type formats for alternate identity documents. These are deliberately
 // tolerant — the canonical authority is the uploaded scan + Legal Unit review.
@@ -37,7 +44,7 @@ export const registerSchema = z.object({
     .regex(/[0-9]/, "Password must contain at least one number"),
   phone: z
     .string()
-    .regex(e164PhoneRegex, "Invalid phone number — include country code, e.g. +14155551234")
+    .refine(isValidPhoneInput, PHONE_ERROR)
     .optional(),
 });
 
@@ -332,7 +339,7 @@ export const adminCreateUserSchema = z
     email: z.string().email("Invalid email address"),
     phone: z
       .string()
-      .regex(e164PhoneRegex, "Invalid phone number — include country code, e.g. +14155551234")
+      .refine(isValidPhoneInput, PHONE_ERROR)
       .optional(),
     roleNames: z.array(z.enum(STAFF_ASSIGNABLE_ROLES)).min(1, "Select at least one role"),
     collectionOfficeIds: z.array(z.string().uuid()).default([]),
@@ -369,7 +376,7 @@ export const adminUpdateUserSchema = z
     email: z.string().email("Invalid email address").optional(),
     phone: z
       .string()
-      .regex(e164PhoneRegex, "Invalid phone number — include country code, e.g. +14155551234")
+      .refine(isValidPhoneInput, PHONE_ERROR)
       .nullable()
       .optional(),
   })
