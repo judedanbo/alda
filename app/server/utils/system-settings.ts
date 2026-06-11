@@ -83,6 +83,36 @@ export const SETTING_FIELDS: SettingField[] = [
     coerce: coerceBool,
   },
   {
+    key: "auth.requirePhoneVerificationForLogin",
+    envVar: "REQUIRE_PHONE_VERIFICATION_FOR_LOGIN",
+    label: "Require verified phone number to log in",
+    description:
+      "When on, accounts with an unverified phone number are refused at login (403) until they complete phone verification. Off by default allows logging in without phone verification.",
+    kind: "boolean",
+    envFallback: () => boolFromEnv(process.env.REQUIRE_PHONE_VERIFICATION_FOR_LOGIN, false),
+    coerce: coerceBool,
+  },
+  {
+    key: "declarations.requireEmailVerification",
+    envVar: "REQUIRE_EMAIL_VERIFICATION_FOR_DECLARATION",
+    label: "Require verified email to create a declaration",
+    description:
+      "When on (the default), applicants must verify their email address before creating a declaration. Turn off to allow creating declarations without email verification.",
+    kind: "boolean",
+    envFallback: () => boolFromEnv(process.env.REQUIRE_EMAIL_VERIFICATION_FOR_DECLARATION, true),
+    coerce: coerceBool,
+  },
+  {
+    key: "declarations.requirePhoneVerification",
+    envVar: "REQUIRE_PHONE_VERIFICATION_FOR_DECLARATION",
+    label: "Require verified phone number to create a declaration",
+    description:
+      "When on (the default), applicants must verify their phone number before creating a declaration. Turn off to allow creating declarations without phone verification.",
+    kind: "boolean",
+    envFallback: () => boolFromEnv(process.env.REQUIRE_PHONE_VERIFICATION_FOR_DECLARATION, true),
+    coerce: coerceBool,
+  },
+  {
     key: "security.cspEnforce",
     envVar: "SECURITY_CSP_ENFORCE",
     label: "Enforce Content-Security-Policy",
