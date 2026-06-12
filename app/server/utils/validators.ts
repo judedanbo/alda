@@ -384,6 +384,39 @@ export const adminUpdateUserSchema = z
     message: "Provide an email or phone number to update",
   });
 
+/**
+ * Authenticated password change (My Account page). The current password is
+ * verified server-side before the change; the new password must meet the same
+ * strength rules as registration/reset.
+ */
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
+});
+
+/**
+ * Self-service contact update (My Account page). Same shape as
+ * `adminUpdateUserSchema` but the caller edits their own record. Both fields
+ * are optional; at least one must be present. Phone may be null to clear it.
+ */
+export const updateContactSchema = z
+  .object({
+    email: z.string().email("Invalid email address").optional(),
+    phone: z
+      .string()
+      .refine(isValidPhoneInput, PHONE_ERROR)
+      .nullable()
+      .optional(),
+  })
+  .refine((v) => v.email !== undefined || v.phone !== undefined, {
+    message: "Provide an email or phone number to update",
+  });
+
 export const acceptInviteSchema = z.object({
   token: z.string().min(1, "Token is required"),
 });

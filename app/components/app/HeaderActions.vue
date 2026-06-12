@@ -70,6 +70,9 @@ const handleRoleSwitch = (role: AcceptableValue) => {
             <DropdownMenuSeparator />
           </template>
           <DropdownMenuItem as-child>
+            <NuxtLink to="/account">My Account</NuxtLink>
+          </DropdownMenuItem>
+          <DropdownMenuItem as-child>
             <NuxtLink to="/help">Help Centre</NuxtLink>
           </DropdownMenuItem>
           <DropdownMenuItem as-child>

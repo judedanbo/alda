@@ -1,6 +1,5 @@
 import prisma from "~/server/utils/prisma";
-import { generateVerificationToken } from "~/server/utils/code-generator";
-import { sendVerificationEmail } from "~/server/services/email.service";
+import { issueEmailVerification } from "~/server/utils/email-verification";
 import { logAudit, AuditActions } from "~/server/utils/audit";
 
 export default defineEventHandler(async (event) => {
@@ -36,25 +35,8 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Invalidate old tokens
-  await prisma.emailVerificationToken.deleteMany({
-    where: { userId: user.id },
-  });
-
-  // Create new token
-  const token = generateVerificationToken();
-  const expiresAt = new Date();
-  expiresAt.setHours(expiresAt.getHours() + 24);
-
-  await prisma.emailVerificationToken.create({
-    data: { userId: user.id, token, expiresAt },
-  });
-
-  try {
-    await sendVerificationEmail(user.email, user.email, token);
-  } catch (e) {
-    console.error("Failed to send verification email:", e);
-  }
+  // Invalidate old tokens, issue a fresh one, and send the verification email.
+  await issueEmailVerification(user.id, user.email);
 
   logAudit(event, {
     userId: user.id,

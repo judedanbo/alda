@@ -176,6 +176,8 @@ export const AuditActions = {
   REFRESH_TOKEN_REPLAY_DETECTED: "refresh_token_replay_detected",
   PASSWORD_RESET_REQUESTED: "password_reset_requested",
   PASSWORD_RESET_COMPLETED: "password_reset_completed",
+  PASSWORD_CHANGED: "password_changed",
+  CONTACT_INFO_UPDATED: "contact_info_updated",
   EMAIL_VERIFIED: "email_verified",
   VERIFICATION_RESENT: "verification_resent",
   INVITE_ACCEPTED: "invite_accepted",
