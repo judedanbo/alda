@@ -59,6 +59,14 @@ data:
   # (e.g. uploadPer5Min → NUXT_ANALYTICS_RL_UPLOAD_PER5_MIN).
   NUXT_ANALYTICS_STORAGE_DRIVER: "redis"
 
+  # Honor X-Forwarded-For / X-Real-IP from the in-cluster ingress-nginx proxy so
+  # Web Analytics / audit logs / rate-limits record the real client IP, not the
+  # ingress pod IP. NUXT_-prefixed so it overrides runtimeConfig at runtime
+  # (plain ANALYTICS_TRUSTED_PROXIES is read only at build time → ignored here).
+  # Broad private ranges are safe: the NetworkPolicy already limits inbound to
+  # app pods to the ingress-nginx pods only, so nothing else can spoof XFF.
+  NUXT_ANALYTICS_TRUSTED_PROXIES: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7"
+
   ANALYTICS_ENABLED: "true"
   ANALYTICS_CAPTURE_ENABLED: "true"
   ANALYTICS_ABUSE_ENABLED: "true"
