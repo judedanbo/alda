@@ -101,9 +101,11 @@ export function getAnalyticsConfig(): AnalyticsConfig {
     rateLimitEnabled: raw.rateLimitEnabled !== false,
     fuzzingEnabled: raw.fuzzingEnabled !== false,
     ipSalt: String(raw.ipSalt || "adla-analytics-default-salt"),
-    trustedProxies: Array.isArray(raw.trustedProxies)
-      ? (raw.trustedProxies as unknown[]).map((p) => String(p).trim()).filter(Boolean)
-      : [],
+    trustedProxies: (Array.isArray(raw.trustedProxies)
+      ? (raw.trustedProxies as unknown[]).map((p) => String(p))
+      : String(raw.trustedProxies || "").split(","))
+      .map((p) => p.trim())
+      .filter(Boolean),
     respectDnt: raw.respectDnt !== false,
     retentionDays: Number(raw.retentionDays) || 30,
     rollupRetentionDays: Number(raw.rollupRetentionDays) || 365,
