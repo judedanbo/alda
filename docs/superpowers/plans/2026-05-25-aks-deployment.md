@@ -1484,6 +1484,17 @@ helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
   --create-namespace \
   --set controller.replicaCount=2
 
+# Preserve the real client source IP end-to-end. The default LoadBalancer
+# Service policy (Cluster) makes the Azure LB SNAT the client IP to a node IP
+# before it reaches nginx, so X-Forwarded-For carries a single 10.x node IP and
+# Web Analytics / rate-limiting / audit logs all record that instead of the real
+# client (regardless of ANALYTICS_TRUSTED_PROXIES). Set the Service to Local:
+echo "==> Preserving client source IP on the ingress LoadBalancer"
+kubectl patch svc ingress-nginx-controller -n ingress-nginx \
+  --type merge -p '{"spec":{"externalTrafficPolicy":"Local"}}'
+# Verify: kubectl get svc ingress-nginx-controller -n ingress-nginx \
+#   -o jsonpath='{.spec.externalTrafficPolicy}'  → Local
+
 echo "==> Installing cert-manager"
 helm repo add jetstack https://charts.jetstack.io
 helm repo update
