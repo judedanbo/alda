@@ -49,6 +49,7 @@ export default defineEventHandler(async (event) => {
     data: {
       id: user.id,
       email: user.email,
+      fullName: user.fullName ?? user.applicantProfile?.fullName ?? null,
       phone: user.phone,
       emailVerified: user.emailVerified,
       phoneVerified: user.phoneVerified,

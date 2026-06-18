@@ -337,6 +337,7 @@ export const STAFF_ASSIGNABLE_ROLES = ["admin", "legal_unit", "schedule_officer"
 export const adminCreateUserSchema = z
   .object({
     email: z.string().email("Invalid email address"),
+    fullName: fullNameSchema.transform((s) => s.trim()),
     phone: z
       .string()
       .refine(isValidPhoneInput, PHONE_ERROR)
@@ -374,14 +375,15 @@ export const adminUserOfficesSchema = z.object({
 export const adminUpdateUserSchema = z
   .object({
     email: z.string().email("Invalid email address").optional(),
+    fullName: fullNameSchema.transform((s) => s.trim()).optional(),
     phone: z
       .string()
       .refine(isValidPhoneInput, PHONE_ERROR)
       .nullable()
       .optional(),
   })
-  .refine((v) => v.email !== undefined || v.phone !== undefined, {
-    message: "Provide an email or phone number to update",
+  .refine((v) => v.email !== undefined || v.phone !== undefined || v.fullName !== undefined, {
+    message: "Provide an email, full name, or phone number to update",
   });
 
 /**

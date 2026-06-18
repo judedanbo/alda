@@ -13,14 +13,43 @@ describe("adminCreateUserSchema", () => {
   it("accepts a legal_unit user with no offices", () => {
     const r = adminCreateUserSchema.safeParse({
       email: "legal@adla.gov.gh",
+      fullName: "Kojo Legal",
       roleNames: ["legal_unit"],
     });
     expect(r.success).toBe(true);
   });
 
+  it("requires a full name", () => {
+    const r = adminCreateUserSchema.safeParse({
+      email: "legal@adla.gov.gh",
+      roleNames: ["legal_unit"],
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("rejects a too-short full name", () => {
+    const r = adminCreateUserSchema.safeParse({
+      email: "legal@adla.gov.gh",
+      fullName: "A",
+      roleNames: ["legal_unit"],
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("trims the full name", () => {
+    const r = adminCreateUserSchema.safeParse({
+      email: "legal@adla.gov.gh",
+      fullName: "  Kojo Legal  ",
+      roleNames: ["legal_unit"],
+    });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.fullName).toBe("Kojo Legal");
+  });
+
   it("rejects the applicant role (cannot be created by admin)", () => {
     const r = adminCreateUserSchema.safeParse({
       email: "x@adla.gov.gh",
+      fullName: "Test User",
       roleNames: ["applicant"],
     });
     expect(r.success).toBe(false);
@@ -29,6 +58,7 @@ describe("adminCreateUserSchema", () => {
   it("requires at least one office for a schedule_officer", () => {
     const r = adminCreateUserSchema.safeParse({
       email: "officer@adla.gov.gh",
+      fullName: "Yaw Officer",
       roleNames: ["schedule_officer"],
       collectionOfficeIds: [],
     });
@@ -38,6 +68,7 @@ describe("adminCreateUserSchema", () => {
   it("accepts a schedule_officer with an office", () => {
     const r = adminCreateUserSchema.safeParse({
       email: "officer@adla.gov.gh",
+      fullName: "Yaw Officer",
       roleNames: ["schedule_officer"],
       collectionOfficeIds: [officeId],
     });
@@ -47,6 +78,7 @@ describe("adminCreateUserSchema", () => {
   it("rejects offices assigned to a non-officer", () => {
     const r = adminCreateUserSchema.safeParse({
       email: "legal@adla.gov.gh",
+      fullName: "Kojo Legal",
       roleNames: ["legal_unit"],
       collectionOfficeIds: [officeId],
     });
@@ -56,6 +88,7 @@ describe("adminCreateUserSchema", () => {
   it("accepts a local Ghana phone (0-prefixed, no country code)", () => {
     const r = adminCreateUserSchema.safeParse({
       email: "legal@adla.gov.gh",
+      fullName: "Kojo Legal",
       roleNames: ["legal_unit"],
       phone: "0241234567",
     });
@@ -63,7 +96,11 @@ describe("adminCreateUserSchema", () => {
   });
 
   it("requires at least one role", () => {
-    const r = adminCreateUserSchema.safeParse({ email: "x@adla.gov.gh", roleNames: [] });
+    const r = adminCreateUserSchema.safeParse({
+      email: "x@adla.gov.gh",
+      fullName: "Test User",
+      roleNames: [],
+    });
     expect(r.success).toBe(false);
   });
 });
@@ -84,6 +121,14 @@ describe("adminUpdateUserSchema", () => {
 
   it("accepts a phone-only update", () => {
     expect(adminUpdateUserSchema.safeParse({ phone: "+233200000000" }).success).toBe(true);
+  });
+
+  it("accepts a full-name-only update", () => {
+    expect(adminUpdateUserSchema.safeParse({ fullName: "New Name" }).success).toBe(true);
+  });
+
+  it("rejects a too-short full name", () => {
+    expect(adminUpdateUserSchema.safeParse({ fullName: "A" }).success).toBe(false);
   });
 
   it("accepts clearing the phone with null", () => {

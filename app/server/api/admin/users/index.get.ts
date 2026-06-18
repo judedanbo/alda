@@ -45,6 +45,7 @@ export default defineEventHandler(async (event) => {
   if (search) {
     where.OR = [
       { email: { contains: search, mode: "insensitive" } },
+      { fullName: { contains: search, mode: "insensitive" } },
       { applicantProfile: { fullName: { contains: search, mode: "insensitive" } } },
     ];
   }
@@ -69,6 +70,7 @@ export default defineEventHandler(async (event) => {
       select: {
         id: true,
         email: true,
+        fullName: true,
         phone: true,
         emailVerified: true,
         isActive: true,
@@ -111,6 +113,7 @@ export default defineEventHandler(async (event) => {
       users: users.map((user) => ({
         id: user.id,
         email: user.email,
+        fullName: user.fullName,
         phone: user.phone,
         emailVerified: user.emailVerified,
         isActive: user.isActive,

@@ -269,43 +269,49 @@ async function main() {
     const seedUsers = [
       {
         email: "applicant@adla.gov.gh",
+        fullName: "Kwame Asante",
         phone: "+233200000005",
         role: applicantRole,
         label: "applicant",
       },
       {
         email: "admin@adla.gov.gh",
+        fullName: "Adwoa Administrator",
         phone: "+233200000000",
         role: adminRole,
         label: "admin",
       },
       {
         email: "officer@adla.gov.gh",
+        fullName: "Yaw Officer",
         phone: "+233200000001",
         role: officerRole,
         label: "schedule officer",
       },
       {
         email: "officer2@adla.gov.gh",
+        fullName: "Akua Officer",
         phone: "+233200000002",
         role: officerRole,
         label: "schedule officer 2",
       },
       {
         email: "legal@adla.gov.gh",
+        fullName: "Kojo Legal",
         phone: "+233200000003",
         role: legalRole,
         label: "legal unit",
       },
       {
         email: "legal2@adla.gov.gh",
+        fullName: "Ama Legal",
         phone: "+233200000004",
         role: legalRole,
         label: "legal unit 2",
       },
     ];
 
-    for (const { email, phone, role, label } of seedUsers) {
+    for (const { email, fullName, phone, role, label } of seedUsers) {
       if (!role) {
         console.warn(`⚠️  Skipping ${label}: role not found`);
         continue;
@@ -316,6 +322,7 @@ async function main() {
         update: {},
         create: {
           email,
+          fullName,
           passwordHash: defaultPassword,
           phone,
           emailVerified: true,

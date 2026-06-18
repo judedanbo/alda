@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
 
   const self = await prisma.user.findUnique({
     where: { id: auth.userId },
-    select: { id: true, email: true, phone: true },
+    select: { id: true, email: true, phone: true, emailVerified: true },
   });
   if (!self) {
     throw createError({ statusCode: 404, statusMessage: "Not Found", message: "User not found" });
@@ -39,6 +39,17 @@ export default defineEventHandler(async (event) => {
   if (email !== undefined) {
     const normalizedEmail = email.toLowerCase();
     if (normalizedEmail !== self.email) {
+      // Email is locked once verified — it can no longer be changed by anyone.
+      if (self.emailVerified) {
+        throw createError({
+          statusCode: 409,
+          statusMessage: "Conflict",
+          data: {
+            fieldErrors: { email: ["Email cannot be changed after it has been verified"] },
+            formErrors: [],
+          },
+        });
+      }
       const owner = await prisma.user.findFirst({
         where: { email: normalizedEmail, id: { not: self.id } },
         select: { id: true },

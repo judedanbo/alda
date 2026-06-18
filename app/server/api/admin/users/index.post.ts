@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const { email, phone, roleNames, collectionOfficeIds } = await validateBody(
+  const { email, fullName, phone, roleNames, collectionOfficeIds } = await validateBody(
     event,
     adminCreateUserSchema,
   );
@@ -107,6 +107,7 @@ export default defineEventHandler(async (event) => {
     const created = await tx.user.create({
       data: {
         email: email.toLowerCase(),
+        fullName,
         passwordHash,
         phone: normalizedPhone,
         emailVerified: false,
@@ -132,7 +133,7 @@ export default defineEventHandler(async (event) => {
       action: AuditActions.USER_CREATED,
       entityType: "user",
       entityId: user.id,
-      newValues: { email: user.email, roles: roleNames, collectionOfficeIds },
+      newValues: { email: user.email, fullName: user.fullName, roles: roleNames, collectionOfficeIds },
     });
   } catch (e) {
     console.error("[admin/users] audit log failed:", e);
@@ -155,6 +156,7 @@ export default defineEventHandler(async (event) => {
     data: {
       id: user.id,
       email: user.email,
+      fullName: user.fullName,
       phone: user.phone,
       roles: roleNames,
       collectionOfficeIds,
