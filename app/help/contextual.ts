@@ -443,4 +443,190 @@ export const contextualHelp: ContextualHelp[] = [
     ],
     articleIds: ["admin-audit-reports"],
   },
+  {
+    routePattern: "/admin/settings",
+    title: "Global settings",
+    summary: "Override runtime behaviour without a redeploy.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Toggle global operational behaviour — login and declaration verification requirements, CSP enforcement, notification rate limit, and verified-contact gating. Each value can be set in-app or left to fall back to the environment default; revert any setting to its default at any time.",
+      },
+      {
+        type: "note",
+        variant: "info",
+        text: "Email (SMTP) and SMS credentials live on the Notifications page, under its Settings tab — not here.",
+      },
+    ],
+    articleIds: ["admin-settings"],
+  },
+  {
+    routePattern: "/admin/notifications",
+    title: "Notifications",
+    summary: "Monitor delivery, retry failures, and manage email/SMS settings.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Use the tabs to see delivery rates and trends (Overview), search the delivery log and retry failed sends (Log), manage SMTP and SMS credentials and test email delivery (Settings), and send a test notification (Tools).",
+      },
+    ],
+    articleIds: ["admin-notifications"],
+  },
+  {
+    routePattern: "/admin/declarations",
+    title: "All declarations",
+    summary: "Search, view, and review every declaration in the system.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Search by code or name and filter by status or date. Open a declaration to see its full timeline and section review issues; for Submitted or Under Review declarations you can open the section review form.",
+      },
+    ],
+    articleIds: ["officer-reviews"],
+  },
+  {
+    routePattern: "/admin/analytics",
+    title: "Sealed declarations analytics",
+    summary: "A system-wide view of sealed declarations.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Summarises sealed declarations across the system — totals, timelines, breakdowns by institution and collection office, and officer performance. Filter and export the underlying records.",
+      },
+    ],
+    articleIds: ["admin-audit-reports"],
+  },
+  {
+    routePattern: "/admin/web-analytics",
+    title: "Web analytics",
+    summary: "Traffic, abuse detection, AI crawlers, and rate limiting.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Monitor portal traffic and security — request volumes and visitors, abuse events and IP enforcement, AI/bot activity, rate-limiting, and fuzzing attempts. Choose a time range and switch tabs to load each view; you can block or allow-list an IP from the Abuse tab.",
+      },
+    ],
+    articleIds: ["admin-audit-reports"],
+  },
+  {
+    routePattern: "/admin/compliance",
+    title: "Declaration compliance",
+    summary: "Who has met their Article 286(5) obligations.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Monitor public office holders' compliance with their declaration obligations. Filter and sort the table to see who is compliant and who is outstanding.",
+      },
+    ],
+  },
+  {
+    routePattern: "/officer/analytics",
+    title: "My sealed declarations",
+    summary: "The declarations you have processed and sealed.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Summarises the declarations you have sealed — totals, a timeline, and breakdowns by institution and collection office, with a sortable table.",
+      },
+    ],
+  },
+  {
+    routePattern: "/officer/compliance",
+    title: "Declaration compliance",
+    summary: "Compliance for the applicants you have processed.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Track declaration compliance for the applicants you have processed. Filter and sort to see who is outstanding.",
+      },
+    ],
+  },
+  {
+    routePattern: "/legal/analytics",
+    title: "Sealed declarations",
+    summary: "All sealed declarations, for verification reference.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "A reference view of all sealed declarations — totals, a timeline, and a breakdown by institution, with a searchable table.",
+      },
+    ],
+  },
+  {
+    routePattern: "/legal/compliance",
+    title: "Declaration compliance",
+    summary: "Compliance oversight across all office holders.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Oversight of declaration obligations across all public office holders. Filter and sort the compliance table.",
+      },
+    ],
+  },
+  // --- Account & common (authenticated) -----------------------------------
+  {
+    routePattern: "/account",
+    title: "My account",
+    summary: "Your contact details, phone verification, and password.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "View your account overview and update your email or phone number (changes require re-verification). Verify your phone with the code we text you, and change your password — changing it signs you out of other devices.",
+      },
+    ],
+    articleIds: ["common-account"],
+  },
+  {
+    routePattern: "/settings/preferences",
+    title: "Settings",
+    summary: "Choose how the portal notifies you.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Turn email, SMS, and in-app notifications on or off. Use the category view for quick control, or the advanced view to set each notification type per channel. Display and accessibility options live here too.",
+      },
+    ],
+    articleIds: ["common-notifications"],
+  },
+  {
+    routePattern: "/notifications",
+    title: "Notifications",
+    summary: "Everything the portal has notified you about.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Your notification history. Use \"Show unread only\" to filter, mark individual items read, or mark all as read.",
+      },
+    ],
+    articleIds: ["common-notifications"],
+  },
+  {
+    routePattern: "/contact",
+    title: "Contact support",
+    summary: "Reach the Ghana Audit Service support team.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Send a message to the support team. Pick the category that fits — general inquiry, technical support, help with a declaration, feedback, complaint, or other — add a subject and your message, and we will follow up.",
+      },
+    ],
+  },
+  {
+    routePattern: "/auth/accept-invite",
+    title: "Activate your account",
+    summary: "Set a password to finish activating your invited account.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Opening the invitation link verifies your email automatically. Choose a password that meets the strength checklist and activate your account, then sign in.",
+      },
+      {
+        type: "note",
+        variant: "info",
+        text: "Invitation links expire after 72 hours. If yours has expired, ask an administrator to resend the invitation.",
+      },
+      { type: "link", label: "Link expired? Contact support", to: "/contact" },
+    ],
+    articleIds: ["common-account"],
+  },
 ];

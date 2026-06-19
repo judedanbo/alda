@@ -89,6 +89,24 @@ export const faqEntries: FaqEntry[] = [
     category: "account",
     keywords: ["notifications", "email", "sms", "settings"],
   },
+  {
+    id: "faq-accept-invite",
+    question: "I was invited to the portal. How do I activate my account?",
+    answer:
+      "Open the link in your invitation email. It verifies your email automatically and takes you to a \"Set your password\" page — choose a password to activate your account, then sign in. Invitation links expire after 72 hours; if yours has expired, ask an administrator to resend the invitation.",
+    roles: [],
+    category: "account",
+    keywords: ["invite", "invitation", "activate", "set password", "staff"],
+  },
+  {
+    id: "faq-switch-roles",
+    question: "I have more than one role. How do I switch between them?",
+    answer:
+      "If your account holds more than one role, an \"Acting as\" selector appears in the account menu in the top-right corner. Pick a role to scope the navigation, dashboard, and what you can access to that role. Switch back at any time from the same menu.",
+    roles: [],
+    category: "account",
+    keywords: ["roles", "acting as", "switch", "multiple roles"],
+  },
   // --- Applicant -----------------------------------------------------------
   {
     id: "faq-new-declaration-disabled",
@@ -135,6 +153,15 @@ export const faqEntries: FaqEntry[] = [
     roles: ["schedule_officer"],
     category: "form-handling",
     keywords: ["form return", "form collected", "blocked"],
+  },
+  {
+    id: "faq-officer-office-scope",
+    question: "Why can't I find or act on a declaration?",
+    answer:
+      "Schedule officers are scoped to their assigned collection office(s). You can only record collections and returns, review, and issue receipts for declarations belonging to your offices — acting on another office's declaration is refused with \"You are not assigned to this collection office.\" If you need access to a different office, ask an administrator to update your office assignment.",
+    roles: ["schedule_officer"],
+    category: "form-handling",
+    keywords: ["office", "assigned", "not assigned", "collection office", "scope"],
   },
   {
     id: "faq-officer-reject",

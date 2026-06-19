@@ -63,6 +63,11 @@ export const officerArticles: HelpArticle[] = [
         variant: "info",
         text: "A declaration must be at Form Collected before you can record a return.",
       },
+      {
+        type: "note",
+        variant: "warning",
+        text: "You can only act on declarations belonging to the collection office(s) you are assigned to. Acting on another office's declaration is refused with \"You are not assigned to this collection office.\" Ask an administrator to assign you to the right office.",
+      },
     ],
   },
   {
