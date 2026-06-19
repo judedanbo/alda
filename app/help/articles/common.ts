@@ -164,7 +164,7 @@ export const commonArticles: HelpArticle[] = [
       },
       {
         type: "paragraph",
-        text: "After registering you receive a verification email. Click the link inside it to confirm your address. Applicants must verify their email before they can create a declaration.",
+        text: "After registering you receive a verification email. Click the link inside it to confirm your address. Applicants must verify both their email and their phone number — using the code we text you — before they can create a declaration.",
       },
       {
         type: "note",

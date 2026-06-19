@@ -72,6 +72,15 @@ export const faqEntries: FaqEntry[] = [
     keywords: ["email", "verification", "spam"],
   },
   {
+    id: "faq-verify-phone",
+    question: "How do I verify my phone number?",
+    answer:
+      "Open your dashboard or My Account, add a phone number if you have not already, and choose to send a code. We text you a 6-digit code — enter it to verify. A verified phone is required before you can create a declaration. Ghana numbers can be local (0241234567) or include the country code (+233241234567).",
+    roles: ["applicant"],
+    category: "account",
+    keywords: ["phone", "verify", "sms", "code", "number", "declaration"],
+  },
+  {
     id: "faq-change-notifications",
     question: "How do I change how I am notified?",
     answer:
@@ -85,10 +94,10 @@ export const faqEntries: FaqEntry[] = [
     id: "faq-new-declaration-disabled",
     question: "Why is the New Declaration option disabled?",
     answer:
-      "New Declaration is disabled until your registration is Verified, and also while you already have a declaration in progress. Finish or resolve your current declaration first.",
+      "New Declaration is disabled until your email and phone number are both verified and the Legal Unit has set your registration to Verified. It is also disabled while you already have a declaration in progress. Finish or resolve your current declaration first.",
     roles: ["applicant"],
     category: "declarations",
-    keywords: ["new declaration", "disabled", "verified", "active"],
+    keywords: ["new declaration", "disabled", "verified", "active", "phone", "email"],
   },
   {
     id: "faq-how-many-declarations",

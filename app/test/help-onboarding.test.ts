@@ -9,12 +9,14 @@ import { onboardingChecklists } from "~/help";
 
 const allFalse: OnboardingState = {
   emailVerified: false,
+  phoneVerified: false,
   profileCreated: false,
   profileVerified: false,
   hasActiveDeclaration: false,
 };
 const allTrue: OnboardingState = {
   emailVerified: true,
+  phoneVerified: true,
   profileCreated: true,
   profileVerified: true,
   hasActiveDeclaration: true,
@@ -35,6 +37,8 @@ describe("evaluateSignal", () => {
   it("maps each signal to the matching state flag", () => {
     expect(evaluateSignal("emailVerified", allTrue)).toBe(true);
     expect(evaluateSignal("emailVerified", allFalse)).toBe(false);
+    expect(evaluateSignal("phoneVerified", allTrue)).toBe(true);
+    expect(evaluateSignal("phoneVerified", allFalse)).toBe(false);
     expect(evaluateSignal("profileCreated", allTrue)).toBe(true);
     expect(evaluateSignal("profileVerified", allFalse)).toBe(false);
     expect(evaluateSignal("hasActiveDeclaration", allTrue)).toBe(true);

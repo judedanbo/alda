@@ -5,6 +5,7 @@ import type { OnboardingItem, OnboardingSignal } from "./types";
 
 export interface OnboardingState {
   emailVerified: boolean;
+  phoneVerified: boolean;
   profileCreated: boolean;
   profileVerified: boolean;
   hasActiveDeclaration: boolean;
@@ -23,6 +24,8 @@ export function evaluateSignal(
   switch (signal) {
     case "emailVerified":
       return state.emailVerified;
+    case "phoneVerified":
+      return state.phoneVerified;
     case "profileCreated":
       return state.profileCreated;
     case "profileVerified":

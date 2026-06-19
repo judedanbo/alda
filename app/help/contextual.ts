@@ -36,14 +36,14 @@ export const contextualHelp: ContextualHelp[] = [
       {
         type: "list",
         items: [
-          "Phone must be in Ghana international format, starting with +233.",
+          "Phone can be a local number (e.g. 0241234567) or include the country code (e.g. +233241234567).",
           "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, and a digit.",
           "You must accept the terms of service to continue.",
         ],
       },
       {
         type: "paragraph",
-        text: "After you submit, we send a verification email. Once you verify your email and sign in, you complete your profile (personal details, Ghana Card, office), which the Legal Unit then reviews before you can create a declaration.",
+        text: "After you submit, we send a verification email. Verify your email and your phone number (with the code we text you), then complete your profile (personal details, Ghana Card, office), which the Legal Unit reviews before you can create a declaration.",
       },
       {
         type: "note",
