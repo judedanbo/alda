@@ -24,7 +24,7 @@ const {
   <div class="space-y-6">
     <AppPageHeader
       title="Sealed Declarations Analytics"
-      description="Comprehensive view of all completed and sealed declarations"
+      description="Comprehensive view of all sealed declarations"
     />
 
     <!-- Zone 1: Filters -->

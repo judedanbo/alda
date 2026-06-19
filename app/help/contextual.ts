@@ -192,11 +192,11 @@ export const contextualHelp: ContextualHelp[] = [
   {
     routePattern: "/applicant/analytics",
     title: "Your analytics",
-    summary: "Insights into your sealed and completed declarations.",
+    summary: "Insights into your sealed declarations.",
     blocks: [
       {
         type: "paragraph",
-        text: "This page summarises your completed declarations — totals by status, key metrics, a timeline of sealed declarations, and a sortable table.",
+        text: "This page summarises your declarations — totals by status, key metrics, a timeline of sealed declarations, and a sortable table.",
       },
     ],
     articleIds: ["applicant-declarations"],

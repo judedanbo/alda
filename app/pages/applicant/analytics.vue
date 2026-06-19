@@ -31,8 +31,8 @@ const {
 <template>
   <div class="space-y-6">
     <AppPageHeader
-      title="My Completed Declarations"
-      description="Your sealed and completed asset declarations"
+      title="My Sealed Declarations"
+      description="Your sealed asset declarations"
     />
 
     <div data-tour="analytics-stats" class="grid grid-cols-2 lg:grid-cols-4 gap-4">

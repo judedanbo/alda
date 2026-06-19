@@ -23,7 +23,7 @@ const {
   <div class="space-y-6">
     <AppPageHeader
       title="Sealed Declarations"
-      description="All completed and sealed declarations for verification reference"
+      description="All sealed declarations for verification reference"
     />
 
     <AnalyticsFilterBar
