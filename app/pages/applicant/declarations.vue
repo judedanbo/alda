@@ -63,6 +63,7 @@ const formatDate = (date: string) => {
       <template #actions>
         <Button
           as-child
+          data-tour="declarations-new"
           :disabled="!isVerified"
           :class="{ 'opacity-50 pointer-events-none': !isVerified }"
         >
@@ -80,7 +81,7 @@ const formatDate = (date: string) => {
     </PageHeader>
 
     <!-- Filters -->
-    <div class="mb-6">
+    <div class="mb-6" data-tour="declarations-filter">
       <Select v-model="statusFilter">
         <SelectTrigger class="w-[200px]">
           <SelectValue placeholder="All Statuses" />
@@ -142,7 +143,7 @@ const formatDate = (date: string) => {
     </EmptyState>
 
     <!-- Declarations List -->
-    <div v-else class="space-y-4">
+    <div v-else class="space-y-4" data-tour="declarations-list">
       <NuxtLink
         v-for="declaration in declarations"
         :key="declaration.id"
@@ -193,6 +194,7 @@ const formatDate = (date: string) => {
       <!-- Pagination -->
       <div
         v-if="pagination && pagination.totalPages > 1"
+        data-tour="declarations-pagination"
         class="flex items-center justify-center gap-2 mt-8"
       >
         <Button

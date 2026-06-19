@@ -66,7 +66,7 @@ const handleSubmit = async () => {
         </CardHeader>
 
         <CardContent>
-          <form class="space-y-6" @submit.prevent="handleSubmit">
+          <form class="space-y-6" data-tour="auth-forgot-form" @submit.prevent="handleSubmit">
             <!-- Email Field -->
             <FormField
               v-slot="{ id, ariaInvalid, ariaDescribedby }"

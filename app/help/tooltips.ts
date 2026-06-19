@@ -88,6 +88,37 @@ export const fieldTooltips: FieldTooltip[] = [
     id: "reissue.letterScan",
     text: "Upload the scanned copy of the signed approval letter.",
   },
+  // Account
+  {
+    id: "account.email",
+    text: "Changing your email sends a verification link to the new address. Email notifications pause until you verify it.",
+  },
+  {
+    id: "account.phone",
+    text: "Changing your phone resets phone verification. Verify the new number to keep receiving SMS and to create declarations.",
+  },
+  {
+    id: "account.currentPassword",
+    text: "Enter your existing password to confirm it's you before setting a new one. Changing your password signs you out of all other devices.",
+  },
+  // Notification preferences
+  {
+    id: "preferences.channelEmail",
+    text: "When off, you receive no email notifications. Security messages such as password resets are always sent.",
+  },
+  {
+    id: "preferences.channelSms",
+    text: "When off, you receive no SMS notifications. A notification is only delivered on a channel you have enabled.",
+  },
+  {
+    id: "preferences.channelInApp",
+    text: "When off, notifications no longer appear inside the portal. You can re-enable this at any time.",
+  },
+  // Contact support
+  {
+    id: "contact.category",
+    text: "Pick the closest category — it helps route your message to the right team.",
+  },
   // Admin
   {
     id: "user.roles",

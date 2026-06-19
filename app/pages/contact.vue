@@ -110,7 +110,7 @@ const handleSubmit = async () => {
           </AlertDescription>
         </Alert>
 
-        <form v-if="!success" class="space-y-5" @submit.prevent="handleSubmit">
+        <form v-if="!success" class="space-y-5" data-tour="contact-form" @submit.prevent="handleSubmit">
           <!-- Name Field -->
           <div class="space-y-2">
             <Label for="name">
@@ -172,9 +172,10 @@ const handleSubmit = async () => {
           </div>
 
           <!-- Category Field -->
-          <div class="space-y-2">
-            <Label for="category">
+          <div class="space-y-2" data-tour="contact-category">
+            <Label for="category" class="inline-flex items-center gap-1">
               Category <span class="text-destructive">*</span>
+              <HelpTip field-id="contact.category" />
             </Label>
             <Select v-model="form.category">
               <SelectTrigger class="w-full">

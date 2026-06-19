@@ -183,7 +183,7 @@ const savePreferences = async () => {
 
     <template v-else>
       <!-- Display & Accessibility -->
-      <Card>
+      <Card data-tour="prefs-accessibility">
         <CardHeader>
           <CardTitle>Display &amp; Accessibility</CardTitle>
           <CardDescription>
@@ -206,7 +206,7 @@ const savePreferences = async () => {
       </Card>
 
       <!-- Notification channels -->
-      <Card class="mt-6">
+      <Card class="mt-6" data-tour="prefs-channels">
         <CardHeader>
           <CardTitle>Notification Channels</CardTitle>
           <CardDescription>
@@ -216,7 +216,7 @@ const savePreferences = async () => {
         <CardContent class="space-y-0">
           <div class="flex items-center justify-between py-4">
             <div class="space-y-1">
-              <Label for="email-notifications" class="text-sm font-medium">Email Notifications</Label>
+              <Label for="email-notifications" class="text-sm font-medium inline-flex items-center gap-1">Email Notifications <HelpTip field-id="preferences.channelEmail" /></Label>
               <p class="text-sm text-muted-foreground">Receive updates and alerts via email.</p>
             </div>
             <Switch id="email-notifications" v-model="channels.emailEnabled" />
@@ -226,7 +226,7 @@ const savePreferences = async () => {
 
           <div class="flex items-center justify-between py-4">
             <div class="space-y-1">
-              <Label for="sms-notifications" class="text-sm font-medium">SMS Notifications</Label>
+              <Label for="sms-notifications" class="text-sm font-medium inline-flex items-center gap-1">SMS Notifications <HelpTip field-id="preferences.channelSms" /></Label>
               <p class="text-sm text-muted-foreground">Receive important alerts via text message.</p>
             </div>
             <Switch id="sms-notifications" v-model="channels.smsEnabled" />
@@ -236,7 +236,7 @@ const savePreferences = async () => {
 
           <div class="flex items-center justify-between py-4">
             <div class="space-y-1">
-              <Label for="inapp-notifications" class="text-sm font-medium">In-App Notifications</Label>
+              <Label for="inapp-notifications" class="text-sm font-medium inline-flex items-center gap-1">In-App Notifications <HelpTip field-id="preferences.channelInApp" /></Label>
               <p class="text-sm text-muted-foreground">Show notifications within the application.</p>
             </div>
             <Switch id="inapp-notifications" v-model="channels.inAppEnabled" />
@@ -245,7 +245,7 @@ const savePreferences = async () => {
       </Card>
 
       <!-- Notification types / categories -->
-      <Card class="mt-6">
+      <Card class="mt-6" data-tour="prefs-types">
         <CardHeader>
           <CardTitle>
             {{ mode === "category" ? "Notification Categories" : "Notification Types" }}

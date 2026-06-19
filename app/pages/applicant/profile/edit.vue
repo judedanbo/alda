@@ -195,7 +195,7 @@ function formatDate(dateStr: string | null): string {
       description="Update your office details and information"
     />
 
-    <Card class="mb-6">
+    <Card class="mb-6" data-tour="edit-identity">
       <CardHeader>
         <CardTitle>Personal Details</CardTitle>
         <CardDescription>
@@ -223,7 +223,7 @@ function formatDate(dateStr: string | null): string {
       </CardContent>
     </Card>
 
-    <Card>
+    <Card data-tour="edit-offices">
       <CardHeader>
         <div class="flex items-center justify-between">
           <div>

@@ -126,8 +126,18 @@ describe("getContextualHelp", () => {
   });
 
   it("matches wildcard routes", () => {
-    expect(getContextualHelp("/applicant/profile/edit")?.routePattern).toBe(
+    // A profile sub-route with no specific entry falls through to the wildcard.
+    expect(getContextualHelp("/applicant/profile/other")?.routePattern).toBe(
       "/applicant/profile/*",
+    );
+  });
+
+  it("prefers a specific profile entry over the wildcard", () => {
+    expect(getContextualHelp("/applicant/profile/edit")?.routePattern).toBe(
+      "/applicant/profile/edit",
+    );
+    expect(getContextualHelp("/applicant/profile/setup")?.routePattern).toBe(
+      "/applicant/profile/setup",
     );
   });
 

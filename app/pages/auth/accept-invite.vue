@@ -184,7 +184,7 @@ const handleSubmit = async () => {
         </CardHeader>
 
         <CardContent>
-          <form class="space-y-6" @submit.prevent="handleSubmit">
+          <form class="space-y-6" data-tour="auth-invite-form" @submit.prevent="handleSubmit">
             <!-- Password Field -->
             <FormField
               v-slot="{ id, ariaInvalid, ariaDescribedby }"

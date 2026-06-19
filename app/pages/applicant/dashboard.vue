@@ -213,6 +213,7 @@ async function handleVerifyPhone() {
     <!-- Phone Verification Banner -->
     <div
       v-if="user && !isPhoneVerified"
+      data-tour="dashboard-phone-verify"
       class="bg-amber-50 border border-amber-200 rounded-lg p-4 dark:bg-amber-950/30 dark:border-amber-900"
     >
       <div class="flex items-start gap-3">
@@ -324,6 +325,7 @@ async function handleVerifyPhone() {
         user?.verificationStatus &&
         user.verificationStatus !== 'VERIFIED'
       "
+      data-tour="dashboard-verification-banner"
       :class="{
         'border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30':
           user.verificationStatus === 'PENDING_VERIFICATION',
@@ -393,7 +395,7 @@ async function handleVerifyPhone() {
           >
             {{ verificationInfo.messageToApplicant }}
           </p>
-          <div class="mt-4 rounded-lg border bg-background/60 p-4">
+          <div class="mt-4 rounded-lg border bg-background/60 p-4" data-tour="dashboard-verification-docs">
             <ApplicantVerificationDocuments />
           </div>
           <Button as-child size="sm" class="mt-3">

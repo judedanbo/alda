@@ -163,7 +163,7 @@ const handleSubmit = async () => {
       </CardHeader>
 
       <CardContent>
-        <form class="space-y-5" @submit.prevent="handleSubmit">
+        <form class="space-y-5" data-tour="auth-register-form" @submit.prevent="handleSubmit">
           <!-- Email Field -->
           <FormField
             v-slot="{ id, ariaInvalid, ariaDescribedby }"
@@ -188,6 +188,7 @@ const handleSubmit = async () => {
           <FormField
             v-slot="{ id, ariaInvalid, ariaDescribedby }"
             label="Phone number"
+            data-tour="auth-phone"
             :hint="phoneChecking ? 'Checking availability…' : 'Enter a local number (e.g. 0241234567) or include the country code (e.g. +233241234567)'"
             :error="fieldErrors.phone"
           >
@@ -207,6 +208,7 @@ const handleSubmit = async () => {
             v-slot="{ id, ariaInvalid, ariaDescribedby }"
             label="Password"
             required
+            data-tour="auth-password"
             :error="fieldErrors.password"
           >
             <Input
@@ -251,7 +253,7 @@ const handleSubmit = async () => {
           </FormField>
 
           <!-- Terms Checkbox -->
-          <div>
+          <div data-tour="auth-terms">
             <div class="flex items-start gap-3">
               <Checkbox
                 id="terms"
