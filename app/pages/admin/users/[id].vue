@@ -23,6 +23,7 @@ interface ActivityItem {
 interface UserDetail {
   id: string;
   email: string;
+  fullName: string | null;
   phone: string | null;
   phoneVerified: boolean;
   emailVerified: boolean;
@@ -83,14 +84,18 @@ onMounted(async () => {
 // ---------------------------------------------------------------------------
 // Profile (email + phone)
 // ---------------------------------------------------------------------------
-const profileForm = ref({ email: "", phone: "" });
+const profileForm = ref({ fullName: "", email: "", phone: "" });
 const savingProfile = ref(false);
 const { fieldErrors, clearAll, clearFieldError, handleServerError } = useFieldErrors();
+
+// Identity (email + full name) is locked once the account's email is verified.
+// While the invite is still pending an admin can correct these fields.
+const identityLocked = computed(() => !!user.value?.emailVerified);
 
 watch(
   user,
   (u) => {
-    if (u) profileForm.value = { email: u.email, phone: u.phone ?? "" };
+    if (u) profileForm.value = { fullName: u.fullName ?? "", email: u.email, phone: u.phone ?? "" };
   },
   { immediate: true },
 );
@@ -98,16 +103,28 @@ watch(
 const saveProfile = async () => {
   if (!user.value) return;
   clearAll();
-  if (!profileForm.value.email.trim()) {
-    fieldErrors.email = "Email is required";
-    return;
+  if (!identityLocked.value) {
+    if (profileForm.value.fullName.trim().length < 2) {
+      fieldErrors.fullName = "Full name must be at least 2 characters";
+      return;
+    }
+    if (!profileForm.value.email.trim()) {
+      fieldErrors.email = "Email is required";
+      return;
+    }
   }
   savingProfile.value = true;
   try {
     await authFetch(`/api/admin/users/${id}`, {
       method: "PATCH",
       body: {
-        email: profileForm.value.email.trim(),
+        // Email/full name are omitted once locked — the server rejects changes anyway.
+        ...(identityLocked.value
+          ? {}
+          : {
+              fullName: profileForm.value.fullName.trim(),
+              email: profileForm.value.email.trim(),
+            }),
         phone: profileForm.value.phone.trim() || null,
       },
     });
@@ -116,7 +133,8 @@ const saveProfile = async () => {
   } catch (e: unknown) {
     const msg = handleServerError(e);
     if (msg) {
-      if (/email/i.test(msg)) fieldErrors.email = msg;
+      if (/full name/i.test(msg)) fieldErrors.fullName = msg;
+      else if (/email/i.test(msg)) fieldErrors.email = msg;
       else toast.error(msg);
     }
   } finally {
@@ -317,7 +335,7 @@ const actionLabel = (action: string) =>
       <Card>
         <CardContent class="pt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div class="space-y-2">
-            <AppUserCell :name="user.profile?.fullName || user.email" :email="user.email" />
+            <AppUserCell :name="user.fullName || user.profile?.fullName || ''" :email="user.email" />
             <div class="flex flex-wrap items-center gap-1.5">
               <Badge
                 :class="user.isActive
@@ -345,15 +363,34 @@ const actionLabel = (action: string) =>
         <TabsContent value="profile">
           <Card>
             <CardContent class="pt-6 space-y-5">
+              <p v-if="identityLocked" class="text-xs text-muted-foreground">
+                Full name and email are locked because this account has been verified. Only the
+                phone number can be updated.
+              </p>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="space-y-1.5">
-                  <Label for="email">Email <span class="text-red-600">*</span></Label>
+                  <Label for="full-name">Full name <span v-if="!identityLocked" class="text-red-600">*</span></Label>
                   <Input
+                    v-if="!identityLocked"
+                    id="full-name"
+                    v-model="profileForm.fullName"
+                    type="text"
+                    placeholder="e.g. Kwame Asante"
+                    @input="clearFieldError('fullName')"
+                  />
+                  <p v-else class="text-sm">{{ user.fullName || '—' }}</p>
+                  <p v-if="fieldErrors.fullName" class="text-xs text-red-600">{{ fieldErrors.fullName }}</p>
+                </div>
+                <div class="space-y-1.5">
+                  <Label for="email">Email <span v-if="!identityLocked" class="text-red-600">*</span></Label>
+                  <Input
+                    v-if="!identityLocked"
                     id="email"
                     v-model="profileForm.email"
                     type="email"
                     @input="clearFieldError('email')"
                   />
+                  <p v-else class="text-sm">{{ user.email }}</p>
                   <p v-if="fieldErrors.email" class="text-xs text-red-600">{{ fieldErrors.email }}</p>
                 </div>
                 <div class="space-y-1.5">

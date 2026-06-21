@@ -72,7 +72,7 @@ const adminEvent = () =>
 
 describe("POST /api/admin/users", () => {
   it("creates a legal_unit user with an unusable password, unverified email, and a 72h invite token", async () => {
-    currentBody = { email: "newlegal@adla.test", roleNames: ["legal_unit"] };
+    currentBody = { email: "newlegal@adla.test", fullName: "Kojo Legal", roleNames: ["legal_unit"] };
     const res = await createUser(adminEvent());
     expect(res.success).toBe(true);
 
@@ -82,6 +82,7 @@ describe("POST /api/admin/users", () => {
     });
     expect(user.emailVerified).toBe(false);
     expect(user.isActive).toBe(true);
+    expect(user.fullName).toBe("Kojo Legal");
     expect(user.passwordHash.length).toBeGreaterThan(0);
     expect(user.roles.map((r) => r.role.name)).toEqual(["legal_unit"]);
 
@@ -94,6 +95,7 @@ describe("POST /api/admin/users", () => {
   it("creates a schedule_officer scoped to the given office", async () => {
     currentBody = {
       email: "newofficer@adla.test",
+      fullName: "Yaw Officer",
       roleNames: ["schedule_officer"],
       collectionOfficeIds: [hqOfficeId],
     };
@@ -106,14 +108,14 @@ describe("POST /api/admin/users", () => {
   });
 
   it("rejects a duplicate email with 409", async () => {
-    currentBody = { email: "newlegal@adla.test", roleNames: ["legal_unit"] };
+    currentBody = { email: "newlegal@adla.test", fullName: "Kojo Legal", roleNames: ["legal_unit"] };
     await expect(createUser(adminEvent())).rejects.toMatchObject({ statusCode: 409 });
   });
 });
 
 describe("POST /api/auth/accept-invite", () => {
   async function createInvitee(email: string) {
-    currentBody = { email, roleNames: ["legal_unit"] };
+    currentBody = { email, fullName: "Invitee User", roleNames: ["legal_unit"] };
     await createUser(adminEvent());
     const user = await prisma.user.findUniqueOrThrow({ where: { email } });
     const token = await prisma.passwordResetToken.findFirstOrThrow({ where: { userId: user.id } });
@@ -167,6 +169,7 @@ describe("PUT /api/admin/users/[id]/offices", () => {
   it("replaces a user's collection-office assignments", async () => {
     currentBody = {
       email: "officer2@adla.test",
+      fullName: "Akua Officer",
       roleNames: ["schedule_officer"],
       collectionOfficeIds: [hqOfficeId],
     };
@@ -216,7 +219,7 @@ describe("PUT /api/admin/users/[id]/roles (self-lockout guard)", () => {
   it("allows granting applicant to an existing user", async () => {
     const applicantRole = await prisma.role.findUniqueOrThrow({ where: { name: "applicant" } });
     const legalRole = await prisma.role.findUniqueOrThrow({ where: { name: "legal_unit" } });
-    currentBody = { email: "dual@adla.test", roleNames: ["legal_unit"] };
+    currentBody = { email: "dual@adla.test", fullName: "Dual User", roleNames: ["legal_unit"] };
     await createUser(adminEvent());
     const user = await prisma.user.findUniqueOrThrow({ where: { email: "dual@adla.test" } });
 
@@ -235,7 +238,7 @@ describe("PUT /api/admin/users/[id]/roles (self-lockout guard)", () => {
 
 describe("POST /api/admin/users/[id]/resend-invite", () => {
   it("replaces the existing invite token with a fresh 72h token", async () => {
-    currentBody = { email: "resend@adla.test", roleNames: ["legal_unit"] };
+    currentBody = { email: "resend@adla.test", fullName: "Resend User", roleNames: ["legal_unit"] };
     await createUser(adminEvent());
     const user = await prisma.user.findUniqueOrThrow({ where: { email: "resend@adla.test" } });
     const first = await prisma.passwordResetToken.findFirstOrThrow({ where: { userId: user.id } });
@@ -252,7 +255,7 @@ describe("POST /api/admin/users/[id]/resend-invite", () => {
   });
 
   it("refuses to resend for an already-activated user", async () => {
-    currentBody = { email: "activated@adla.test", roleNames: ["legal_unit"] };
+    currentBody = { email: "activated@adla.test", fullName: "Activated User", roleNames: ["legal_unit"] };
     await createUser(adminEvent());
     const user = await prisma.user.findUniqueOrThrow({ where: { email: "activated@adla.test" } });
     await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } });
@@ -268,7 +271,7 @@ const deleteUser = (await import("~/server/api/admin/users/[id]/index.delete")).
 const resetPassword = (await import("~/server/api/admin/users/[id]/reset-password.post")).default;
 
 async function makeLegalUser(email: string) {
-  currentBody = { email, roleNames: ["legal_unit"] };
+  currentBody = { email, fullName: "Legal User", roleNames: ["legal_unit"] };
   await createUser(adminEvent());
   return prisma.user.findUniqueOrThrow({ where: { email } });
 }
@@ -280,6 +283,7 @@ describe("GET /api/admin/users/[id]", () => {
     const res = await getUser(adminEvent());
     expect(res.success).toBe(true);
     expect(res.data.id).toBe(user.id);
+    expect(res.data.fullName).toBe("Legal User");
     expect(res.data.roles).toEqual(["legal_unit"]);
     expect(Array.isArray(res.data.activity)).toBe(true);
   });
@@ -293,15 +297,36 @@ describe("GET /api/admin/users/[id]", () => {
 });
 
 describe("PATCH /api/admin/users/[id]", () => {
-  it("updates email and phone", async () => {
+  it("updates email, full name and phone while the invite is pending", async () => {
     const user = await makeLegalUser("patch@adla.test");
     currentRouteId = user.id;
-    currentBody = { email: "patched@adla.test", phone: "+233200000111" };
+    currentBody = { email: "patched@adla.test", fullName: "Renamed User", phone: "+233200000111" };
     const res = await updateUser(adminEvent());
     expect(res.success).toBe(true);
     const after = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
     expect(after.email).toBe("patched@adla.test");
+    expect(after.fullName).toBe("Renamed User");
     expect(after.phone).toBe("+233200000111");
+  });
+
+  it("locks email and full name once the email is verified", async () => {
+    const user = await makeLegalUser("locked@adla.test");
+    await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } });
+    currentRouteId = user.id;
+
+    currentBody = { email: "newlocked@adla.test" };
+    await expect(updateUser(adminEvent())).rejects.toMatchObject({ statusCode: 409 });
+
+    currentBody = { fullName: "Cannot Change" };
+    await expect(updateUser(adminEvent())).rejects.toMatchObject({ statusCode: 409 });
+
+    // Phone is still editable after verification.
+    currentBody = { phone: "+233200000222" };
+    const res = await updateUser(adminEvent());
+    expect(res.success).toBe(true);
+    const after = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+    expect(after.email).toBe("locked@adla.test");
+    expect(after.phone).toBe("+233200000222");
   });
 
   it("clears the phone with null", async () => {

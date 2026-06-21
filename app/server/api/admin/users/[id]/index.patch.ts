@@ -25,32 +25,47 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: "User ID is required" });
   }
 
-  const { email, phone } = await validateBody(event, adminUpdateUserSchema);
+  const { email, fullName, phone } = await validateBody(event, adminUpdateUserSchema);
 
   const target = await prisma.user.findFirst({
     where: { id: userId, deletedAt: null },
-    select: { id: true, email: true, phone: true },
+    select: { id: true, email: true, fullName: true, phone: true, emailVerified: true },
   });
   if (!target) {
     throw createError({ statusCode: 404, statusMessage: "User not found" });
   }
 
-  const data: { email?: string; phone?: string | null } = {};
+  const data: { email?: string; fullName?: string; phone?: string | null } = {};
+
+  // Identity (email + full name) is locked once the account's email is verified.
+  // Admins may correct these only while the invite is still pending.
+  const wantsEmailChange = email !== undefined && email.toLowerCase() !== target.email;
+  const wantsNameChange = fullName !== undefined && fullName !== target.fullName;
+  if (target.emailVerified && (wantsEmailChange || wantsNameChange)) {
+    throw createError({
+      statusCode: 409,
+      statusMessage: "Conflict",
+      message: "Email and full name cannot be changed after the account is verified",
+    });
+  }
 
   // Email — unique (case-insensitive), excluding self.
-  if (email !== undefined) {
-    const normalizedEmail = email.toLowerCase();
-    if (normalizedEmail !== target.email) {
-      const owner = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-      if (owner && owner.id !== userId) {
-        throw createError({
-          statusCode: 409,
-          statusMessage: "Conflict",
-          message: "An account with this email already exists",
-        });
-      }
-      data.email = normalizedEmail;
+  if (wantsEmailChange) {
+    const normalizedEmail = email!.toLowerCase();
+    const owner = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (owner && owner.id !== userId) {
+      throw createError({
+        statusCode: 409,
+        statusMessage: "Conflict",
+        message: "An account with this email already exists",
+      });
     }
+    data.email = normalizedEmail;
+  }
+
+  // Full name.
+  if (wantsNameChange) {
+    data.fullName = fullName;
   }
 
   // Phone — null clears it; otherwise normalize + uniqueness check (Ghana
@@ -95,7 +110,7 @@ export default defineEventHandler(async (event) => {
   const updated = await prisma.user.update({
     where: { id: userId },
     data,
-    select: { id: true, email: true, phone: true },
+    select: { id: true, email: true, fullName: true, phone: true },
   });
 
   logAudit(event, {
@@ -103,13 +118,13 @@ export default defineEventHandler(async (event) => {
     action: AuditActions.USER_UPDATED,
     entityType: "user",
     entityId: userId,
-    oldValues: { email: target.email, phone: target.phone },
-    newValues: { email: updated.email, phone: updated.phone },
+    oldValues: { email: target.email, fullName: target.fullName, phone: target.phone },
+    newValues: { email: updated.email, fullName: updated.fullName, phone: updated.phone },
   });
 
   return {
     success: true,
     message: "User updated successfully",
-    data: { id: updated.id, email: updated.email, phone: updated.phone },
+    data: { id: updated.id, email: updated.email, fullName: updated.fullName, phone: updated.phone },
   };
 });

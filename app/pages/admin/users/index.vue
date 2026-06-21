@@ -17,6 +17,7 @@ interface CollectionOffice {
 interface User {
   id: string;
   email: string;
+  fullName: string | null;
   phone: string | null;
   emailVerified: boolean;
   isActive: boolean;
@@ -99,12 +100,14 @@ const columns: DataTableColumn[] = [
 const showCreateModal = ref(false);
 const creating = ref(false);
 const createForm = ref<{
+  fullName: string;
   email: string;
   phone: string;
   roleNames: string[];
   collectionOfficeIds: string[];
-}>({ email: "", phone: "", roleNames: [], collectionOfficeIds: [] });
-const createErrors = ref<{ email: string; phone: string; roles: string; offices: string }>({
+}>({ fullName: "", email: "", phone: "", roleNames: [], collectionOfficeIds: [] });
+const createErrors = ref<{ fullName: string; email: string; phone: string; roles: string; offices: string }>({
+  fullName: "",
   email: "",
   phone: "",
   roles: "",
@@ -116,8 +119,8 @@ const createNeedsOffice = computed(() =>
 );
 
 const openCreateModal = () => {
-  createForm.value = { email: "", phone: "", roleNames: [], collectionOfficeIds: [] };
-  createErrors.value = { email: "", phone: "", roles: "", offices: "" };
+  createForm.value = { fullName: "", email: "", phone: "", roleNames: [], collectionOfficeIds: [] };
+  createErrors.value = { fullName: "", email: "", phone: "", roles: "", offices: "" };
   showCreateModal.value = true;
 };
 
@@ -153,8 +156,12 @@ const toggleCreateOffice = (officeId: string, checked: boolean) => {
 };
 
 const submitCreate = async () => {
-  createErrors.value = { email: "", phone: "", roles: "", offices: "" };
+  createErrors.value = { fullName: "", email: "", phone: "", roles: "", offices: "" };
 
+  if (createForm.value.fullName.trim().length < 2) {
+    createErrors.value.fullName = "Full name must be at least 2 characters";
+    return;
+  }
   if (!createForm.value.email.trim()) {
     createErrors.value.email = "Email is required";
     return;
@@ -173,6 +180,7 @@ const submitCreate = async () => {
     const response = await authFetch<{ success: boolean; inviteEmailSent?: boolean; message?: string }>("/api/admin/users", {
       method: "POST",
       body: {
+        fullName: createForm.value.fullName.trim(),
         email: createForm.value.email.trim(),
         phone: createForm.value.phone.trim() || undefined,
         roleNames: createForm.value.roleNames,
@@ -346,7 +354,7 @@ const resendInvite = async (user: User) => {
         <template #cell-email="{ row }">
           <div class="flex flex-col gap-1">
             <AppUserCell
-              :name="(row as User).profile?.fullName || (row as User).email"
+              :name="(row as User).fullName || (row as User).profile?.fullName || ''"
               :email="(row as User).email"
             />
             <Badge v-if="!(row as User).activated" variant="secondary" class="w-fit">
@@ -415,6 +423,16 @@ const resendInvite = async (user: User) => {
           </DialogDescription>
         </DialogHeader>
         <div class="space-y-4">
+          <div class="space-y-1.5">
+            <Label for="create-full-name">Full name <span class="text-red-600">*</span></Label>
+            <Input
+              id="create-full-name"
+              v-model="createForm.fullName"
+              type="text"
+              placeholder="e.g. Kwame Asante"
+            />
+            <p v-if="createErrors.fullName" class="text-xs text-red-600">{{ createErrors.fullName }}</p>
+          </div>
           <div class="space-y-1.5">
             <Label for="create-email">Email <span class="text-red-600">*</span></Label>
             <Input

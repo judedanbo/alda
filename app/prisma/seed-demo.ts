@@ -338,10 +338,10 @@ async function main() {
   console.log("\nPhase 1: Creating demo officers...");
 
   const demoOfficerSpecs = [
-    { email: "demo-officer-1@adla.gov.gh", phone: "+233201000001", roleId: officerRole.id },
-    { email: "demo-officer-2@adla.gov.gh", phone: "+233201000002", roleId: officerRole.id },
-    { email: "demo-officer-3@adla.gov.gh", phone: "+233201000003", roleId: officerRole.id },
-    { email: "demo-legal-1@adla.gov.gh", phone: "+233201000004", roleId: legalRole.id },
+    { email: "demo-officer-1@adla.gov.gh", fullName: generateFullName(901), phone: "+233201000001", roleId: officerRole.id },
+    { email: "demo-officer-2@adla.gov.gh", fullName: generateFullName(902), phone: "+233201000002", roleId: officerRole.id },
+    { email: "demo-officer-3@adla.gov.gh", fullName: generateFullName(903), phone: "+233201000003", roleId: officerRole.id },
+    { email: "demo-legal-1@adla.gov.gh", fullName: generateFullName(904), phone: "+233201000004", roleId: legalRole.id },
   ];
 
   const scheduleOfficerIds: string[] = existingOfficers
@@ -357,6 +357,7 @@ async function main() {
       data: {
         id,
         email: spec.email,
+        fullName: spec.fullName,
         passwordHash,
         phone: spec.phone,
         emailVerified: true,

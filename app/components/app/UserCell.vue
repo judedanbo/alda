@@ -32,7 +32,7 @@ const avatarColor = computed(() => {
     </div>
     <div class="min-w-0">
       <p class="text-sm font-medium text-foreground truncate">{{ displayName }}</p>
-      <p v-if="email" class="text-[11px] text-muted-foreground truncate">{{ email }}</p>
+      <p v-if="email && email !== displayName" class="text-[11px] text-muted-foreground truncate">{{ email }}</p>
     </div>
   </div>
 </template>

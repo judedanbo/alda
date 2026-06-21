@@ -220,7 +220,7 @@ export default defineEventHandler(async (event) => {
         phoneVerifiedAt: user.phoneVerifiedAt,
         roles,
         hasProfile: !!profile,
-        fullName: profile?.fullName,
+        fullName: user.fullName ?? profile?.fullName ?? null,
         verificationStatus: profile?.verificationStatus,
       },
       tokens,

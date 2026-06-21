@@ -11,7 +11,7 @@ export interface User {
   phoneVerifiedAt: string | null;
   roles: string[];
   hasProfile?: boolean;
-  fullName?: string;
+  fullName?: string | null;
   verificationStatus?: string;
 }
 

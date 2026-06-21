@@ -29,6 +29,7 @@ export default defineEventHandler(async (event) => {
     select: {
       id: true,
       email: true,
+      fullName: true,
       phone: true,
       phoneVerified: true,
       emailVerified: true,
@@ -94,6 +95,7 @@ export default defineEventHandler(async (event) => {
     data: {
       id: user.id,
       email: user.email,
+      fullName: user.fullName,
       phone: user.phone,
       phoneVerified: user.phoneVerified,
       emailVerified: user.emailVerified,
