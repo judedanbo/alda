@@ -30,6 +30,17 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     <DialogOverlay
       class="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
     >
+      <!--
+        Unlike the standard DialogContent (overlay + content are siblings), the
+        scroll variant nests the content INSIDE the overlay so the backdrop can
+        scroll. reka's DialogOverlay registers `@pointerdown.left.prevent`, so a
+        pointerdown on a plain <input> here bubbles to the overlay and gets its
+        default prevented — which suppresses the compatibility mousedown and
+        stops the input from focusing on click (labels still work via `for=`).
+        Stop pointerdown at the content so it never reaches the overlay handler;
+        outside-click dismissal is unaffected (it keys off the pointerdown
+        target being outside the content, not on bubbling through it).
+      -->
       <DialogContent
         :class="
           cn(
@@ -38,6 +49,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
           )
         "
         v-bind="{ ...$attrs, ...forwarded }"
+        @pointerdown.stop
         @pointer-down-outside="(event) => {
           const originalEvent = event.detail.originalEvent;
           const target = originalEvent.target as HTMLElement;
