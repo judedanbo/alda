@@ -36,7 +36,7 @@
     "jsonwebtoken": "^9.0.2",
     "lucide-vue-next": "^1.0.0",
     "minio": "^8.0.7",
-    "nodemailer": "^8.0.7",
+    "nodemailer": "^9.0.0",
     "nuxt": "^4.2.0",
     "pdf-lib": "^1.17.1",
     "pinia": "^3.0.4",
@@ -51,6 +51,9 @@
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
+  },
+  "overrides": {
+    "esbuild": ">=0.28.1"
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.0.0",
