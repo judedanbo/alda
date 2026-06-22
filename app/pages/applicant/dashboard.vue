@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { CompassIcon, ChevronDownIcon } from "lucide-vue-next";
+import { getToursForRole } from "~/help";
+
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
@@ -63,6 +66,9 @@ onMounted(() => {
 
 const showCodeHistory = ref(false);
 const codeCopied = ref(false);
+
+const showGuidedTours = ref(false);
+const guidedTours = getToursForRole("applicant");
 
 const canCreateDeclaration = computed(
   () =>
@@ -800,5 +806,39 @@ async function handleVerifyPhone() {
         </CardContent>
       </Card>
     </div>
+
+    <!-- Guided tours (collapsible) -->
+    <Card v-if="guidedTours.length">
+      <CardHeader>
+        <button
+          type="button"
+          class="flex w-full items-center gap-3 text-left"
+          :aria-expanded="showGuidedTours"
+          @click="showGuidedTours = !showGuidedTours"
+        >
+          <div
+            class="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg"
+          >
+            <CompassIcon class="size-5" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <CardTitle class="text-base">Guided tours</CardTitle>
+            <CardDescription>
+              Take an interactive walkthrough of any page in the portal.
+            </CardDescription>
+          </div>
+          <span class="text-muted-foreground shrink-0 text-xs font-medium tabular-nums">
+            {{ guidedTours.length }}
+          </span>
+          <ChevronDownIcon
+            class="text-muted-foreground size-4 shrink-0 transition-transform duration-200 motion-reduce:transition-none"
+            :class="{ 'rotate-180': showGuidedTours }"
+          />
+        </button>
+      </CardHeader>
+      <CardContent v-if="showGuidedTours">
+        <HelpTourList :tours="guidedTours" />
+      </CardContent>
+    </Card>
   </div>
 </template>

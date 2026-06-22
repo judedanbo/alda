@@ -57,6 +57,11 @@ useSeoMeta({
 
     <Card v-else>
       <CardHeader>
+        <p
+          class="text-primary text-[11px] font-semibold uppercase tracking-wide"
+        >
+          Guide
+        </p>
         <CardTitle class="text-2xl">{{ guide.title }}</CardTitle>
         <CardDescription>{{ guide.description }}</CardDescription>
         <div class="flex flex-wrap items-center gap-3 pt-1">
@@ -71,14 +76,24 @@ useSeoMeta({
         </div>
       </CardHeader>
       <CardContent class="space-y-6">
-        <Button
+        <!-- Prefer a hands-on walkthrough? Launch the matching tour. -->
+        <div
           v-if="guide.relatedTourId"
-          variant="outline"
-          @click="start(guide.relatedTourId)"
+          class="border-primary/20 bg-primary/5 flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
         >
-          <PlayIcon class="size-4" />
-          Start interactive tour
-        </Button>
+          <div class="min-w-0">
+            <p class="text-foreground text-sm font-medium">
+              Prefer a hands-on walkthrough?
+            </p>
+            <p class="text-muted-foreground text-sm">
+              Run this guide as an interactive tour right on the page.
+            </p>
+          </div>
+          <Button class="shrink-0" @click="start(guide.relatedTourId)">
+            <PlayIcon class="size-4" />
+            Start interactive tour
+          </Button>
+        </div>
 
         <HelpGuideSteps :steps="guide.steps" />
       </CardContent>

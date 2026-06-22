@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   getArticlesForRole,
   getGuidesForRole,
+  getToursForRole,
   getFaqsForRole,
   getGlossaryForRole,
   getArticleById,
@@ -51,6 +52,30 @@ describe("role-scoped collections", () => {
       true,
     );
     expect(getGlossaryForRole("applicant").length).toBeGreaterThan(0);
+  });
+});
+
+describe("getToursForRole", () => {
+  it("returns role-scoped tours that have a launchable route", () => {
+    const tours = getToursForRole("applicant");
+    expect(tours.length).toBeGreaterThan(0);
+    expect(tours.every((t) => t.roles.includes("applicant"))).toBe(true);
+    expect(tours.every((t) => !!t.route)).toBe(true);
+    // the getting-started tour is a routed applicant tour
+    expect(tours.some((t) => t.id === "tour-applicant-getting-started")).toBe(true);
+  });
+
+  it("excludes routeless tours and auth-page tours", () => {
+    const ids = getToursForRole("applicant").map((t) => t.id);
+    // routeless: only runs on a specific declaration page
+    expect(ids).not.toContain("tour-applicant-declaration-detail");
+    expect(ids).not.toContain("tour-applicant-reissue");
+    // auth-page tours can't run while logged in (middleware redirects away)
+    expect(ids).not.toContain("tour-applicant-login");
+    expect(ids).not.toContain("tour-applicant-register");
+    expect(getToursForRole("applicant").every((t) => !t.route!.startsWith("/auth"))).toBe(
+      true,
+    );
   });
 });
 

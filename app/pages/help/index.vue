@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { BookOpenIcon, ClockIcon, ArrowRightIcon } from "lucide-vue-next";
+import {
+  BookOpenIcon,
+  ClockIcon,
+  ArrowRightIcon,
+  CompassIcon,
+} from "lucide-vue-next";
+import { EmptyState } from "~/components/ui/empty-state";
 import type { HelpRole } from "~/help";
 import {
   getArticlesForRole,
   getGuidesForRole,
+  getToursForRole,
   getFaqsForRole,
   getGlossaryForRole,
   ROLE_META,
@@ -44,6 +51,7 @@ watch([selectedRole, activeTab], () => {
 
 const articles = computed(() => getArticlesForRole(selectedRole.value));
 const guides = computed(() => getGuidesForRole(selectedRole.value));
+const roleTours = computed(() => getToursForRole(selectedRole.value));
 const faqs = computed(() => getFaqsForRole(selectedRole.value));
 const glossaryTerms = computed(() => getGlossaryForRole(selectedRole.value));
 
@@ -142,42 +150,84 @@ useSeoMeta({
       </TabsContent>
 
       <!-- Guides -->
-      <TabsContent value="guides" class="space-y-3">
-        <p
-          v-if="guides.length === 0"
-          class="text-muted-foreground py-8 text-center text-sm"
+      <TabsContent value="guides" class="space-y-6">
+        <!-- Interactive tours panel -->
+        <section
+          v-if="roleTours.length > 0"
+          class="bg-muted/40 rounded-xl border p-4 sm:p-5"
         >
-          No guides for this role yet.
-        </p>
-        <NuxtLink
-          v-for="guide in guides"
-          :key="guide.id"
-          :to="`/help/guides/${guide.id}`"
-          class="block"
-        >
-          <Card class="hover:border-primary/50 transition-colors">
-            <CardContent class="py-4">
-              <div class="flex items-start justify-between gap-4">
-                <div class="min-w-0">
+          <div class="mb-4 flex items-center gap-2.5">
+            <div
+              class="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-lg"
+            >
+              <CompassIcon class="size-4" />
+            </div>
+            <div>
+              <p
+                class="text-foreground text-[11px] font-semibold uppercase tracking-wide"
+              >
+                Interactive tours
+              </p>
+              <p class="text-muted-foreground text-xs">
+                Guided walkthroughs that highlight each part of a page as you go.
+              </p>
+            </div>
+          </div>
+          <HelpTourList :tours="roleTours" />
+        </section>
+
+        <!-- Written guides -->
+        <section class="space-y-3">
+          <p
+            v-if="roleTours.length > 0"
+            class="text-muted-foreground text-[11px] font-semibold uppercase tracking-wide"
+          >
+            Step-by-step guides
+          </p>
+          <EmptyState
+            v-if="guides.length === 0"
+            :icon="BookOpenIcon"
+            title="No guides yet"
+            description="Step-by-step guides for this section are on the way."
+          />
+          <NuxtLink
+            v-for="guide in guides"
+            :key="guide.id"
+            :to="`/help/guides/${guide.id}`"
+            class="block"
+          >
+            <Card class="hover:border-primary/50 transition-colors">
+              <CardContent class="flex items-start gap-4 py-4">
+                <div
+                  class="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-lg"
+                >
+                  <BookOpenIcon class="size-5" />
+                </div>
+                <div class="min-w-0 flex-1">
                   <p class="text-foreground font-medium">{{ guide.title }}</p>
                   <p class="text-muted-foreground mt-0.5 text-sm">
                     {{ guide.description }}
                   </p>
+                  <div class="mt-2 flex flex-wrap items-center gap-2">
+                    <Badge variant="outline" class="font-normal">
+                      {{ guide.steps.length }} steps
+                    </Badge>
+                    <span
+                      v-if="guide.estimatedMinutes"
+                      class="text-muted-foreground flex items-center gap-1 text-xs"
+                    >
+                      <ClockIcon class="size-3.5" />
+                      About {{ guide.estimatedMinutes }} min
+                    </span>
+                  </div>
                 </div>
-                <Badge variant="outline" class="shrink-0">
-                  {{ guide.steps.length }} steps
-                </Badge>
-              </div>
-              <p
-                v-if="guide.estimatedMinutes"
-                class="text-muted-foreground mt-2 flex items-center gap-1 text-xs"
-              >
-                <ClockIcon class="size-3.5" />
-                About {{ guide.estimatedMinutes }} min
-              </p>
-            </CardContent>
-          </Card>
-        </NuxtLink>
+                <ArrowRightIcon
+                  class="text-muted-foreground mt-1 size-4 shrink-0"
+                />
+              </CardContent>
+            </Card>
+          </NuxtLink>
+        </section>
       </TabsContent>
 
       <!-- FAQ -->
