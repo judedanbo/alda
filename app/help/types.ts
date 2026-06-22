@@ -109,6 +109,7 @@ export interface TourDefinition {
 
 export type OnboardingSignal =
   | "emailVerified"
+  | "phoneVerified"
   | "profileCreated"
   | "profileVerified"
   | "hasActiveDeclaration";

@@ -50,6 +50,7 @@ export function useOnboarding() {
   const ctx = computed<ItemContext>(() => {
     const state: OnboardingState = {
       emailVerified: authStore.isEmailVerified,
+      phoneVerified: authStore.isPhoneVerified,
       profileCreated: !!authStore.user?.hasProfile,
       profileVerified: authStore.isVerified,
       hasActiveDeclaration: hasActiveDeclaration.value,

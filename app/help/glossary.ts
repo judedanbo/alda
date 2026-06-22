@@ -117,6 +117,19 @@ export const glossaryTerms: GlossaryTerm[] = [
     roles: ["schedule_officer", "admin"],
   },
   {
+    id: "gl-issues-identified",
+    term: "Issues Identified",
+    definition:
+      "A review sub-status meaning a reviewer has flagged one or more sections. The declaration stays Under Review until every flagged issue is resolved.",
+    aliases: ["review status"],
+  },
+  {
+    id: "gl-issues-resolved",
+    term: "Issues Resolved",
+    definition:
+      "A review sub-status meaning every flagged section has been resolved. The declaration is ready for final approval and stays Under Review until it is approved.",
+  },
+  {
     id: "gl-registration-verification",
     term: "Registration verification",
     definition:

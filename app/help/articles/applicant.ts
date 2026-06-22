@@ -23,8 +23,9 @@ export const applicantArticles: HelpArticle[] = [
         type: "list",
         ordered: true,
         items: [
-          "Register with your email and create a password.",
+          "Register with your email and phone number, and create a password.",
           "Verify your email by clicking the link we send you.",
+          "Verify your phone number with the code we text you.",
           "Complete your profile — personal details, Ghana Card images, and your office.",
           "Wait for the Legal Unit to verify your registration.",
           "Once verified, create a declaration to receive your unique code.",
@@ -101,14 +102,19 @@ export const applicantArticles: HelpArticle[] = [
         items: [
           "Verified — you can now create declarations.",
           "On Hold — your registration is paused; the message explains why.",
-          "More Information Required — update your profile with what was asked for.",
+          "More Information Required — the reviewer needs more details or documents before they can decide.",
           "Rejected — the registration cannot proceed; read the reason carefully.",
         ],
       },
       {
         type: "note",
+        variant: "tip",
+        text: "When your registration is set to More Information Required, an upload area appears on your Profile page. Upload the supporting documents the reviewer asked for (up to five files) — they see exactly what you supply in response.",
+      },
+      {
+        type: "note",
         variant: "info",
-        text: "The New Declaration option stays disabled until your registration is Verified.",
+        text: "The New Declaration option stays disabled until your email and phone number are verified and the Legal Unit has set your registration to Verified.",
       },
     ],
   },
@@ -133,7 +139,7 @@ export const applicantArticles: HelpArticle[] = [
       },
       {
         type: "paragraph",
-        text: "You cannot start a new declaration while one is already in progress (Code Generated, Form Collected, Submitted, or Under Review). Finish or resolve the current one first.",
+        text: "You cannot start a new declaration while one is already in progress (Code Generated, Form Collected, Submitted, Under Review, or Approved). Finish or resolve the current one first — an Approved declaration still blocks a new one until its receipt is generated and it is Sealed.",
       },
       {
         type: "heading",

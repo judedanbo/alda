@@ -52,7 +52,7 @@ export const tours: TourDefinition[] = [
         element: "[data-tour=\"nav-new-declaration\"]",
         title: "New declaration",
         description:
-          "Once your registration is verified, create a declaration here to get your unique code.",
+          "Once your email and phone are verified and the Legal Unit has verified your registration, create a declaration here to get your unique code.",
       },
       {
         element: "[data-tour=\"help-button\"]",
@@ -219,14 +219,14 @@ export const tours: TourDefinition[] = [
   {
     id: "tour-applicant-analytics",
     title: "Applicant: your analytics",
-    description: "An orientation tour of your completed-declaration insights.",
+    description: "An orientation tour of your sealed-declaration insights.",
     roles: ["applicant"],
     route: "/applicant/analytics",
     steps: [
       {
         title: "Your declaration analytics",
         description:
-          "This page summarises your sealed and completed declarations.",
+          "This page summarises your sealed declarations.",
       },
       {
         element: "[data-tour=\"analytics-stats\"]",
@@ -253,9 +253,9 @@ export const tours: TourDefinition[] = [
       },
       {
         element: "[data-tour=\"analytics-table\"]",
-        title: "Completed declarations",
+        title: "Your declarations",
         description:
-          "Sort and page through your completed declarations in detail.",
+          "Sort and page through your sealed declarations in detail.",
       },
       {
         title: "That is the tour",

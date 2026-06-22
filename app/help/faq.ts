@@ -72,6 +72,15 @@ export const faqEntries: FaqEntry[] = [
     keywords: ["email", "verification", "spam"],
   },
   {
+    id: "faq-verify-phone",
+    question: "How do I verify my phone number?",
+    answer:
+      "Open your dashboard or My Account, add a phone number if you have not already, and choose to send a code. We text you a 6-digit code — enter it to verify. A verified phone is required before you can create a declaration. Ghana numbers can be local (0241234567) or include the country code (+233241234567).",
+    roles: ["applicant"],
+    category: "account",
+    keywords: ["phone", "verify", "sms", "code", "number", "declaration"],
+  },
+  {
     id: "faq-change-notifications",
     question: "How do I change how I am notified?",
     answer:
@@ -80,15 +89,33 @@ export const faqEntries: FaqEntry[] = [
     category: "account",
     keywords: ["notifications", "email", "sms", "settings"],
   },
+  {
+    id: "faq-accept-invite",
+    question: "I was invited to the portal. How do I activate my account?",
+    answer:
+      "Open the link in your invitation email. It verifies your email automatically and takes you to a \"Set your password\" page — choose a password to activate your account, then sign in. Invitation links expire after 72 hours; if yours has expired, ask an administrator to resend the invitation.",
+    roles: [],
+    category: "account",
+    keywords: ["invite", "invitation", "activate", "set password", "staff"],
+  },
+  {
+    id: "faq-switch-roles",
+    question: "I have more than one role. How do I switch between them?",
+    answer:
+      "If your account holds more than one role, an \"Acting as\" selector appears in the account menu in the top-right corner. Pick a role to scope the navigation, dashboard, and what you can access to that role. Switch back at any time from the same menu.",
+    roles: [],
+    category: "account",
+    keywords: ["roles", "acting as", "switch", "multiple roles"],
+  },
   // --- Applicant -----------------------------------------------------------
   {
     id: "faq-new-declaration-disabled",
     question: "Why is the New Declaration option disabled?",
     answer:
-      "New Declaration is disabled until your registration is Verified, and also while you already have a declaration in progress. Finish or resolve your current declaration first.",
+      "New Declaration is disabled until your email and phone number are both verified and the Legal Unit has set your registration to Verified. It is also disabled while you already have a declaration in progress. Finish or resolve your current declaration first.",
     roles: ["applicant"],
     category: "declarations",
-    keywords: ["new declaration", "disabled", "verified", "active"],
+    keywords: ["new declaration", "disabled", "verified", "active", "phone", "email"],
   },
   {
     id: "faq-how-many-declarations",
@@ -126,6 +153,15 @@ export const faqEntries: FaqEntry[] = [
     roles: ["schedule_officer"],
     category: "form-handling",
     keywords: ["form return", "form collected", "blocked"],
+  },
+  {
+    id: "faq-officer-office-scope",
+    question: "Why can't I find or act on a declaration?",
+    answer:
+      "Schedule officers are scoped to their assigned collection office(s). You can only record collections and returns, review, and issue receipts for declarations belonging to your offices — acting on another office's declaration is refused with \"You are not assigned to this collection office.\" If you need access to a different office, ask an administrator to update your office assignment.",
+    roles: ["schedule_officer"],
+    category: "form-handling",
+    keywords: ["office", "assigned", "not assigned", "collection office", "scope"],
   },
   {
     id: "faq-officer-reject",

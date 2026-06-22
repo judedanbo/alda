@@ -16,6 +16,16 @@ export const onboardingChecklists: Record<HelpRole, OnboardingChecklist> = {
         completionKey: "emailVerified",
       },
       {
+        id: "verify-phone",
+        label: "Verify your phone number",
+        description:
+          "Enter the code we text you. A verified phone is required to create a declaration.",
+        completion: "auto",
+        completionKey: "phoneVerified",
+        actionTo: "/account",
+        actionLabel: "Verify phone",
+      },
+      {
         id: "complete-profile",
         label: "Complete your profile",
         description:
