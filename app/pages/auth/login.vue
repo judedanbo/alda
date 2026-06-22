@@ -61,7 +61,7 @@ const handleSubmit = async () => {
       </CardHeader>
 
       <CardContent>
-        <form class="space-y-6" @submit.prevent="handleSubmit">
+        <form class="space-y-6" data-tour="auth-login-form" @submit.prevent="handleSubmit">
           <!-- Email Field -->
           <FormField
             v-slot="{ id, ariaInvalid, ariaDescribedby }"
@@ -88,6 +88,7 @@ const handleSubmit = async () => {
                 <span>Password</span>
                 <NuxtLink
                   to="/auth/forgot-password"
+                  data-tour="auth-forgot-link"
                   class="text-sm text-primary hover:underline font-normal"
                 >
                   Forgot password?
@@ -120,7 +121,7 @@ const handleSubmit = async () => {
       <CardFooter class="flex-col gap-4">
         <p class="text-center text-sm text-muted-foreground">
           Don't have an account?
-          <NuxtLink to="/auth/register" class="text-primary font-medium hover:underline">
+          <NuxtLink to="/auth/register" data-tour="auth-register-link" class="text-primary font-medium hover:underline">
             Create account
           </NuxtLink>
         </p>

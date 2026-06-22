@@ -231,7 +231,7 @@ async function changePassword() {
 
     <template v-else-if="account">
       <!-- Account overview -->
-      <Card>
+      <Card data-tour="account-overview">
         <CardHeader>
           <CardTitle>Account Overview</CardTitle>
           <CardDescription>Your account details and current roles.</CardDescription>
@@ -297,7 +297,7 @@ async function changePassword() {
       </Card>
 
       <!-- Contact information -->
-      <Card class="mt-6">
+      <Card class="mt-6" data-tour="account-contact">
         <CardHeader>
           <CardTitle>Contact Information</CardTitle>
           <CardDescription>
@@ -306,7 +306,7 @@ async function changePassword() {
         </CardHeader>
         <CardContent class="space-y-4">
           <div class="space-y-1.5">
-            <Label for="account-email">Email</Label>
+            <Label for="account-email" class="flex items-center gap-1">Email <HelpTip field-id="account.email" /></Label>
             <Input
               id="account-email"
               v-model="contact.email"
@@ -319,7 +319,7 @@ async function changePassword() {
           </div>
 
           <div class="space-y-1.5">
-            <Label for="account-phone">Phone</Label>
+            <Label for="account-phone" class="flex items-center gap-1">Phone <HelpTip field-id="account.phone" /></Label>
             <Input
               id="account-phone"
               v-model="contact.phone"
@@ -406,7 +406,7 @@ async function changePassword() {
       </Card>
 
       <!-- Password -->
-      <Card class="mt-6">
+      <Card class="mt-6" data-tour="account-password">
         <CardHeader>
           <CardTitle>Password</CardTitle>
           <CardDescription>
@@ -415,7 +415,7 @@ async function changePassword() {
         </CardHeader>
         <CardContent class="space-y-4">
           <div class="space-y-1.5">
-            <Label for="pw-current">Current password</Label>
+            <Label for="pw-current" class="flex items-center gap-1">Current password <HelpTip field-id="account.currentPassword" /></Label>
             <Input
               id="pw-current"
               v-model="pw.current"

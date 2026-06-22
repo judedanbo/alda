@@ -264,3 +264,95 @@ html.a11y-readable-font body {
   font-family: "Atkinson Hyperlegible", system-ui, -apple-system, BlinkMacSystemFont,
     'Segoe UI', Roboto, sans-serif;
 }
+
+/* ── Branded interactive-tour popovers (driver.js) ─────────────────────────
+   Scoped to the `adla-tour` popoverClass set in composables/useTour.ts so the
+   vanilla driver.css is never touched globally. Everything is keyed off the
+   theme tokens (var(--color-*)), so the popover adapts across all five themes.
+   Signature: a Ghana-green left rail — the same "journey rail" motif used by
+   the written-guide step list. */
+.adla-tour.driver-popover {
+  font-family: inherit;
+  background: var(--color-popover);
+  color: var(--color-popover-foreground);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-xl);
+  box-shadow:
+    0 10px 30px -12px rgb(0 0 0 / 0.35),
+    0 4px 10px -6px rgb(0 0 0 / 0.2);
+  max-width: 340px;
+}
+
+.adla-tour .driver-popover-title {
+  font-size: 0.975rem;
+  font-weight: 600;
+  color: var(--color-popover-foreground);
+}
+
+.adla-tour .driver-popover-description {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--color-muted-foreground);
+}
+
+/* Progress text rendered as a small uppercase eyebrow. */
+.adla-tour .driver-popover-progress-text {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted-foreground);
+}
+
+.adla-tour .driver-popover-footer button {
+  text-shadow: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  padding: 0.35rem 0.75rem;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+/* Primary action — solid Ghana green. */
+.adla-tour .driver-popover-next-btn {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  border: 1px solid var(--color-primary);
+}
+.adla-tour .driver-popover-next-btn:hover {
+  background: color-mix(in srgb, var(--color-primary) 88%, black);
+}
+
+/* Secondary action — quiet outline. */
+.adla-tour .driver-popover-prev-btn {
+  background: transparent;
+  color: var(--color-muted-foreground);
+  border: 1px solid var(--color-border);
+}
+.adla-tour .driver-popover-prev-btn:hover {
+  background: var(--color-muted);
+  color: var(--color-foreground);
+}
+
+.adla-tour .driver-popover-close-btn {
+  color: var(--color-muted-foreground);
+  transition: color 0.15s ease;
+}
+.adla-tour .driver-popover-close-btn:hover {
+  color: var(--color-foreground);
+}
+
+/* Recolor the arrow to match the popover surface across all placements. */
+.adla-tour .driver-popover-arrow-side-left.driver-popover-arrow {
+  border-left-color: var(--color-popover);
+}
+.adla-tour .driver-popover-arrow-side-right.driver-popover-arrow {
+  border-right-color: var(--color-popover);
+}
+.adla-tour .driver-popover-arrow-side-top.driver-popover-arrow {
+  border-top-color: var(--color-popover);
+}
+.adla-tour .driver-popover-arrow-side-bottom.driver-popover-arrow {
+  border-bottom-color: var(--color-popover);
+}

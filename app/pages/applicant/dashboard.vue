@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { CompassIcon, ChevronDownIcon } from "lucide-vue-next";
+import { getToursForRole } from "~/help";
+
 definePageMeta({
   layout: "dashboard",
   middleware: "auth",
@@ -63,6 +66,9 @@ onMounted(() => {
 
 const showCodeHistory = ref(false);
 const codeCopied = ref(false);
+
+const showGuidedTours = ref(false);
+const guidedTours = getToursForRole("applicant");
 
 const canCreateDeclaration = computed(
   () =>
@@ -176,6 +182,7 @@ async function handleVerifyPhone() {
     <!-- Email Verification Banner -->
     <div
       v-if="user && !isEmailVerified"
+      data-tour="dashboard-email-verify"
       class="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center justify-between dark:bg-amber-950/30 dark:border-amber-900"
     >
       <div class="flex items-center gap-3">
@@ -213,6 +220,7 @@ async function handleVerifyPhone() {
     <!-- Phone Verification Banner -->
     <div
       v-if="user && !isPhoneVerified"
+      data-tour="dashboard-phone-verify"
       class="bg-amber-50 border border-amber-200 rounded-lg p-4 dark:bg-amber-950/30 dark:border-amber-900"
     >
       <div class="flex items-start gap-3">
@@ -324,6 +332,7 @@ async function handleVerifyPhone() {
         user?.verificationStatus &&
         user.verificationStatus !== 'VERIFIED'
       "
+      data-tour="dashboard-verification-banner"
       :class="{
         'border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30':
           user.verificationStatus === 'PENDING_VERIFICATION',
@@ -393,7 +402,7 @@ async function handleVerifyPhone() {
           >
             {{ verificationInfo.messageToApplicant }}
           </p>
-          <div class="mt-4 rounded-lg border bg-background/60 p-4">
+          <div class="mt-4 rounded-lg border bg-background/60 p-4" data-tour="dashboard-verification-docs">
             <ApplicantVerificationDocuments />
           </div>
           <Button as-child size="sm" class="mt-3">
@@ -422,6 +431,7 @@ async function handleVerifyPhone() {
     <!-- Active Code Hero -->
     <Card
       v-if="dashboard?.activeDeclaration"
+      data-tour="dashboard-active-declaration"
       class="border-primary/30 bg-primary/5"
     >
       <CardContent class="p-6">
@@ -576,6 +586,7 @@ async function handleVerifyPhone() {
     <!-- Verification activity + Quick actions -->
     <div class="grid md:grid-cols-3 gap-4">
       <AppStatCard
+        data-tour="dashboard-verification-lookups"
         label="Verification Lookups"
         :value="dashboard?.verificationCount ?? 0"
         :loading="loading"
@@ -585,7 +596,7 @@ async function handleVerifyPhone() {
         icon-color="text-primary"
         icon-path="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
       />
-      <Card class="md:col-span-2">
+      <Card data-tour="dashboard-quick-actions" class="md:col-span-2">
         <CardHeader>
           <CardTitle class="text-base">Quick Actions</CardTitle>
         </CardHeader>
@@ -694,7 +705,7 @@ async function handleVerifyPhone() {
     <!-- Summary + Code history -->
     <div class="grid lg:grid-cols-3 gap-4">
       <div class="lg:col-span-2">
-        <Card>
+        <Card data-tour="dashboard-declarations-overview">
           <CardHeader class="flex flex-row items-center justify-between pb-2">
             <div>
               <CardTitle class="text-base">Declarations Overview</CardTitle>
@@ -740,7 +751,7 @@ async function handleVerifyPhone() {
           </CardContent>
         </Card>
       </div>
-      <Card>
+      <Card data-tour="dashboard-code-history">
         <CardHeader>
           <CardTitle class="text-base flex items-center justify-between">
             Code History
@@ -795,5 +806,39 @@ async function handleVerifyPhone() {
         </CardContent>
       </Card>
     </div>
+
+    <!-- Guided tours (collapsible) -->
+    <Card v-if="guidedTours.length">
+      <CardHeader>
+        <button
+          type="button"
+          class="flex w-full items-center gap-3 text-left"
+          :aria-expanded="showGuidedTours"
+          @click="showGuidedTours = !showGuidedTours"
+        >
+          <div
+            class="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg"
+          >
+            <CompassIcon class="size-5" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <CardTitle class="text-base">Guided tours</CardTitle>
+            <CardDescription>
+              Take an interactive walkthrough of any page in the portal.
+            </CardDescription>
+          </div>
+          <span class="text-muted-foreground shrink-0 text-xs font-medium tabular-nums">
+            {{ guidedTours.length }}
+          </span>
+          <ChevronDownIcon
+            class="text-muted-foreground size-4 shrink-0 transition-transform duration-200 motion-reduce:transition-none"
+            :class="{ 'rotate-180': showGuidedTours }"
+          />
+        </button>
+      </CardHeader>
+      <CardContent v-if="showGuidedTours">
+        <HelpTourList :tours="guidedTours" />
+      </CardContent>
+    </Card>
   </div>
 </template>

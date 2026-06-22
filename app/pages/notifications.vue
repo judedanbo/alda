@@ -83,6 +83,7 @@ const totalPages = computed(() => Math.ceil(notificationStore.total / limit));
           v-if="hasUnread"
           variant="outline"
           size="sm"
+          data-tour="notifications-mark-all"
           @click="handleMarkAllAsRead"
         >
           Mark all as read
@@ -91,7 +92,7 @@ const totalPages = computed(() => Math.ceil(notificationStore.total / limit));
     </PageHeader>
 
     <!-- Filters -->
-    <div class="mb-6 flex items-center gap-2">
+    <div class="mb-6 flex items-center gap-2" data-tour="notifications-filter">
       <Switch
         :checked="showUnreadOnly"
         @update:checked="showUnreadOnly = $event"
@@ -130,7 +131,7 @@ const totalPages = computed(() => Math.ceil(notificationStore.total / limit));
     </Card>
 
     <!-- Notifications List -->
-    <div v-else class="space-y-2">
+    <div v-else class="space-y-2" data-tour="notifications-list">
       <Card
         v-for="notification in notificationStore.notifications"
         :key="notification.id"

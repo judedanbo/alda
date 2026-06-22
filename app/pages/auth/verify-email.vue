@@ -36,7 +36,7 @@ onMounted(async () => {
 
 <template>
   <div class="w-full max-w-md">
-    <Card role="status" aria-live="polite">
+    <Card role="status" aria-live="polite" data-tour="auth-verify-card">
       <!-- Loading State -->
       <div v-if="status === 'loading'" class="text-center py-4">
         <CardHeader class="text-center">

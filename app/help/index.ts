@@ -87,6 +87,22 @@ export function getGlossaryForRole(role: HelpRole): GlossaryTerm[] {
   return glossary.filter((t) => appliesToRole(t.roles, role));
 }
 
+/**
+ * Interactive tours that can be triggered for `role` from inside the
+ * authenticated app (Help Centre, dashboard). Excludes tours without a `route`
+ * (they only run on a dynamic page, e.g. a single declaration) and `/auth/*`
+ * tours (the auth middleware redirects logged-in users away, so they would
+ * no-op — those stay reachable via the "?" panel on the sign-in pages).
+ */
+export function getToursForRole(role: HelpRole): TourDefinition[] {
+  return tours.filter(
+    (t) =>
+      appliesToRole(t.roles, role) &&
+      !!t.route &&
+      !t.route.startsWith("/auth"),
+  );
+}
+
 // --- By-id lookups ---------------------------------------------------------
 
 export function getArticleById(id: string): HelpArticle | undefined {

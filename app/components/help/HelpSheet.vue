@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { PlayIcon, LifeBuoyIcon } from "lucide-vue-next";
+import type { Component } from "vue";
+import {
+  PlayIcon,
+  LifeBuoyIcon,
+  BookOpenIcon,
+  CompassIcon,
+} from "lucide-vue-next";
 import { getContextualHelp, getArticleById, getGuideById } from "~/help";
 import { useHelpStore } from "~/stores/help";
 
@@ -19,6 +25,7 @@ interface ReadMoreLink {
   kind: string;
   title: string;
   to: string;
+  icon: Component;
 }
 
 const readMore = computed<ReadMoreLink[]>(() => {
@@ -27,13 +34,23 @@ const readMore = computed<ReadMoreLink[]>(() => {
   for (const id of help.value.articleIds ?? []) {
     const a = getArticleById(id);
     if (a) {
-      links.push({ kind: "Article", title: a.title, to: `/help/articles/${a.id}` });
+      links.push({
+        kind: "Article",
+        title: a.title,
+        to: `/help/articles/${a.id}`,
+        icon: BookOpenIcon,
+      });
     }
   }
   for (const id of help.value.guideIds ?? []) {
     const g = getGuideById(id);
     if (g) {
-      links.push({ kind: "Guide", title: g.title, to: `/help/guides/${g.id}` });
+      links.push({
+        kind: "Guide",
+        title: g.title,
+        to: `/help/guides/${g.id}`,
+        icon: CompassIcon,
+      });
     }
   }
   return links;
@@ -67,11 +84,8 @@ function startTour(tourId: string) {
 
       <div class="flex-1 space-y-6 overflow-y-auto p-4">
         <template v-if="help">
-          <HelpArticleBody :blocks="help.blocks" />
-
           <Button
             v-if="help.tourId"
-            variant="outline"
             class="w-full"
             @click="startTour(help.tourId)"
           >
@@ -79,18 +93,35 @@ function startTour(tourId: string) {
             Start a tour of this page
           </Button>
 
+          <HelpArticleBody :blocks="help.blocks" />
+
           <div v-if="readMore.length" class="space-y-2">
-            <p class="text-foreground text-sm font-semibold">Read more</p>
+            <p
+              class="text-muted-foreground text-[11px] font-semibold uppercase tracking-wide"
+            >
+              Read more
+            </p>
             <NuxtLink
               v-for="link in readMore"
               :key="link.to"
               :to="link.to"
-              class="hover:border-primary/50 hover:bg-muted/40 flex flex-col gap-0.5 rounded-md border p-2.5 transition-colors"
+              class="hover:border-primary/50 hover:bg-muted/40 flex items-center gap-3 rounded-md border p-2.5 transition-colors"
             >
-              <Badge variant="outline" class="w-fit">{{ link.kind }}</Badge>
-              <span class="text-foreground text-sm font-medium">
-                {{ link.title }}
-              </span>
+              <div
+                class="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-md"
+              >
+                <component :is="link.icon" class="size-4" />
+              </div>
+              <div class="min-w-0">
+                <p
+                  class="text-muted-foreground text-[10px] font-semibold uppercase tracking-wide"
+                >
+                  {{ link.kind }}
+                </p>
+                <span class="text-foreground text-sm font-medium">
+                  {{ link.title }}
+                </span>
+              </div>
             </NuxtLink>
           </div>
         </template>

@@ -69,6 +69,9 @@ export function useTour() {
       nextBtnText: "Next",
       prevBtnText: "Back",
       doneBtnText: "Done",
+      // Scopes the branded popover theme in assets/css/main.css so our
+      // overrides never leak into any other driver.js usage.
+      popoverClass: "adla-tour",
       steps,
       onDestroyed: () => {
         running.value = false;

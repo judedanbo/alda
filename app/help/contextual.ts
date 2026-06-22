@@ -23,6 +23,7 @@ export const contextualHelp: ContextualHelp[] = [
     ],
     articleIds: ["common-account", "common-welcome", "applicant-getting-started"],
     guideIds: ["guide-applicant-register"],
+    tourId: "tour-applicant-login",
   },
   {
     routePattern: "/auth/register",
@@ -59,6 +60,7 @@ export const contextualHelp: ContextualHelp[] = [
       "applicant-verification",
     ],
     guideIds: ["guide-applicant-register", "guide-applicant-profile"],
+    tourId: "tour-applicant-register",
   },
   {
     routePattern: "/auth/forgot-password",
@@ -82,6 +84,7 @@ export const contextualHelp: ContextualHelp[] = [
     ],
     articleIds: ["common-account"],
     guideIds: ["guide-applicant-register"],
+    tourId: "tour-applicant-password-reset",
   },
   {
     routePattern: "/auth/reset-password",
@@ -100,6 +103,7 @@ export const contextualHelp: ContextualHelp[] = [
       { type: "link", label: "Link expired or not working? Contact support", to: "/contact" },
     ],
     articleIds: ["common-account"],
+    tourId: "tour-applicant-password-reset",
   },
   {
     routePattern: "/auth/verify-email",
@@ -122,6 +126,43 @@ export const contextualHelp: ContextualHelp[] = [
     ],
     articleIds: ["common-account", "applicant-getting-started"],
     guideIds: ["guide-applicant-register"],
+    tourId: "tour-applicant-verify-email",
+  },
+  {
+    routePattern: "/auth/accept-invite",
+    title: "Activate your account",
+    summary: "Set your password to finish activating the account you were invited to.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "An administrator created your account and sent you this invitation. This page confirms the invite, then lets you choose your password.",
+      },
+      {
+        type: "note",
+        variant: "info",
+        text: "Invitation links are single-use and expire. If yours no longer works, ask an administrator to resend the invite.",
+      },
+      { type: "link", label: "Need a new invite? Contact support", to: "/contact" },
+    ],
+    articleIds: ["common-account"],
+    tourId: "tour-applicant-accept-invite",
+  },
+  {
+    routePattern: "/contact",
+    title: "Contact support",
+    summary: "Send the Ghana Audit Service a message about the portal.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Pick the closest category, add a clear subject and message, and we will get back to you. Include your declaration code if your question is about a specific declaration.",
+      },
+      {
+        type: "note",
+        variant: "tip",
+        text: "We aim to respond within 2–3 business days to the email address you provide.",
+      },
+    ],
+    tourId: "tour-applicant-contact",
   },
 
   // --- Applicant -----------------------------------------------------------
@@ -155,6 +196,7 @@ export const contextualHelp: ContextualHelp[] = [
       },
     ],
     articleIds: ["applicant-declarations"],
+    tourId: "tour-applicant-declarations-list",
   },
   {
     routePattern: "/applicant/declaration/new",
@@ -203,6 +245,44 @@ export const contextualHelp: ContextualHelp[] = [
     tourId: "tour-applicant-analytics",
   },
   {
+    routePattern: "/applicant/profile/setup",
+    title: "Complete your profile",
+    summary: "The three-step profile the Legal Unit verifies.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Work through the three steps: personal details, clear Ghana Card images, and at least one public office. Submitting sends your registration to the Legal Unit.",
+      },
+      {
+        type: "note",
+        variant: "warning",
+        text: "Blurred or cropped Ghana Card images are the most common cause of verification delays.",
+      },
+    ],
+    articleIds: ["applicant-profile"],
+    guideIds: ["guide-applicant-profile"],
+    tourId: "tour-applicant-profile-setup",
+  },
+  {
+    routePattern: "/applicant/profile/edit",
+    title: "Edit your profile",
+    summary: "Update your office details after setup.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Your legal identity is read-only — contact an administrator to change it. You can add, edit, or remove your office details here at any time.",
+      },
+      {
+        type: "note",
+        variant: "tip",
+        text: "If the Legal Unit asked for more information, update what they mentioned and resubmit from your dashboard.",
+      },
+    ],
+    articleIds: ["applicant-profile"],
+    guideIds: ["guide-applicant-profile"],
+    tourId: "tour-applicant-edit-profile",
+  },
+  {
     routePattern: "/applicant/profile/*",
     title: "Your profile",
     summary: "The three-step profile the Legal Unit verifies.",
@@ -219,6 +299,61 @@ export const contextualHelp: ContextualHelp[] = [
     ],
     articleIds: ["applicant-profile"],
     guideIds: ["guide-applicant-profile"],
+  },
+  {
+    routePattern: "/account",
+    title: "Your account",
+    summary: "Manage your email, phone, and password.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Update your sign-in email or phone number, change your password, and check your email and phone verification status.",
+      },
+      {
+        type: "note",
+        variant: "warning",
+        text: "Changing your email or phone requires re-verification before notifications resume on that channel. Changing your password signs you out of all other devices.",
+      },
+      { type: "link", label: "Manage notifications & accessibility", to: "/settings/preferences" },
+    ],
+    articleIds: ["common-account"],
+    tourId: "tour-applicant-account",
+  },
+  {
+    routePattern: "/notifications",
+    title: "Your notifications",
+    summary: "Every update about your declarations and verification.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Read your notifications here. Filter to unread only, mark items as read individually, or clear them all at once.",
+      },
+      {
+        type: "note",
+        variant: "tip",
+        text: "Choose which notifications reach you by email, SMS, or in-app on the Preferences page.",
+      },
+      { type: "link", label: "Notification preferences", to: "/settings/preferences" },
+    ],
+    tourId: "tour-applicant-notifications",
+  },
+  {
+    routePattern: "/settings/preferences",
+    title: "Notifications & accessibility",
+    summary: "Tune how you are notified and how the portal looks.",
+    blocks: [
+      {
+        type: "paragraph",
+        text: "Adjust accessibility options (text size, colour theme, reduced motion) and choose which notifications reach you on each channel. Your choices are saved to your account and synced across devices.",
+      },
+      {
+        type: "note",
+        variant: "info",
+        text: "A notification is only delivered on a channel you have enabled. Security messages such as password resets are always sent.",
+      },
+    ],
+    articleIds: ["common-account"],
+    tourId: "tour-applicant-preferences",
   },
   // --- Officer -------------------------------------------------------------
   {
