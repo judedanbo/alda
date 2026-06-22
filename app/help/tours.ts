@@ -21,8 +21,13 @@ import type { TourDefinition } from "./types";
 //   analytics-table
 //        -> pages/applicant/analytics.vue
 //   dashboard-phone-verify, dashboard-verification-banner,
-//   dashboard-verification-docs
-//        -> pages/applicant/dashboard.vue (conditional banners)
+//   dashboard-verification-docs, dashboard-email-verify,
+//   dashboard-active-declaration, dashboard-verification-lookups,
+//   dashboard-quick-actions, dashboard-declarations-overview,
+//   dashboard-code-history
+//        -> pages/applicant/dashboard.vue (conditional banners + section
+//        cards; the email/phone/registration/active-declaration anchors are
+//        conditionally rendered, so their tour steps self-skip when absent)
 //   auth-login-form, auth-forgot-link, auth-register-link
 //        -> pages/auth/login.vue
 //   auth-register-form, auth-phone, auth-password, auth-terms
@@ -68,16 +73,58 @@ export const tours: TourDefinition[] = [
           "Work through this checklist to reach your first declaration. Each item links to where you need to go.",
       },
       {
+        element: "[data-tour=\"dashboard-email-verify\"]",
+        title: "Verify your email",
+        description:
+          "Confirm your email address so we can send you declaration updates. This step disappears once it's verified.",
+      },
+      {
         element: "[data-tour=\"dashboard-phone-verify\"]",
         title: "Verify your phone",
         description:
           "If this banner appears, send yourself a 6-digit code and enter it here. A verified phone is required before you can create a declaration.",
       },
       {
+        element: "[data-tour=\"dashboard-verification-banner\"]",
+        title: "Registration under review",
+        description:
+          "Track your registration's review status here. The Legal Unit verifies your identity before you can declare; any requests for more information show up in this banner.",
+      },
+      {
+        element: "[data-tour=\"dashboard-active-declaration\"]",
+        title: "Your active declaration",
+        description:
+          "When you have a live declaration, its unique code, status and any reviewer comments appear here. Share the code with the Legal Unit to verify it.",
+      },
+      {
+        element: "[data-tour=\"dashboard-verification-lookups\"]",
+        title: "Verification lookups",
+        description:
+          "See how many times the Legal Unit has looked up your code to verify your declaration.",
+      },
+      {
+        element: "[data-tour=\"dashboard-quick-actions\"]",
+        title: "Quick actions",
+        description:
+          "Jump straight to starting a new declaration, browsing all your declarations, or editing your profile.",
+      },
+      {
         element: "[data-tour=\"nav-new-declaration\"]",
         title: "New declaration",
         description:
           "Once your email and phone are verified and the Legal Unit has verified your registration, create a declaration here to get your unique code.",
+      },
+      {
+        element: "[data-tour=\"dashboard-declarations-overview\"]",
+        title: "Declarations overview",
+        description:
+          "A snapshot of your declaration activity — totals plus pending, approved and rejected counts.",
+      },
+      {
+        element: "[data-tour=\"dashboard-code-history\"]",
+        title: "Code history",
+        description:
+          "Every unique code ever issued to you, with its status — handy if a declaration was rejected and reissued.",
       },
       {
         element: "[data-tour=\"help-button\"]",

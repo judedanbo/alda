@@ -176,6 +176,7 @@ async function handleVerifyPhone() {
     <!-- Email Verification Banner -->
     <div
       v-if="user && !isEmailVerified"
+      data-tour="dashboard-email-verify"
       class="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center justify-between dark:bg-amber-950/30 dark:border-amber-900"
     >
       <div class="flex items-center gap-3">
@@ -424,6 +425,7 @@ async function handleVerifyPhone() {
     <!-- Active Code Hero -->
     <Card
       v-if="dashboard?.activeDeclaration"
+      data-tour="dashboard-active-declaration"
       class="border-primary/30 bg-primary/5"
     >
       <CardContent class="p-6">
@@ -578,6 +580,7 @@ async function handleVerifyPhone() {
     <!-- Verification activity + Quick actions -->
     <div class="grid md:grid-cols-3 gap-4">
       <AppStatCard
+        data-tour="dashboard-verification-lookups"
         label="Verification Lookups"
         :value="dashboard?.verificationCount ?? 0"
         :loading="loading"
@@ -587,7 +590,7 @@ async function handleVerifyPhone() {
         icon-color="text-primary"
         icon-path="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
       />
-      <Card class="md:col-span-2">
+      <Card data-tour="dashboard-quick-actions" class="md:col-span-2">
         <CardHeader>
           <CardTitle class="text-base">Quick Actions</CardTitle>
         </CardHeader>
@@ -696,7 +699,7 @@ async function handleVerifyPhone() {
     <!-- Summary + Code history -->
     <div class="grid lg:grid-cols-3 gap-4">
       <div class="lg:col-span-2">
-        <Card>
+        <Card data-tour="dashboard-declarations-overview">
           <CardHeader class="flex flex-row items-center justify-between pb-2">
             <div>
               <CardTitle class="text-base">Declarations Overview</CardTitle>
@@ -742,7 +745,7 @@ async function handleVerifyPhone() {
           </CardContent>
         </Card>
       </div>
-      <Card>
+      <Card data-tour="dashboard-code-history">
         <CardHeader>
           <CardTitle class="text-base flex items-center justify-between">
             Code History
