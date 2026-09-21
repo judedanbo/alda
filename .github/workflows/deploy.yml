@@ -45,7 +45,6 @@ jobs:
             echo "environment=staging" >> "$GITHUB_OUTPUT"
             echo "overlay=staging" >> "$GITHUB_OUTPUT"
             echo "namespace=adla-staging" >> "$GITHUB_OUTPUT"
-            # TEMPORARY: typo'd staging host until DNS is corrected to staging-alda.*
             echo "domain=staging-alda.audit.gov.gh" >> "$GITHUB_OUTPUT"
           fi
 
