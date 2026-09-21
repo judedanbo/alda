@@ -9,10 +9,10 @@ spec:
     # TEMPORARY: DNS typo. Correct to staging-alda.audit.gov.gh once the DNS
     # record is fixed (host and tls host must match for cert-manager).
     - hosts:
-        - ttaging-alda.audit.gov.gh
+        - staging-alda.audit.gov.gh
       secretName: adla-staging-tls
   rules:
-    - host: ttaging-alda.audit.gov.gh
+    - host: staging-alda.audit.gov.gh
       http:
         paths:
           - path: /
