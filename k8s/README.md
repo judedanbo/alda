@@ -44,7 +44,7 @@ Secrets; TLS is issued by cert-manager; ingress is served by ingress-nginx.
 | Namespaces | `adla-staging`, `adla-production` |
 | Trigger → environment | merge to `main` → staging; publish a GitHub Release → production |
 | Production host | `alda.audit.gov.gh` |
-| Staging host | `ttaging-alda.audit.gov.gh` *(temporary — DNS typo, to be corrected to `staging-alda.audit.gov.gh`)* |
+| Staging host | `staging-alda.audit.gov.gh` |
 | StorageClass | `managed-csi` (Azure Disk) |
 
 ---
@@ -71,7 +71,7 @@ k8s/
 │   ├── minio-init-job.yaml     # optional manual bucket creator
 │   └── kustomization.yaml
 └── overlays/
-    ├── staging/                # namespace adla-staging, host ttaging-alda.*
+    ├── staging/                # namespace adla-staging, host staging-alda.*
     └── production/             # namespace adla-production, host alda.*
 ```
 
@@ -136,7 +136,7 @@ Create/confirm DNS **A records** pointing at the ingress-nginx external IP from
 the prerequisites:
 
 - `alda.audit.gov.gh` → `<ingress-nginx EXTERNAL-IP>`  (production — required)
-- `ttaging-alda.audit.gov.gh` → `<ingress-nginx EXTERNAL-IP>`  (staging — temporary)
+- `staging-alda.audit.gov.gh` → `<ingress-nginx EXTERNAL-IP>`  (staging)
 
 > cert-manager uses an HTTP-01 challenge, so the host **must** resolve to the
 > ingress IP before a certificate can be issued. Until staging DNS exists, the
@@ -353,10 +353,6 @@ kubectl edit pvc data-adla-postgres-0 -n <ns>   # raise spec.resources.requests.
   create namespaces or write ResourceQuota/LimitRange, so those are applied once
   at bootstrap (Step 2) by a cluster admin. Raising a quota later is a deliberate
   operator action, not something a compromised pipeline can do.
-- **Staging host is `ttaging-alda.audit.gov.gh`** — a deliberate temporary match for
-  the current (typo'd) DNS record. Correct it to `staging-alda.audit.gov.gh` in
-  `overlays/staging/{ingress-patch,configmap-patch}.yaml` and `deploy.yml`'s
-  `set-env` once DNS is fixed.
 - **`/api/health` is shallow** (returns 200 without checking the DB) — readiness can
   go green before a request would actually succeed; the deploy ordering compensates.
 - **Notifications are deferred** — SMTP/SMS are unconfigured for the first cut, so
